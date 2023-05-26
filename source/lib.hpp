@@ -117,13 +117,13 @@ struct token
 inline auto operator<<(std::ostream& ostream, const token& token)
     -> std::ostream&
 {
-    return ostream << "Token(" << token.type << ", " << token.literal << ")";
+    return ostream << "token{" << token.type << ", " << token.literal << "}";
 }
 
-class lexxur
+class tokenizer
 {
   public:
-    explicit lexxur(std::string_view contents);
+    explicit tokenizer(std::string_view contents);
 
     auto next_token() -> token;
 

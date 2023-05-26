@@ -3,9 +3,9 @@
 
 #include "lib.hpp"
 
-TEST(deeznuts, deeznuts)
+TEST(test, deeznuts)
 {
-    auto lexer = lexxur {"deez nuts 1024& *^}{][)(:=><-+?;/%|~"};
+    auto lexer = tokenizer {"deez nuts 1024& *^}{][)(:=><-+?;/%|~"};
     using enum token_type;
     auto le_tokens = std::vector<token> {
         token {identifier, "deez"}, token {identifier, "nuts"},

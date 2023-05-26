@@ -5,7 +5,7 @@
 
 auto main() -> int
 {
-    auto lib = lexxur {"Lexxur"};
+    auto lib = tokenizer {"Lexxur"};
     auto le_token = lib.next_token();
 
     std::cout << "le token: `" << le_token.literal << "`\n";
