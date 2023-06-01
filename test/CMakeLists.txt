@@ -8,7 +8,7 @@ project(lexereagenTests LANGUAGES CXX)
 
 add_executable(lexereagen_test source/lexereagen_test.cpp)
 target_link_libraries(lexereagen_test PRIVATE lexereagen_lib gtest gtest_main) 
-target_compile_features(lexereagen_test PRIVATE cxx_std_17)
+target_compile_features(lexereagen_test PRIVATE cxx_std_20)
 
 add_test(NAME lexereagen_test COMMAND lexereagen_test)
 

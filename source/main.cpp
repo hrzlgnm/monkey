@@ -1,14 +1,25 @@
+#include <future>
 #include <iostream>
 #include <string>
 
 #include "lib.hpp"
 
+constexpr auto prompt = ">> ";
+
 auto main() -> int
 {
-    auto lib = tokenizer {"Lexxur"};
-    auto le_token = lib.next_token();
+    std::cout << prompt;
 
-    std::cout << "le token: `" << le_token.literal << "`\n";
+    auto input = std::string {};
+    while (getline(std::cin, input)) {
+        auto lxr = lexer {input};
+        auto tok = lxr.next_token();
+        while (tok.type != token_type::eof) {
+            std::cout << tok << '\n';
+            tok = lxr.next_token();
+        }
+        std::cout << prompt;
+    }
 
     return 0;
 }
