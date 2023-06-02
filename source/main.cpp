@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-#include "lib.hpp"
+#include "lexer.hpp"
 
 constexpr auto prompt = ">> ";
 

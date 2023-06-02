@@ -1,7 +1,7 @@
 
-#include <gtest/gtest.h>
+#include "lexer.hpp"
 
-#include "lib.hpp"
+#include <gtest/gtest.h>
 
 TEST(test, chapter1dot2)
 {

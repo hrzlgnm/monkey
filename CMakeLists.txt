@@ -17,7 +17,9 @@ include(cmake/variables.cmake)
 
 add_library(
     lexereagen_lib OBJECT
-    source/lib.cpp
+    source/lexer.cpp
+    source/token.cpp
+    source/token_type.cpp
 )
 
 target_include_directories(

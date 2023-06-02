@@ -1,16 +1,10 @@
 #include <algorithm>
 #include <array>
-#include <cctype>
-#include <cstdlib>
-#include <limits>
-#include <map>
-#include <string_view>
-#include <system_error>
+#include <numeric>
 
-#include "lib.hpp"
+#include "lexer.hpp"
 
-#include <sys/stat.h>
-#include <unistd.h>
+#include "token_type.hpp"
 
 using lut = std::array<token_type, std::numeric_limits<unsigned char>::max()>;
 

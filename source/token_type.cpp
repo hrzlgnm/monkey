@@ -1,64 +1,6 @@
-#pragma once
+#include "token_type.hpp"
 
-#include <functional>
-#include <ios>
-#include <optional>
-#include <ostream>
-#include <string>
-#include <string_view>
-#include <type_traits>
-
-enum class token_type
-{
-    // special tokens
-    illegal,
-    eof,
-
-    // single character tokens
-    assign,
-    asterisk,
-    back_slash,
-    caret,
-    colon,
-    comma,
-    dot,
-    exclamation,
-    greater_than,
-    lbracket,
-    less_than,
-    lparen,
-    minus,
-    lsquirly,
-    percent,
-    pipe,
-    plus,
-    question,
-    rbracket,
-    rparen,
-    rsquirly,
-    semicolon,
-    slash,
-    tilde,
-
-    // two character tokens
-    equals,
-    not_equals,
-
-    // multi character tokens
-    identifier,
-    integer,
-
-    // keywords
-    let,
-    function,
-    tru,
-    fals,
-    eef,
-    elze,
-    ret,
-};
-
-inline auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
+auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
 {
     switch (type) {
         case token_type::asterisk:
@@ -138,39 +80,3 @@ inline auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
     }
     __builtin_unreachable();
 }
-
-struct token
-{
-    token_type type;
-    std::string_view literal;
-    auto operator==(const token& other) const -> bool
-    {
-        return type == other.type && literal == other.literal;
-    }
-};
-
-inline auto operator<<(std::ostream& ostream, const token& token)
-    -> std::ostream&
-{
-    return ostream << "token{" << token.type << ", `" << token.literal << "´}";
-}
-
-class lexer
-{
-  public:
-    explicit lexer(std::string_view input);
-
-    auto next_token() -> token;
-
-  private:
-    auto read_char() -> void;
-    auto skip_whitespace() -> void;
-    auto peek_char() -> std::string_view::value_type;
-    auto read_identifier_or_keyword() -> token;
-    auto read_integer() -> token;
-
-    std::string_view m_input;
-    std::string_view::size_type m_position {0};
-    std::string_view::size_type m_read_position {0};
-    std::string_view::value_type m_byte {0};
-};
