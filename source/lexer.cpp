@@ -6,11 +6,12 @@
 
 #include "token_type.hpp"
 
-using lut = std::array<token_type, std::numeric_limits<unsigned char>::max()>;
+using chart_literal_lookup_table =
+    std::array<token_type, std::numeric_limits<unsigned char>::max()>;
 
-constexpr auto build_char_to_token_type_map() -> lut
+constexpr auto build_char_to_token_type_map() -> chart_literal_lookup_table
 {
-    auto arr = lut {};
+    auto arr = chart_literal_lookup_table {};
     using enum token_type;
     arr.fill(illegal);
     arr['*'] = asterisk;
@@ -42,8 +43,9 @@ constexpr auto build_char_to_token_type_map() -> lut
 
 constexpr auto char_literal_tokens = build_char_to_token_type_map();
 constexpr auto keyword_count = 7;
-constexpr auto build_keywoard_to_token_type_map()
-    -> std::array<std::pair<std::string_view, token_type>, keyword_count>
+using keyword_pair = std::pair<std::string_view, token_type>;
+using keyword_lookup_table = std::array<keyword_pair, keyword_count>;
+constexpr auto build_keyword_to_token_type_map() -> keyword_lookup_table
 {
     return {std::pair {"fn", token_type::function},
             std::pair {"let", token_type::let},
@@ -54,7 +56,7 @@ constexpr auto build_keywoard_to_token_type_map()
             std::pair {"return", token_type::ret}};
 }
 
-constexpr auto keyword_tokens = build_keywoard_to_token_type_map();
+constexpr auto keyword_tokens = build_keyword_to_token_type_map();
 
 inline auto is_letter(char chr) -> bool
 {
