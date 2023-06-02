@@ -6,7 +6,7 @@
 #include "token.hpp"
 #include "token_type.hpp"
 
-class parser
+class parser final
 {
   public:
     explicit parser(lexer lxr);

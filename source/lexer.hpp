@@ -3,7 +3,7 @@
 
 #include "token.hpp"
 
-class lexer
+class lexer final
 {
   public:
     explicit lexer(std::string_view input);

@@ -5,7 +5,7 @@
 
 #include "token_type.hpp"
 
-struct token
+struct token final
 {
     token_type type;
     std::string_view literal;
