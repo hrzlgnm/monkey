@@ -159,7 +159,7 @@ auto lexer::read_identifier_or_keyword() -> token
     if (itr != keyword_tokens.end()) {
         return token {itr->second, itr->first};
     }
-    return token {token_type::identifier, identifier_or_keyword};
+    return token {token_type::ident, identifier_or_keyword};
 }
 
 auto lexer::read_integer() -> token

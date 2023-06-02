@@ -27,7 +27,7 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "exclamation";
         case token_type::greater_than:
             return ostream << "greater_than";
-        case token_type::identifier:
+        case token_type::ident:
             return ostream << "identifier";
         case token_type::integer:
             return ostream << "integer";

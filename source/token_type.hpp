@@ -39,7 +39,7 @@ enum class token_type
     not_equals,
 
     // multi character tokens
-    identifier,
+    ident,
     integer,
 
     // keywords

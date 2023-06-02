@@ -1,5 +1,6 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(cmake/prelude.cmake)
 
 project(
@@ -15,19 +16,18 @@ include(cmake/variables.cmake)
 
 # ---- Declare library ----
 
-add_library(
-    lexereagen_lib OBJECT
-    source/lexer.cpp
-    source/token.cpp
-    source/token_type.cpp
+add_library(lexereagen_lib 
+    OBJECT
+        source/lexer.cpp
+        source/parser.cpp
+        source/token.cpp
+        source/token_type.cpp
 )
 
-target_include_directories(
-    lexereagen_lib ${warning_guard}
+target_include_directories(lexereagen_lib ${warning_guard}
     PUBLIC
-    "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>"
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>"
 )
-
 target_compile_features(lexereagen_lib PUBLIC cxx_std_20)
 
 # ---- Declare executable ----
