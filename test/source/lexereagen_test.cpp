@@ -1,9 +1,14 @@
 
+#include <memory>
+#include <memory_resource>
+
 #include "lexer.hpp"
 
 #include <gtest/gtest.h>
 
+#include "ast.hpp"
 #include "parser.hpp"
+#include "token_type.hpp"
 
 TEST(test, chapter1dot2Lexing)
 {
@@ -158,4 +163,36 @@ return 993322;
         ASSERT_TRUE(ret_stmt);
         ASSERT_EQ(ret_stmt->tkn.literal, "return");
     }
+}
+
+TEST(test, chapter2dot6TestString)
+{
+    using enum token_type;
+    auto ltkn = token {
+        .type = let,
+        .literal = "let",
+    };
+    auto name = std::make_unique<identifier>();
+    name->tkn = token {
+        .type = ident,
+        .literal = "myVar",
+    };
+    name->value = "myVar";
+
+    auto value = std::make_unique<identifier>();
+    value->tkn = token {
+        .type = ident,
+        .literal = "anotherVar",
+    };
+    value->value = "anotherVar";
+    program prgrm;
+
+    prgrm.statements.push_back(std::make_unique<let_statement>());
+    dynamic_cast<let_statement*>(prgrm.statements.back().get())->tkn = ltkn;
+    dynamic_cast<let_statement*>(prgrm.statements.back().get())->name =
+        std::move(name);
+    dynamic_cast<let_statement*>(prgrm.statements.back().get())->value =
+        std::move(value);
+
+    ASSERT_EQ(prgrm.string(), "let myVar = anotherVar;");
 }
