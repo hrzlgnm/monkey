@@ -196,3 +196,41 @@ TEST(test, chapter2dot6TestString)
 
     ASSERT_EQ(prgrm.string(), "let myVar = anotherVar;");
 }
+
+TEST(test, chapter2dot6TestIdentfierExpression)
+{
+    const auto* input = "foobar;";
+    auto prsr = parser {lexer {input}};
+
+    auto prgrm = prsr.parse_program();
+    ASSERT_EQ(prgrm->statements.size(), 1);
+    auto* stmt = prgrm->statements[0].get();
+    auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
+    ASSERT_TRUE(expr_stmt);
+
+    auto* expr = expr_stmt->expr.get();
+    auto* ident = dynamic_cast<identifier*>(expr);
+    ASSERT_TRUE(ident);
+
+    ASSERT_EQ(ident->value, "foobar");
+    ASSERT_EQ(ident->token_literal(), "foobar");
+}
+
+TEST(test, chapter2dot6TestIntegerExpression)
+{
+    const auto* input = "5;";
+    auto prsr = parser {lexer {input}};
+
+    auto prgrm = prsr.parse_program();
+    ASSERT_EQ(prgrm->statements.size(), 1);
+    auto* stmt = prgrm->statements[0].get();
+    auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
+    ASSERT_TRUE(expr_stmt);
+
+    auto* expr = expr_stmt->expr.get();
+    auto* ident = dynamic_cast<integer_literal*>(expr);
+    ASSERT_TRUE(ident);
+
+    ASSERT_EQ(ident->value, 5);
+    ASSERT_EQ(ident->token_literal(), "5");
+}

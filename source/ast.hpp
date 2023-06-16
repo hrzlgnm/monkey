@@ -1,8 +1,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <memory>
 #include <sstream>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <vector>
@@ -22,17 +24,20 @@ struct node
     virtual auto string() const -> std::string = 0;
 };
 
-struct statement : public node
+struct statement : node
+{
+    using node::node;
+};
+using statement_ptr = std::unique_ptr<statement>;
+
+struct expression : node
 {
     using node::node;
 };
 
-struct expression : public node
-{
-    using node::node;
-};
+using expression_ptr = std::unique_ptr<expression>;
 
-struct program : public node
+struct program : node
 {
     using node::node;
     inline auto token_literal() const -> std::string_view override
@@ -57,9 +62,14 @@ struct program : public node
     std::vector<std::unique_ptr<statement>> statements {};
 };
 
-struct identifier : public expression
+struct identifier : expression
 {
     using expression::expression;
+    inline identifier(token tokn, std::string_view val)
+        : tkn {tokn}
+        , value {val}
+    {
+    }
     inline auto token_literal() const -> std::string_view override
     {
         return tkn.literal;
@@ -72,7 +82,7 @@ struct identifier : public expression
     std::string_view value;
 };
 
-struct let_statement : public statement
+struct let_statement : statement
 {
     using statement::statement;
 
@@ -95,7 +105,7 @@ struct let_statement : public statement
     std::unique_ptr<expression> value {};
 };
 
-struct return_statement : public statement
+struct return_statement : statement
 {
     using statement::statement;
     inline auto token_literal() const -> std::string_view override
@@ -116,7 +126,7 @@ struct return_statement : public statement
     std::unique_ptr<expression> return_value {};
 };
 
-struct expression_statement : public statement
+struct expression_statement : statement
 {
     using statement::statement;
     inline auto token_literal() const -> std::string_view override
@@ -132,4 +142,20 @@ struct expression_statement : public statement
     }
     token tkn {};
     std::unique_ptr<expression> expr {};
+};
+
+struct integer_literal : expression
+{
+    using expression::expression;
+    inline auto token_literal() const -> std::string_view override
+    {
+        return tkn.literal;
+    }
+    inline auto string() const -> std::string override
+    {
+        return std::string {tkn.literal};
+    }
+
+    token tkn {};
+    int64_t value {};
 };
