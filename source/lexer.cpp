@@ -156,8 +156,8 @@ auto lexer::read_identifier_or_keyword() -> token
     const auto* const itr =
         std::find_if(keyword_tokens.begin(),
                      keyword_tokens.end(),
-                     [&identifier_or_keyword](auto keyword_pair) -> bool
-                     { return keyword_pair.first == identifier_or_keyword; });
+                     [&identifier_or_keyword](auto pair) -> bool
+                     { return pair.first == identifier_or_keyword; });
     if (itr != keyword_tokens.end()) {
         return token {itr->second, itr->first};
     }

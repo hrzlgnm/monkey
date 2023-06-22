@@ -56,9 +56,6 @@ struct program : node
         }
         return strm.str();
     }
-
-    std::string buff;
-
     std::vector<std::unique_ptr<statement>> statements {};
 };
 
