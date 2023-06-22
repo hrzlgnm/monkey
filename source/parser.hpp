@@ -28,12 +28,14 @@ class parser final
     auto parse_expression(int precedence) -> expression_ptr;
     auto parse_identifier() -> expression_ptr;
     auto parse_integer_literal() -> expression_ptr;
+    auto parse_prefix_expression() -> expression_ptr;
     auto expect_peek(token_type type) -> bool;
     auto cur_token_is(token_type type) const -> bool;
     auto peek_token_is(token_type type) const -> bool;
     auto peek_error(token_type type) -> void;
     auto register_infix(token_type type, infix_parser infix) -> void;
     auto register_prefix(token_type type, prefix_parser prefix) -> void;
+    auto no_prefix_expression_error(token_type type) -> void;
 
     lexer m_lxr;
     token m_cur_token {};

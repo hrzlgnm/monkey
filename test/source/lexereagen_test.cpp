@@ -1,6 +1,8 @@
 
+#include <cstdint>
 #include <memory>
 #include <memory_resource>
+#include <string_view>
 
 #include "lexer.hpp"
 
@@ -203,6 +205,7 @@ TEST(test, chapter2dot6TestIdentfierExpression)
     auto prsr = parser {lexer {input}};
 
     auto prgrm = prsr.parse_program();
+    ASSERT_TRUE(prsr.errors().empty());
     ASSERT_EQ(prgrm->statements.size(), 1);
     auto* stmt = prgrm->statements[0].get();
     auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
@@ -222,6 +225,7 @@ TEST(test, chapter2dot6TestIntegerExpression)
     auto prsr = parser {lexer {input}};
 
     auto prgrm = prsr.parse_program();
+    ASSERT_TRUE(prsr.errors().empty());
     ASSERT_EQ(prgrm->statements.size(), 1);
     auto* stmt = prgrm->statements[0].get();
     auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
@@ -233,4 +237,33 @@ TEST(test, chapter2dot6TestIntegerExpression)
 
     ASSERT_EQ(ident->value, 5);
     ASSERT_EQ(ident->token_literal(), "5");
+}
+
+TEST(test, chapter2dot6TestPrefixExpression)
+{
+    struct prefix_test
+    {
+        std::string_view input;
+        std::string op;
+        int64_t integer_value;
+    } prefix_tests[] = {{"!5;", "!", 5}, {"-15;", "-", 15}};
+
+    for (const auto& prefix_test : prefix_tests) {
+        auto prsr = parser {lexer {prefix_test.input}};
+        auto prgrm = prsr.parse_program();
+        ASSERT_TRUE(prsr.errors().empty()) << prsr.errors().at(0);
+        ASSERT_EQ(prgrm->statements.size(), 1);
+        auto* stmt = prgrm->statements[0].get();
+        auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
+        ASSERT_TRUE(expr_stmt);
+
+        auto* expr = expr_stmt->expr.get();
+        auto* prefix = dynamic_cast<prefix_expression*>(expr);
+        ASSERT_TRUE(prefix);
+        ASSERT_EQ(prefix_test.op, prefix->op);
+
+        auto* ntgr_xpr = dynamic_cast<integer_literal*>(prefix->right.get());
+        ASSERT_TRUE(ntgr_xpr);
+        ASSERT_EQ(prefix_test.integer_value, ntgr_xpr->value);
+    }
 }

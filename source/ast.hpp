@@ -101,3 +101,14 @@ struct integer_literal : expression
     token tkn {};
     int64_t value {};
 };
+
+struct prefix_expression : expression
+{
+    using expression::expression;
+    auto token_literal() const -> std::string_view override;
+    auto string() const -> std::string override;
+
+    token tkn;
+    std::string op;
+    expression_ptr right;
+};

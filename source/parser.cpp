@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <locale>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -23,15 +24,27 @@ enum precedence
     call,
 };
 
+const auto precedences = std::map<token_type, precedence> {
+    {token_type::equals, equals},
+    {token_type::not_equals, equals},
+    {token_type::less_than, lessgreater},
+    {token_type::greater_than, lessgreater},
+    {token_type::plus, sum},
+    {token_type::minus, sum},
+    {token_type::slash, product},
+    {token_type::asterisk, product},
+};
+
 parser::parser(lexer lxr)
     : m_lxr(lxr)
 {
     next_token();
     next_token();
-
-    register_prefix(token_type::ident, [this] { return parse_identifier(); });
-    register_prefix(token_type::integer,
-                    [this] { return parse_integer_literal(); });
+    using enum token_type;
+    register_prefix(ident, [this] { return parse_identifier(); });
+    register_prefix(integer, [this] { return parse_integer_literal(); });
+    register_prefix(exclamation, [this] { return parse_prefix_expression(); });
+    register_prefix(minus, [this] { return parse_prefix_expression(); });
 }
 
 auto parser::parse_program() -> std::unique_ptr<program>
@@ -122,6 +135,7 @@ auto parser::parse_expression(int precedence) -> expression_ptr
     (void)precedence;
     auto prefix = m_prefix_parsers[m_cur_token.type];
     if (!prefix) {
+        no_prefix_expression_error(m_cur_token.type);
         return {};
     }
     return prefix();
@@ -144,6 +158,17 @@ auto parser::parse_integer_literal() -> expression_ptr
         return {};
     }
     return lit;
+}
+
+auto parser::parse_prefix_expression() -> expression_ptr
+{
+    auto pfx_expr = std::make_unique<prefix_expression>();
+    pfx_expr->tkn = m_cur_token;
+    pfx_expr->op = m_cur_token.literal;
+
+    next_token();
+    pfx_expr->right = parse_expression(prefix);
+    return pfx_expr;
 }
 
 auto parser::expect_peek(token_type type) -> bool
@@ -180,4 +205,11 @@ auto parser::cur_token_is(token_type type) const -> bool
 auto parser::peek_token_is(token_type type) const -> bool
 {
     return m_peek_token.type == type;
+}
+
+auto parser::no_prefix_expression_error(token_type type) -> void
+{
+    std::ostringstream strm;
+    strm << "no prefix parse function for " << type << " found";
+    m_errors.push_back(strm.str());
 }
