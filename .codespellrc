@@ -1,6 +1,7 @@
 [codespell]
 builtin = clear,rare,en-GB_to_en-US,names,informal,code
 check-filenames =
+ignore-words = .codespellignore
 check-hidden =
 skip = */.git,*/build,*/prefix
-quiet-level = 2
+quiet-level = 2 
