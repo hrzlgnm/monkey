@@ -91,6 +91,17 @@ struct expression_statement : statement
     std::unique_ptr<expression> expr {};
 };
 
+struct boolean : expression
+{
+    boolean(token tokn, bool val);
+    auto token_literal() const -> std::string_view override;
+
+    auto string() const -> std::string override;
+
+    token tkn {};
+    bool value {};
+};
+
 struct integer_literal : expression
 {
     using expression::expression;

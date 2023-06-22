@@ -30,6 +30,8 @@ class parser final
     auto parse_integer_literal() -> expression_ptr;
     auto parse_prefix_expression() -> expression_ptr;
     auto parse_infix_expression(expression_ptr left) -> expression_ptr;
+    auto parse_boolean() -> expression_ptr;
+    auto parse_grouped_expression() -> expression_ptr;
 
     auto expect_peek(token_type type) -> bool;
     auto cur_token_is(token_type type) const -> bool;

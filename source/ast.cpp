@@ -80,6 +80,22 @@ auto expression_statement::string() const -> std::string
     return {};
 }
 
+boolean::boolean(token tokn, bool val)
+    : tkn {tokn}
+    , value {val}
+{
+}
+
+auto boolean::token_literal() const -> std::string_view
+{
+    return tkn.literal;
+}
+
+auto boolean::string() const -> std::string
+{
+    return std::string {tkn.literal};
+}
+
 auto integer_literal::token_literal() const -> std::string_view
 {
     return tkn.literal;
@@ -113,7 +129,9 @@ auto infix_expression::string() const -> std::string
     std::ostringstream strm;
     strm << "(";
     strm << left->string();
+    strm << ' ';
     strm << op;
+    strm << ' ';
     strm << right->string();
     strm << ")";
     return strm.str();

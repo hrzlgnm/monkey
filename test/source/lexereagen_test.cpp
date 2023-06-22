@@ -246,7 +246,14 @@ TEST(test, chapter2dot6TestPrefixExpressions)
         std::string_view input;
         std::string op;
         int64_t integer_value;
-    } prefix_tests[] = {{"!5;", "!", 5}, {"-15;", "-", 15}};
+    } prefix_tests[] = {
+        // clang-format: off
+        // NOLINTBEGIN(*-magic-*)
+        {"!5;", "!", 5},
+        {"-15;", "-", 15}
+        // NOLINTEND(*-magic-*)
+        // clang-format: on
+    };
 
     for (const auto& prefix_test : prefix_tests) {
         auto prsr = parser {lexer {prefix_test.input}};
@@ -277,6 +284,7 @@ TEST(test, chapter2dot6TestInfixExpressions)
         std::string op;
         int64_t right_value;
     } infix_tests[] = {
+        // NOLINTBEGIN(*-magic-*)
         {"5 + 5;", 5, "+", 5},
         {"5 - 5;", 5, "-", 5},
         {"5 * 5;", 5, "*", 5},
@@ -285,6 +293,7 @@ TEST(test, chapter2dot6TestInfixExpressions)
         {"5 < 5;", 5, "<", 5},
         {"5 == 5;", 5, "==", 5},
         {"5 != 5;", 5, "!=", 5},
+        // NOLINTEND(*-magic-*)
     };
 
     for (const auto& infix_test : infix_tests) {
@@ -309,5 +318,61 @@ TEST(test, chapter2dot6TestInfixExpressions)
             dynamic_cast<integer_literal*>(infix->right.get());
         ASSERT_TRUE(rght_ntgr_xpr);
         ASSERT_EQ(infix_test.right_value, rght_ntgr_xpr->value);
+    }
+}
+
+TEST(test, chapter2dot8TestOperatorPrecedence)
+{
+    struct oper_test
+    {
+        std::string_view input;
+        std::string expected;
+    } tests[] = {
+        {
+            "true",
+            "true",
+        },
+        {
+            "false",
+            "false",
+        },
+        {
+            "3 > 5 == false",
+            "((3 > 5) == false)",
+        },
+        {
+            "3 < 5 == true",
+            "((3 < 5) == true)",
+        },
+        {
+            "1 + (2 + 3) + 4",
+            "((1 + (2 + 3)) + 4)",
+        },
+        {
+
+            "(5 + 5) * 2",
+            "((5 + 5) * 2)",
+        },
+        {
+            "2 / (5 + 5)",
+            "(2 / (5 + 5))",
+        },
+        {
+            "-(5 + 5)",
+            "(-(5 + 5))",
+        },
+        {
+            "!(true == true)",
+            "(!(true == true))",
+        },
+    };
+    for (const auto& t : tests) {
+        auto prsr = parser {lexer {t.input}};
+
+        auto prgrm = prsr.parse_program();
+        ASSERT_TRUE(prsr.errors().empty()) << prsr.errors().at(0);
+        ASSERT_EQ(prgrm->statements.size(), 1);
+        auto* stmt = prgrm->statements[0].get();
+        ASSERT_EQ(t.expected, stmt->string());
     }
 }

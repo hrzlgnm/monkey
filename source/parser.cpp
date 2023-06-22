@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -22,16 +21,25 @@ enum precedence
     call,
 };
 
-const auto precedences = std::map<token_type, precedence> {
-    {token_type::equals, equals},
-    {token_type::not_equals, equals},
-    {token_type::less_than, lessgreater},
-    {token_type::greater_than, lessgreater},
-    {token_type::plus, sum},
-    {token_type::minus, sum},
-    {token_type::slash, product},
-    {token_type::asterisk, product},
-};
+auto precedence_of_token(token_type type) -> int
+{
+    switch (type) {
+        case token_type::equals:
+        case token_type::not_equals:
+            return equals;
+        case token_type::less_than:
+        case token_type::greater_than:
+            return lessgreater;
+        case token_type::plus:
+        case token_type::minus:
+            return sum;
+        case token_type::slash:
+        case token_type::asterisk:
+            return product;
+        default:
+            return lowest;
+    }
+}
 
 parser::parser(lexer lxr)
     : m_lxr(lxr)
@@ -43,6 +51,9 @@ parser::parser(lexer lxr)
     register_prefix(integer, [this] { return parse_integer_literal(); });
     register_prefix(exclamation, [this] { return parse_prefix_expression(); });
     register_prefix(minus, [this] { return parse_prefix_expression(); });
+    register_prefix(tru, [this] { return parse_boolean(); });
+    register_prefix(fals, [this] { return parse_boolean(); });
+    register_prefix(lparen, [this] { return parse_grouped_expression(); });
     register_infix(plus,
                    [this](expression_ptr left)
                    { return parse_infix_expression(std::move(left)); });
@@ -203,6 +214,20 @@ auto parser::parse_prefix_expression() -> expression_ptr
     pfx_expr->right = parse_expression(prefix);
     return pfx_expr;
 }
+auto parser::parse_boolean() -> expression_ptr
+{
+    return std::make_unique<boolean>(m_current_token,
+                                     cur_token_is(token_type::tru));
+}
+auto parser::parse_grouped_expression() -> expression_ptr
+{
+    next_token();
+    auto exp = parse_expression(lowest);
+    if (!expect_peek(token_type::rparen)) {
+        return {};
+    }
+    return exp;
+}
 
 auto parser::parse_infix_expression(expression_ptr left) -> expression_ptr
 {
@@ -235,10 +260,12 @@ auto parser::peek_error(token_type type) -> void
          << m_peek_token.type << " instead";
     m_errors.push_back(strm.str());
 }
+
 auto parser::register_infix(token_type type, infix_parser infix) -> void
 {
     m_infix_parsers[type] = std::move(infix);
 }
+
 auto parser::register_prefix(token_type type, prefix_parser prefix) -> void
 {
     m_prefix_parsers[type] = std::move(prefix);
@@ -263,18 +290,10 @@ auto parser::no_prefix_expression_error(token_type type) -> void
 
 auto parser::peek_precedence() const -> int
 {
-    auto itr = precedences.find(m_peek_token.type);
-    if (itr != precedences.end()) {
-        return itr->second;
-    }
-    return lowest;
+    return precedence_of_token(m_peek_token.type);
 }
 
 auto parser::current_precedence() const -> int
 {
-    auto itr = precedences.find(m_current_token.type);
-    if (itr != precedences.end()) {
-        return itr->second;
-    }
-    return lowest;
+    return precedence_of_token(m_current_token.type);
 }
