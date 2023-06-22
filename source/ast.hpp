@@ -1,12 +1,9 @@
 #pragma once
 
-#include <algorithm>
 #include <cstdint>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <vector>
 
 #include "token.hpp"
@@ -40,41 +37,21 @@ using expression_ptr = std::unique_ptr<expression>;
 struct program : node
 {
     using node::node;
-    inline auto token_literal() const -> std::string_view override
-    {
-        if (statements.empty()) {
-            return "";
-        }
-        return statements[0]->token_literal();
-    }
+    auto token_literal() const -> std::string_view override;
 
-    auto string() const -> std::string override
-    {
-        std::stringstream strm;
-        for (const auto& statement : statements) {
-            strm << statement->string();
-        }
-        return strm.str();
-    }
+    auto string() const -> std::string override;
+
     std::vector<std::unique_ptr<statement>> statements {};
 };
 
 struct identifier : expression
 {
     using expression::expression;
-    inline identifier(token tokn, std::string_view val)
-        : tkn {tokn}
-        , value {val}
-    {
-    }
-    inline auto token_literal() const -> std::string_view override
-    {
-        return tkn.literal;
-    }
-    inline auto string() const -> std::string override
-    {
-        return {value.data(), value.size()};
-    }
+    identifier(token tokn, std::string_view val);
+    auto token_literal() const -> std::string_view override;
+
+    auto string() const -> std::string override;
+
     token tkn {};
     std::string_view value;
 };
@@ -83,20 +60,10 @@ struct let_statement : statement
 {
     using statement::statement;
 
-    inline auto token_literal() const -> std::string_view override
-    {
-        return tkn.literal;
-    }
-    inline auto string() const -> std::string override
-    {
-        std::stringstream strm;
-        strm << token_literal() << " " << name->string() << " = ";
-        if (value) {
-            strm << value->string();
-        }
-        strm << ';';
-        return strm.str();
-    }
+    auto token_literal() const -> std::string_view override;
+
+    auto string() const -> std::string override;
+
     token tkn {};
     std::unique_ptr<identifier> name {};
     std::unique_ptr<expression> value {};
@@ -105,20 +72,10 @@ struct let_statement : statement
 struct return_statement : statement
 {
     using statement::statement;
-    inline auto token_literal() const -> std::string_view override
-    {
-        return tkn.literal;
-    }
-    inline auto string() const -> std::string override
-    {
-        std::stringstream strm;
-        strm << token_literal() << " ";
-        if (return_value) {
-            strm << return_value->string();
-        }
-        strm << ';';
-        return strm.str();
-    }
+    auto token_literal() const -> std::string_view override;
+
+    auto string() const -> std::string override;
+
     token tkn {};
     std::unique_ptr<expression> return_value {};
 };
@@ -126,17 +83,10 @@ struct return_statement : statement
 struct expression_statement : statement
 {
     using statement::statement;
-    inline auto token_literal() const -> std::string_view override
-    {
-        return tkn.literal;
-    }
-    inline auto string() const -> std::string override
-    {
-        if (expr) {
-            return expr->string();
-        }
-        return {};
-    }
+    auto token_literal() const -> std::string_view override;
+
+    auto string() const -> std::string override;
+
     token tkn {};
     std::unique_ptr<expression> expr {};
 };
@@ -144,14 +94,9 @@ struct expression_statement : statement
 struct integer_literal : expression
 {
     using expression::expression;
-    inline auto token_literal() const -> std::string_view override
-    {
-        return tkn.literal;
-    }
-    inline auto string() const -> std::string override
-    {
-        return std::string {tkn.literal};
-    }
+    auto token_literal() const -> std::string_view override;
+
+    auto string() const -> std::string override;
 
     token tkn {};
     int64_t value {};
