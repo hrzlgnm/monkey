@@ -108,7 +108,19 @@ struct prefix_expression : expression
     auto token_literal() const -> std::string_view override;
     auto string() const -> std::string override;
 
-    token tkn;
-    std::string op;
-    expression_ptr right;
+    token tkn {};
+    std::string op {};
+    expression_ptr right {};
+};
+
+struct infix_expression : expression
+{
+    using expression::expression;
+    auto token_literal() const -> std::string_view override;
+    auto string() const -> std::string override;
+
+    token tkn {};
+    expression_ptr left {};
+    std::string op {};
+    expression_ptr right {};
 };

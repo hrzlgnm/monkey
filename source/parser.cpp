@@ -1,11 +1,9 @@
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
-#include <locale>
 #include <map>
 #include <memory>
 #include <sstream>
-#include <stdexcept>
-#include <system_error>
 
 #include "parser.hpp"
 
@@ -45,12 +43,36 @@ parser::parser(lexer lxr)
     register_prefix(integer, [this] { return parse_integer_literal(); });
     register_prefix(exclamation, [this] { return parse_prefix_expression(); });
     register_prefix(minus, [this] { return parse_prefix_expression(); });
+    register_infix(plus,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
+    register_infix(minus,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
+    register_infix(slash,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
+    register_infix(asterisk,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
+    register_infix(equals,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
+    register_infix(not_equals,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
+    register_infix(less_than,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
+    register_infix(greater_than,
+                   [this](expression_ptr left)
+                   { return parse_infix_expression(std::move(left)); });
 }
 
 auto parser::parse_program() -> std::unique_ptr<program>
 {
     auto prog = std::make_unique<program>();
-    while (m_cur_token.type != token_type::eof) {
+    while (m_current_token.type != token_type::eof) {
         auto stmt = parse_statement();
         if (stmt) {
             prog->statements.push_back(std::move(stmt));
@@ -67,14 +89,14 @@ auto parser::errors() const -> const std::vector<std::string>&
 
 auto parser::next_token() -> void
 {
-    m_cur_token = m_peek_token;
+    m_current_token = m_peek_token;
     m_peek_token = m_lxr.next_token();
 }
 
 auto parser::parse_statement() -> std::unique_ptr<statement>
 {
     using enum token_type;
-    switch (m_cur_token.type) {
+    switch (m_current_token.type) {
         case let:
             return parse_let_statement();
         case ret:
@@ -88,13 +110,13 @@ auto parser::parse_let_statement() -> std::unique_ptr<let_statement>
 {
     using enum token_type;
     auto stmt = std::make_unique<let_statement>();
-    stmt->tkn = m_cur_token;
+    stmt->tkn = m_current_token;
     if (!expect_peek(ident)) {
         return {};
     }
     stmt->name = std::make_unique<identifier>();
-    stmt->name->tkn = m_cur_token;
-    stmt->name->value = m_cur_token.literal;
+    stmt->name->tkn = m_current_token;
+    stmt->name->value = m_current_token.literal;
 
     if (!expect_peek(assign)) {
         return {};
@@ -110,7 +132,7 @@ auto parser::parse_return_statement() -> std::unique_ptr<return_statement>
 {
     using enum token_type;
     auto stmt = std::make_unique<return_statement>();
-    stmt->tkn = m_cur_token;
+    stmt->tkn = m_current_token;
     next_token();
     while (!cur_token_is(semicolon)) {
         next_token();
@@ -123,7 +145,7 @@ auto parser::parse_expression_statement()
 {
     using enum token_type;
     auto expr_stmt = std::make_unique<expression_statement>();
-    expr_stmt->tkn = m_cur_token;
+    expr_stmt->tkn = m_current_token;
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -132,28 +154,39 @@ auto parser::parse_expression_statement()
 }
 auto parser::parse_expression(int precedence) -> expression_ptr
 {
-    (void)precedence;
-    auto prefix = m_prefix_parsers[m_cur_token.type];
+    auto prefix = m_prefix_parsers[m_current_token.type];
     if (!prefix) {
-        no_prefix_expression_error(m_cur_token.type);
+        no_prefix_expression_error(m_current_token.type);
         return {};
     }
-    return prefix();
+    auto left_expr = prefix();
+    while (!peek_token_is(token_type::semicolon)
+           && precedence < peek_precedence()) {
+        auto infix = m_infix_parsers[m_peek_token.type];
+        if (!infix) {
+            return left_expr;
+        }
+        next_token();
+
+        left_expr = infix(std::move(left_expr));
+    }
+    return left_expr;
 }
 auto parser::parse_identifier() -> expression_ptr
 {
-    return std::make_unique<identifier>(m_cur_token, m_cur_token.literal);
+    return std::make_unique<identifier>(m_current_token,
+                                        m_current_token.literal);
 }
 
 auto parser::parse_integer_literal() -> expression_ptr
 {
     auto lit = std::make_unique<integer_literal>();
-    lit->tkn = m_cur_token;
+    lit->tkn = m_current_token;
     try {
-        lit->value = std::stoll(std::string {m_cur_token.literal});
+        lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
         std::stringstream strm;
-        strm << "could not parse " << m_cur_token.literal << " as integer";
+        strm << "could not parse " << m_current_token.literal << " as integer";
         m_errors.push_back(strm.str());
         return {};
     }
@@ -163,12 +196,26 @@ auto parser::parse_integer_literal() -> expression_ptr
 auto parser::parse_prefix_expression() -> expression_ptr
 {
     auto pfx_expr = std::make_unique<prefix_expression>();
-    pfx_expr->tkn = m_cur_token;
-    pfx_expr->op = m_cur_token.literal;
+    pfx_expr->tkn = m_current_token;
+    pfx_expr->op = m_current_token.literal;
 
     next_token();
     pfx_expr->right = parse_expression(prefix);
     return pfx_expr;
+}
+
+auto parser::parse_infix_expression(expression_ptr left) -> expression_ptr
+{
+    auto infix_expr = std::make_unique<infix_expression>();
+    infix_expr->tkn = m_current_token;
+    infix_expr->op = m_current_token.literal;
+    infix_expr->left = std::move(left);
+
+    auto precedence = current_precedence();
+    next_token();
+    infix_expr->right = parse_expression(precedence);
+
+    return infix_expr;
 }
 
 auto parser::expect_peek(token_type type) -> bool
@@ -199,7 +246,7 @@ auto parser::register_prefix(token_type type, prefix_parser prefix) -> void
 
 auto parser::cur_token_is(token_type type) const -> bool
 {
-    return m_cur_token.type == type;
+    return m_current_token.type == type;
 }
 
 auto parser::peek_token_is(token_type type) const -> bool
@@ -212,4 +259,22 @@ auto parser::no_prefix_expression_error(token_type type) -> void
     std::ostringstream strm;
     strm << "no prefix parse function for " << type << " found";
     m_errors.push_back(strm.str());
+}
+
+auto parser::peek_precedence() const -> int
+{
+    auto itr = precedences.find(m_peek_token.type);
+    if (itr != precedences.end()) {
+        return itr->second;
+    }
+    return lowest;
+}
+
+auto parser::current_precedence() const -> int
+{
+    auto itr = precedences.find(m_current_token.type);
+    if (itr != precedences.end()) {
+        return itr->second;
+    }
+    return lowest;
 }

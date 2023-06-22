@@ -239,7 +239,7 @@ TEST(test, chapter2dot6TestIntegerExpression)
     ASSERT_EQ(ident->token_literal(), "5");
 }
 
-TEST(test, chapter2dot6TestPrefixExpression)
+TEST(test, chapter2dot6TestPrefixExpressions)
 {
     struct prefix_test
     {
@@ -265,5 +265,49 @@ TEST(test, chapter2dot6TestPrefixExpression)
         auto* ntgr_xpr = dynamic_cast<integer_literal*>(prefix->right.get());
         ASSERT_TRUE(ntgr_xpr);
         ASSERT_EQ(prefix_test.integer_value, ntgr_xpr->value);
+    }
+}
+
+TEST(test, chapter2dot6TestInfixExpressions)
+{
+    struct infix_test
+    {
+        std::string_view input;
+        int64_t left_value;
+        std::string op;
+        int64_t right_value;
+    } infix_tests[] = {
+        {"5 + 5;", 5, "+", 5},
+        {"5 - 5;", 5, "-", 5},
+        {"5 * 5;", 5, "*", 5},
+        {"5 / 5;", 5, "/", 5},
+        {"5 > 5;", 5, ">", 5},
+        {"5 < 5;", 5, "<", 5},
+        {"5 == 5;", 5, "==", 5},
+        {"5 != 5;", 5, "!=", 5},
+    };
+
+    for (const auto& infix_test : infix_tests) {
+        auto prsr = parser {lexer {infix_test.input}};
+        auto prgrm = prsr.parse_program();
+        ASSERT_TRUE(prsr.errors().empty()) << prsr.errors().at(0);
+        ASSERT_EQ(prgrm->statements.size(), 1);
+        auto* stmt = prgrm->statements[0].get();
+        auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
+        ASSERT_TRUE(expr_stmt);
+
+        auto* expr = expr_stmt->expr.get();
+        auto* infix = dynamic_cast<infix_expression*>(expr);
+        ASSERT_TRUE(infix);
+        ASSERT_EQ(infix_test.op, infix->op);
+
+        auto* lft_ntgr_xpr = dynamic_cast<integer_literal*>(infix->left.get());
+        ASSERT_TRUE(lft_ntgr_xpr);
+        ASSERT_EQ(infix_test.left_value, lft_ntgr_xpr->value);
+
+        auto* rght_ntgr_xpr =
+            dynamic_cast<integer_literal*>(infix->right.get());
+        ASSERT_TRUE(rght_ntgr_xpr);
+        ASSERT_EQ(infix_test.right_value, rght_ntgr_xpr->value);
     }
 }

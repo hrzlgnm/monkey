@@ -103,3 +103,18 @@ auto prefix_expression::string() const -> std::string
     strm << ")";
     return strm.str();
 }
+
+auto infix_expression::token_literal() const -> std::string_view
+{
+    return tkn.literal;
+}
+auto infix_expression::string() const -> std::string
+{
+    std::ostringstream strm;
+    strm << "(";
+    strm << left->string();
+    strm << op;
+    strm << right->string();
+    strm << ")";
+    return strm.str();
+}
