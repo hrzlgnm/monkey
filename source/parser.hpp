@@ -26,12 +26,16 @@ class parser final
     auto parse_return_statement() -> std::unique_ptr<return_statement>;
     auto parse_expression_statement() -> std::unique_ptr<expression_statement>;
     auto parse_expression(int precedence) -> expression_ptr;
-    auto parse_identifier() -> expression_ptr;
+    auto parse_identifier() -> identifier_ptr;
     auto parse_integer_literal() -> expression_ptr;
     auto parse_prefix_expression() -> expression_ptr;
     auto parse_infix_expression(expression_ptr left) -> expression_ptr;
     auto parse_boolean() -> expression_ptr;
     auto parse_grouped_expression() -> expression_ptr;
+    auto parse_if_expression() -> expression_ptr;
+    auto parse_function_literal() -> expression_ptr;
+    auto parse_function_parameters() -> std::vector<identifier_ptr>;
+    auto parse_block_statement() -> block_statement_ptr;
 
     auto expect_peek(token_type type) -> bool;
     auto cur_token_is(token_type type) const -> bool;

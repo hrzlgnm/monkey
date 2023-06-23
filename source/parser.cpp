@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <iterator>
 #include <map>
 #include <memory>
 #include <sstream>
@@ -54,6 +55,8 @@ parser::parser(lexer lxr)
     register_prefix(tru, [this] { return parse_boolean(); });
     register_prefix(fals, [this] { return parse_boolean(); });
     register_prefix(lparen, [this] { return parse_grouped_expression(); });
+    register_prefix(eef, [this] { return parse_if_expression(); });
+    register_prefix(function, [this] { return parse_function_literal(); });
     register_infix(plus,
                    [this](expression_ptr left)
                    { return parse_infix_expression(std::move(left)); });
@@ -183,7 +186,7 @@ auto parser::parse_expression(int precedence) -> expression_ptr
     }
     return left_expr;
 }
-auto parser::parse_identifier() -> expression_ptr
+auto parser::parse_identifier() -> identifier_ptr
 {
     return std::make_unique<identifier>(m_current_token,
                                         m_current_token.literal);
@@ -227,6 +230,87 @@ auto parser::parse_grouped_expression() -> expression_ptr
         return {};
     }
     return exp;
+}
+
+auto parser::parse_if_expression() -> expression_ptr
+{
+    auto expr = std::make_unique<if_expression>();
+    if (!expect_peek(token_type::lparen)) {
+        return {};
+    }
+    next_token();
+    expr->condition = parse_expression(lowest);
+
+    if (!expect_peek(token_type::rparen)) {
+        return {};
+    }
+
+    if (!expect_peek(token_type::lsquirly)) {
+        return {};
+    }
+
+    expr->consequence = parse_block_statement();
+
+    if (peek_token_is(token_type::elze)) {
+        next_token();
+        if (!expect_peek(token_type::lsquirly)) {
+            return {};
+        }
+        expr->alternative = parse_block_statement();
+    }
+
+    return expr;
+}
+
+auto parser::parse_function_literal() -> expression_ptr
+{
+    auto literal = std::make_unique<function_literal>(m_current_token);
+    if (!expect_peek(token_type::lparen)) {
+        return {};
+    }
+    literal->parameters = parse_function_parameters();
+    if (!expect_peek(token_type::lsquirly)) {
+        return {};
+    }
+    literal->body = parse_block_statement();
+    return literal;
+}
+
+auto parser::parse_function_parameters() -> std::vector<identifier_ptr>
+{
+    std::vector<identifier_ptr> identifiers;
+    if (peek_token_is(token_type::rparen)) {
+        next_token();
+        return identifiers;
+    }
+    next_token();
+    identifiers.push_back(parse_identifier());
+    while (peek_token_is(token_type::comma)) {
+        next_token();
+        next_token();
+        identifiers.push_back(parse_identifier());
+    }
+    if (!expect_peek(token_type::rparen)) {
+        return {};
+    }
+    return identifiers;
+}
+
+auto parser::parse_block_statement() -> block_statement_ptr
+{
+    auto block = std::make_unique<block_statement>();
+    block->tkn = m_current_token;
+    next_token();
+    while (!cur_token_is(token_type::rsquirly)
+           && !cur_token_is(token_type::eof)) {
+        auto stmt = parse_statement();
+        if (stmt) {
+            block->statements.push_back(std::move(stmt));
+        }
+        next_token();
+    }
+
+    return block;
 }
 
 auto parser::parse_infix_expression(expression_ptr left) -> expression_ptr

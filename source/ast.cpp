@@ -1,10 +1,20 @@
 #include <algorithm>
 #include <sstream>
+#include <string>
 
 #include "ast.hpp"
 
 #include "token.hpp"
 #include "token_type.hpp"
+
+statement::statement(token tokn)
+    : tkn {tokn}
+{
+}
+expression::expression(token tokn)
+    : tkn {tokn}
+{
+}
 
 auto program::token_literal() const -> std::string_view
 {
@@ -24,7 +34,7 @@ auto program::string() const -> std::string
 }
 
 identifier::identifier(token tokn, std::string_view val)
-    : tkn {tokn}
+    : expression {tokn}
     , value {val}
 {
 }
@@ -81,7 +91,7 @@ auto expression_statement::string() const -> std::string
 }
 
 boolean::boolean(token tokn, bool val)
-    : tkn {tokn}
+    : expression {tokn}
     , value {val}
 {
 }
@@ -134,5 +144,54 @@ auto infix_expression::string() const -> std::string
     strm << ' ';
     strm << right->string();
     strm << ")";
+    return strm.str();
+}
+
+auto block_statement::token_literal() const -> std::string_view
+{
+    return tkn.literal;
+}
+auto block_statement::string() const -> std::string
+{
+    std::ostringstream strm;
+    for (const auto& stmt : statements) {
+        strm << stmt->string();
+    }
+    return strm.str();
+}
+auto if_expression::token_literal() const -> std::string_view
+{
+    return tkn.literal;
+}
+
+auto if_expression::string() const -> std::string
+{
+    std::ostringstream strm;
+    strm << "if" << condition->string() << " " << consequence->string();
+    if (alternative) {
+        strm << "else " << alternative->string();
+    }
+    return strm.str();
+}
+
+auto function_literal::token_literal() const -> std::string_view
+{
+    return tkn.literal;
+}
+
+auto function_literal::string() const -> std::string
+{
+    std::ostringstream strm;
+    strm << tkn.literal << "(";
+    bool first = true;
+    for (const auto& param : parameters) {
+        if (!first) {
+            strm << ",";
+        }
+        strm << param->string();
+        first = false;
+    }
+    strm << ") ";
+    strm << body->string();
     return strm.str();
 }
