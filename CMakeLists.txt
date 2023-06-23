@@ -25,6 +25,16 @@ add_library(lexereagen_lib
         source/token_type.cpp
 )
 
+target_precompile_headers(lexereagen_lib
+    PRIVATE
+        <algorithm>
+        <iostream>
+        <cstdint>
+        <memory>
+        <string>
+        <string_view>
+)
+
 target_include_directories(lexereagen_lib ${warning_guard}
     PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>"

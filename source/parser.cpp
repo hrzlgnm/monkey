@@ -123,8 +123,7 @@ auto parser::parse_statement() -> std::unique_ptr<statement>
 auto parser::parse_let_statement() -> std::unique_ptr<let_statement>
 {
     using enum token_type;
-    auto stmt = std::make_unique<let_statement>();
-    stmt->tkn = m_current_token;
+    auto stmt = std::make_unique<let_statement>(m_current_token);
     if (!expect_peek(ident)) {
         return {};
     }
@@ -145,8 +144,7 @@ auto parser::parse_let_statement() -> std::unique_ptr<let_statement>
 auto parser::parse_return_statement() -> std::unique_ptr<return_statement>
 {
     using enum token_type;
-    auto stmt = std::make_unique<return_statement>();
-    stmt->tkn = m_current_token;
+    auto stmt = std::make_unique<return_statement>(m_current_token);
     next_token();
     while (!cur_token_is(semicolon)) {
         next_token();
@@ -158,8 +156,7 @@ auto parser::parse_expression_statement()
     -> std::unique_ptr<expression_statement>
 {
     using enum token_type;
-    auto expr_stmt = std::make_unique<expression_statement>();
-    expr_stmt->tkn = m_current_token;
+    auto expr_stmt = std::make_unique<expression_statement>(m_current_token);
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -194,8 +191,7 @@ auto parser::parse_identifier() -> identifier_ptr
 
 auto parser::parse_integer_literal() -> expression_ptr
 {
-    auto lit = std::make_unique<integer_literal>();
-    lit->tkn = m_current_token;
+    auto lit = std::make_unique<integer_literal>(m_current_token);
     try {
         lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
@@ -209,8 +205,7 @@ auto parser::parse_integer_literal() -> expression_ptr
 
 auto parser::parse_prefix_expression() -> expression_ptr
 {
-    auto pfx_expr = std::make_unique<prefix_expression>();
-    pfx_expr->tkn = m_current_token;
+    auto pfx_expr = std::make_unique<prefix_expression>(m_current_token);
     pfx_expr->op = m_current_token.literal;
 
     next_token();
@@ -234,7 +229,7 @@ auto parser::parse_grouped_expression() -> expression_ptr
 
 auto parser::parse_if_expression() -> expression_ptr
 {
-    auto expr = std::make_unique<if_expression>();
+    auto expr = std::make_unique<if_expression>(m_current_token);
     if (!expect_peek(token_type::lparen)) {
         return {};
     }
@@ -298,8 +293,7 @@ auto parser::parse_function_parameters() -> std::vector<identifier_ptr>
 
 auto parser::parse_block_statement() -> block_statement_ptr
 {
-    auto block = std::make_unique<block_statement>();
-    block->tkn = m_current_token;
+    auto block = std::make_unique<block_statement>(m_current_token);
     next_token();
     while (!cur_token_is(token_type::rsquirly)
            && !cur_token_is(token_type::eof)) {
@@ -315,8 +309,7 @@ auto parser::parse_block_statement() -> block_statement_ptr
 
 auto parser::parse_infix_expression(expression_ptr left) -> expression_ptr
 {
-    auto infix_expr = std::make_unique<infix_expression>();
-    infix_expr->tkn = m_current_token;
+    auto infix_expr = std::make_unique<infix_expression>(m_current_token);
     infix_expr->op = m_current_token.literal;
     infix_expr->left = std::move(left);
 
