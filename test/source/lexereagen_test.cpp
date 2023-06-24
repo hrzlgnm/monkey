@@ -320,10 +320,8 @@ TEST(test, testPrefixExpressions)
     };
     std::array prefix_tests {
         // clang-format: off
-        // NOLINTBEGIN(*-magic-*)
         prefix_test {"!5;", "!", 5},
         prefix_test {"-15;", "-", 15}
-        // NOLINTEND(*-magic-*)
         // clang-format: on
     };
 
