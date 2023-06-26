@@ -1,8 +1,9 @@
 #pragma once
-#include <cmath>
-#include <cstdint>
+
 #include <functional>
-#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "ast.hpp"
 #include "lexer.hpp"
@@ -13,7 +14,7 @@ class parser final
 {
   public:
     explicit parser(lexer lxr);
-    auto parse_program() -> std::unique_ptr<program>;
+    auto parse_program() -> program_ptr;
     auto errors() const -> const std::vector<std::string>&;
 
   private:
@@ -21,10 +22,11 @@ class parser final
     using prefix_parser = std::function<expression_ptr()>;
 
     auto next_token() -> void;
-    auto parse_statement() -> std::unique_ptr<statement>;
-    auto parse_let_statement() -> std::unique_ptr<let_statement>;
-    auto parse_return_statement() -> std::unique_ptr<return_statement>;
-    auto parse_expression_statement() -> std::unique_ptr<expression_statement>;
+    auto parse_statement() -> statement_ptr;
+    auto parse_let_statement() -> statement_ptr;
+    auto parse_return_statement() -> statement_ptr;
+    auto parse_expression_statement() -> statement_ptr;
+
     auto parse_expression(int precedence) -> expression_ptr;
     auto parse_identifier() -> identifier_ptr;
     auto parse_integer_literal() -> expression_ptr;

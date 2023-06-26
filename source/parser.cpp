@@ -88,7 +88,7 @@ parser::parser(lexer lxr)
                    { return parse_call_expression(std::move(left)); });
 }
 
-auto parser::parse_program() -> std::unique_ptr<program>
+auto parser::parse_program() -> program_ptr
 {
     auto prog = std::make_unique<program>();
     while (m_current_token.type != token_type::eof) {
@@ -112,7 +112,7 @@ auto parser::next_token() -> void
     m_peek_token = m_lxr.next_token();
 }
 
-auto parser::parse_statement() -> std::unique_ptr<statement>
+auto parser::parse_statement() -> statement_ptr
 {
     using enum token_type;
     switch (m_current_token.type) {
@@ -125,7 +125,7 @@ auto parser::parse_statement() -> std::unique_ptr<statement>
     }
 }
 
-auto parser::parse_let_statement() -> std::unique_ptr<let_statement>
+auto parser::parse_let_statement() -> statement_ptr
 {
     using enum token_type;
     auto stmt = std::make_unique<let_statement>(m_current_token);
@@ -148,7 +148,7 @@ auto parser::parse_let_statement() -> std::unique_ptr<let_statement>
     return stmt;
 }
 
-auto parser::parse_return_statement() -> std::unique_ptr<return_statement>
+auto parser::parse_return_statement() -> statement_ptr
 {
     using enum token_type;
     auto stmt = std::make_unique<return_statement>(m_current_token);
@@ -162,8 +162,7 @@ auto parser::parse_return_statement() -> std::unique_ptr<return_statement>
     return stmt;
 }
 
-auto parser::parse_expression_statement()
-    -> std::unique_ptr<expression_statement>
+auto parser::parse_expression_statement() -> statement_ptr
 {
     using enum token_type;
     auto expr_stmt = std::make_unique<expression_statement>(m_current_token);
@@ -173,6 +172,7 @@ auto parser::parse_expression_statement()
     }
     return expr_stmt;
 }
+
 auto parser::parse_expression(int precedence) -> expression_ptr
 {
     auto prefix = m_prefix_parsers[m_current_token.type];
