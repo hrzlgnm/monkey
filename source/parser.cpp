@@ -37,6 +37,8 @@ auto precedence_of_token(token_type type) -> int
         case token_type::slash:
         case token_type::asterisk:
             return product;
+        case token_type::lparen:
+            return call;
         default:
             return lowest;
     }
@@ -81,6 +83,9 @@ parser::parser(lexer lxr)
     register_infix(greater_than,
                    [this](expression_ptr left)
                    { return parse_infix_expression(std::move(left)); });
+    register_infix(lparen,
+                   [this](expression_ptr left)
+                   { return parse_call_expression(std::move(left)); });
 }
 
 auto parser::parse_program() -> std::unique_ptr<program>
@@ -305,6 +310,35 @@ auto parser::parse_block_statement() -> block_statement_ptr
     }
 
     return block;
+}
+
+auto parser::parse_call_expression(expression_ptr function) -> expression_ptr
+{
+    auto call = std::make_unique<call_expression>(m_current_token);
+    call->function = std::move(function);
+    call->arguments = parse_call_arguments();
+    return call;
+}
+
+auto parser::parse_call_arguments() -> std::vector<expression_ptr>
+{
+    std::vector<expression_ptr> arguments;
+    if (peek_token_is(token_type::rparen)) {
+        next_token();
+        return arguments;
+    }
+    next_token();
+    arguments.push_back(parse_expression(lowest));
+
+    while (peek_token_is(token_type::comma)) {
+        next_token();
+        next_token();
+        arguments.push_back(parse_expression(lowest));
+    }
+    if (!expect_peek(token_type::rparen)) {
+        return {};
+    }
+    return arguments;
 }
 
 auto parser::parse_infix_expression(expression_ptr left) -> expression_ptr

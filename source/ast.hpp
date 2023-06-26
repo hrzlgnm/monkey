@@ -25,6 +25,7 @@ struct statement : node
 {
     using node::node;
     explicit statement(token tokn);
+    auto token_literal() const -> std::string_view override;
     token tkn {};
 };
 using statement_ptr = std::unique_ptr<statement>;
@@ -33,6 +34,8 @@ struct expression : node
 {
     using node::node;
     explicit expression(token tokn);
+    auto token_literal() const -> std::string_view override;
+
     token tkn {};
 };
 
@@ -42,7 +45,6 @@ struct program : node
 {
     using node::node;
     auto token_literal() const -> std::string_view override;
-
     auto string() const -> std::string override;
 
     std::vector<std::unique_ptr<statement>> statements {};
@@ -53,8 +55,6 @@ struct identifier : expression
 {
     using expression::expression;
     identifier(token tokn, std::string_view val);
-    auto token_literal() const -> std::string_view override;
-
     auto string() const -> std::string override;
 
     std::string_view value;
@@ -65,9 +65,6 @@ using identifier_ptr = std::unique_ptr<identifier>;
 struct let_statement : statement
 {
     using statement::statement;
-
-    auto token_literal() const -> std::string_view override;
-
     auto string() const -> std::string override;
 
     std::unique_ptr<identifier> name {};
@@ -77,8 +74,6 @@ struct let_statement : statement
 struct return_statement : statement
 {
     using statement::statement;
-    auto token_literal() const -> std::string_view override;
-
     auto string() const -> std::string override;
 
     std::unique_ptr<expression> return_value {};
@@ -87,8 +82,6 @@ struct return_statement : statement
 struct expression_statement : statement
 {
     using statement::statement;
-    auto token_literal() const -> std::string_view override;
-
     auto string() const -> std::string override;
 
     std::unique_ptr<expression> expr {};
@@ -97,8 +90,6 @@ struct expression_statement : statement
 struct boolean : expression
 {
     boolean(token tokn, bool val);
-    auto token_literal() const -> std::string_view override;
-
     auto string() const -> std::string override;
 
     bool value {};
@@ -107,8 +98,6 @@ struct boolean : expression
 struct integer_literal : expression
 {
     using expression::expression;
-    auto token_literal() const -> std::string_view override;
-
     auto string() const -> std::string override;
 
     int64_t value {};
@@ -117,7 +106,6 @@ struct integer_literal : expression
 struct prefix_expression : expression
 {
     using expression::expression;
-    auto token_literal() const -> std::string_view override;
     auto string() const -> std::string override;
 
     std::string op {};
@@ -127,7 +115,6 @@ struct prefix_expression : expression
 struct infix_expression : expression
 {
     using expression::expression;
-    auto token_literal() const -> std::string_view override;
     auto string() const -> std::string override;
 
     expression_ptr left {};
@@ -138,7 +125,6 @@ struct infix_expression : expression
 struct block_statement : statement
 {
     using statement::statement;
-    auto token_literal() const -> std::string_view override;
     auto string() const -> std::string override;
 
     std::vector<statement_ptr> statements {};
@@ -149,7 +135,6 @@ using block_statement_ptr = std::unique_ptr<block_statement>;
 struct if_expression : expression
 {
     using expression::expression;
-    auto token_literal() const -> std::string_view override;
     auto string() const -> std::string override;
 
     expression_ptr condition {};
@@ -160,9 +145,18 @@ struct if_expression : expression
 struct function_literal : expression
 {
     using expression::expression;
-    auto token_literal() const -> std::string_view override;
     auto string() const -> std::string override;
 
     std::vector<identifier_ptr> parameters;
     block_statement_ptr body;
+};
+
+struct call_expression : expression
+{
+    using expression::expression;
+
+    auto string() const -> std::string override;
+
+    expression_ptr function;
+    std::vector<expression_ptr> arguments;
 };
