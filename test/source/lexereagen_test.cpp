@@ -26,7 +26,7 @@ inline auto assert_boolean_literal(const expression_ptr& expr, bool value)
     -> void
 {
     auto* bool_expr = dynamic_cast<boolean*>(expr.get());
-    ASSERT_TRUE(bool_expr);
+    ASSERT_TRUE(bool_expr) << "expected boolean, got" << expr.get();
     ASSERT_EQ(bool_expr->value, value);
 }
 
@@ -34,7 +34,7 @@ inline auto assert_identifier(const expression_ptr& expr,
                               const std::string& value) -> void
 {
     auto* ident = dynamic_cast<identifier*>(expr.get());
-    ASSERT_TRUE(ident);
+    ASSERT_TRUE(ident) << "expected identifier, got" << expr.get();
     ASSERT_EQ(ident->value, value);
 }
 
@@ -42,7 +42,7 @@ inline auto assert_integer_literal(const expression_ptr& expr, int64_t value)
     -> void
 {
     auto* integer_lit = dynamic_cast<integer_literal*>(expr.get());
-    ASSERT_TRUE(integer_lit);
+    ASSERT_TRUE(integer_lit) << "expected integer_literal, got " << expr.get();
 
     ASSERT_EQ(integer_lit->value, value);
     ASSERT_EQ(integer_lit->token_literal(), std::to_string(value));
@@ -100,6 +100,22 @@ auto assert_expression_statement(parser& prsr, const program_ptr& prgrm)
                                     + stmt->string());
     }
     return expr_stmt;
+}
+
+auto assert_let_statement(statement* stmt,
+                          const std::string& expected_identifier)
+    -> let_statement*
+{
+    auto* let_stmt = dynamic_cast<let_statement*>(stmt);
+    if (!let_stmt) {
+        throw std::invalid_argument("expected let_statement, got "
+                                    + stmt->string());
+    }
+    if (let_stmt->name->token_literal() != expected_identifier) {
+        throw std::invalid_argument("expected identifier " + expected_identifier
+                                    + ", got " + let_stmt->name->string());
+    }
+    return let_stmt;
 }
 
 TEST(test, lexing)
@@ -211,12 +227,34 @@ let foobar = 838383;
     ASSERT_EQ(program->statements.size(), 3);
     auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar"};
     for (size_t i = 0; i < 3; ++i) {
-        auto* stmt = program->statements[i].get();
-        auto* let_stmt = dynamic_cast<let_statement*>(stmt);
-        ASSERT_TRUE(let_stmt);
-        ASSERT_EQ(let_stmt->tkn.literal, "let");
-        ASSERT_EQ(let_stmt->name->value, expected_identifiers[i]);
-        ASSERT_EQ(let_stmt->name->tkn.literal, expected_identifiers[i]);
+        assert_let_statement(program->statements[i].get(),
+                             expected_identifiers[i]);
+    }
+}
+
+TEST(test, testLetStatements)
+{
+    struct let_test
+    {
+        std::string_view input;
+        std::string expected_identifier;
+        value_type expected_value;
+    };
+    std::array let_tests {
+        // clang-format: off
+        let_test {"let x = 5;", "x", 5},
+        let_test {"let y = true;", "y", true},
+        let_test {"let foobar = y;", "foobar", "y"},
+        // clang-format: on
+    };
+
+    for (const auto& let : let_tests) {
+        auto prsr = parser {lexer {let.input}};
+        auto prgrm = prsr.parse_program();
+        assert_no_parse_errors(prsr);
+        auto* let_stmt = assert_let_statement(prgrm->statements[0].get(),
+                                              let.expected_identifier);
+        assert_literal_expression(let_stmt->value, let.expected_value);
     }
 }
 
@@ -250,11 +288,14 @@ return 993322;
     assert_no_parse_errors(prsr);
     ASSERT_TRUE(program);
     ASSERT_EQ(program->statements.size(), 3);
+    std::array expected_return_values {5, 10, 993322};
     for (size_t i = 0; i < 3; ++i) {
         auto* stmt = program->statements[i].get();
         auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
         ASSERT_TRUE(ret_stmt);
         ASSERT_EQ(ret_stmt->tkn.literal, "return");
+        assert_literal_expression(ret_stmt->return_value,
+                                  expected_return_values[i]);
     }
 }
 

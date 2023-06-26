@@ -132,15 +132,17 @@ auto parser::parse_let_statement() -> std::unique_ptr<let_statement>
     if (!expect_peek(ident)) {
         return {};
     }
-    stmt->name = std::make_unique<identifier>();
-    stmt->name->tkn = m_current_token;
+    stmt->name = std::make_unique<identifier>(m_current_token);
     stmt->name->value = m_current_token.literal;
 
     if (!expect_peek(assign)) {
         return {};
     }
 
-    while (!cur_token_is(semicolon)) {
+    next_token();
+    stmt->value = parse_expression(lowest);
+
+    if (peek_token_is(semicolon)) {
         next_token();
     }
     return stmt;
@@ -150,8 +152,11 @@ auto parser::parse_return_statement() -> std::unique_ptr<return_statement>
 {
     using enum token_type;
     auto stmt = std::make_unique<return_statement>(m_current_token);
+
     next_token();
-    while (!cur_token_is(semicolon)) {
+    stmt->return_value = parse_expression(lowest);
+
+    if (peek_token_is(semicolon)) {
         next_token();
     }
     return stmt;
