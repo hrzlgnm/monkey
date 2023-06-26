@@ -370,7 +370,7 @@ TEST(test, testInfixExpressions)
     }
 }
 
-TEST(test, testOperatorPrecedence)
+TEST(test, testOperatorPrecedenceParsing)
 {
     struct oper_test
     {
@@ -415,14 +415,25 @@ TEST(test, testOperatorPrecedence)
             "!(true == true)",
             "(!(true == true))",
         },
+        oper_test {
+            "a + add(b * c) + d",
+            "((a + add((b * c))) + d)",
+        },
+        oper_test {
+            "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+            "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+        },
+        oper_test {
+            "add(a + b + c * d / f + g)",
+            "add((((a + b) + ((c * d) / f)) + g))",
+        },
+
     };
     for (const auto& operator_precendce_test : operator_precedence_tests) {
         auto prsr = parser {lexer {operator_precendce_test.input}};
         auto prgrm = prsr.parse_program();
         assert_no_parse_errors(prsr);
-        ASSERT_EQ(prgrm->statements.size(), 1);
-        auto* stmt = prgrm->statements[0].get();
-        ASSERT_EQ(operator_precendce_test.expected, stmt->string());
+        ASSERT_EQ(operator_precendce_test.expected, prgrm->string());
     }
 }
 
@@ -517,6 +528,20 @@ TEST(test, testFunctionParameters)
             ++index;
         }
     }
+}
+
+TEST(test, testCallExpressionParsing)
+{
+    auto prsr = parser {lexer {"add(1, 2 * 3, 4 + 5);"}};
+    auto prgrm = prsr.parse_program();
+    auto* expr_stmt = assert_expression_statement(prsr, prgrm);
+    auto* call = dynamic_cast<call_expression*>(expr_stmt->expr.get());
+    ASSERT_TRUE(call);
+    assert_identifier(call->function, "add");
+    ASSERT_EQ(call->arguments.size(), 3);
+    assert_literal_expression(call->arguments[0], 1);
+    assert_infix_expression(call->arguments[1], 2, "*", 3);
+    assert_infix_expression(call->arguments[2], 4, "+", 5);
 }
 
 // NOLINTEND

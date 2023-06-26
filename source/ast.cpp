@@ -11,9 +11,20 @@ statement::statement(token tokn)
     : tkn {tokn}
 {
 }
+
+auto statement::token_literal() const -> std::string_view
+{
+    return tkn.literal;
+}
+
 expression::expression(token tokn)
     : tkn {tokn}
 {
+}
+
+auto expression::token_literal() const -> std::string_view
+{
+    return tkn.literal;
 }
 
 auto program::token_literal() const -> std::string_view
@@ -39,19 +50,11 @@ identifier::identifier(token tokn, std::string_view val)
 {
 }
 
-auto identifier::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
 auto identifier::string() const -> std::string
 {
     return {value.data(), value.size()};
 }
 
-auto let_statement::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
 auto let_statement::string() const -> std::string
 {
     std::stringstream strm;
@@ -63,10 +66,6 @@ auto let_statement::string() const -> std::string
     return strm.str();
 }
 
-auto return_statement::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
 auto return_statement::string() const -> std::string
 {
     std::stringstream strm;
@@ -78,10 +77,6 @@ auto return_statement::string() const -> std::string
     return strm.str();
 }
 
-auto expression_statement::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
 auto expression_statement::string() const -> std::string
 {
     if (expr) {
@@ -96,19 +91,9 @@ boolean::boolean(token tokn, bool val)
 {
 }
 
-auto boolean::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
-
 auto boolean::string() const -> std::string
 {
     return std::string {tkn.literal};
-}
-
-auto integer_literal::token_literal() const -> std::string_view
-{
-    return tkn.literal;
 }
 
 auto integer_literal::string() const -> std::string
@@ -116,10 +101,6 @@ auto integer_literal::string() const -> std::string
     return std::string {tkn.literal};
 }
 
-auto prefix_expression::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
 auto prefix_expression::string() const -> std::string
 {
     std::ostringstream strm;
@@ -130,10 +111,6 @@ auto prefix_expression::string() const -> std::string
     return strm.str();
 }
 
-auto infix_expression::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
 auto infix_expression::string() const -> std::string
 {
     std::ostringstream strm;
@@ -147,10 +124,6 @@ auto infix_expression::string() const -> std::string
     return strm.str();
 }
 
-auto block_statement::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
 auto block_statement::string() const -> std::string
 {
     std::ostringstream strm;
@@ -158,10 +131,6 @@ auto block_statement::string() const -> std::string
         strm << stmt->string();
     }
     return strm.str();
-}
-auto if_expression::token_literal() const -> std::string_view
-{
-    return tkn.literal;
 }
 
 auto if_expression::string() const -> std::string
@@ -174,11 +143,6 @@ auto if_expression::string() const -> std::string
     return strm.str();
 }
 
-auto function_literal::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
-
 auto function_literal::string() const -> std::string
 {
     std::ostringstream strm;
@@ -186,12 +150,30 @@ auto function_literal::string() const -> std::string
     bool first = true;
     for (const auto& param : parameters) {
         if (!first) {
-            strm << ",";
+            strm << ", ";
         }
         strm << param->string();
         first = false;
     }
     strm << ") ";
     strm << body->string();
+    return strm.str();
+}
+
+auto call_expression::string() const -> std::string
+{
+    std::ostringstream strm;
+
+    strm << function->string() << "(";
+    bool first = true;
+    for (const auto& argument : arguments) {
+        if (!first) {
+            strm << ", ";
+        }
+        strm << argument->string();
+        first = false;
+    }
+    strm << ")";
+
     return strm.str();
 }
