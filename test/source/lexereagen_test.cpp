@@ -20,26 +20,23 @@
 using value_type = std::variant<int64_t, std::string, bool>;
 
 template<class>
-inline constexpr bool always_false_v = false;
+inline constexpr bool always_false_v {false};
 
-inline auto assert_boolean_literal(const expression_ptr& expr, bool value)
-    -> void
+auto assert_boolean_literal(const expression_ptr& expr, bool value) -> void
 {
     auto* bool_expr = dynamic_cast<boolean*>(expr.get());
     ASSERT_TRUE(bool_expr) << "expected boolean, got" << expr.get();
     ASSERT_EQ(bool_expr->value, value);
 }
 
-inline auto assert_identifier(const expression_ptr& expr,
-                              const std::string& value) -> void
+auto assert_identifier(const expression_ptr& expr, const std::string& value) -> void
 {
     auto* ident = dynamic_cast<identifier*>(expr.get());
     ASSERT_TRUE(ident) << "expected identifier, got" << expr.get();
     ASSERT_EQ(ident->value, value);
 }
 
-inline auto assert_integer_literal(const expression_ptr& expr, int64_t value)
-    -> void
+auto assert_integer_literal(const expression_ptr& expr, int64_t value) -> void
 {
     auto* integer_lit = dynamic_cast<integer_literal*>(expr.get());
     ASSERT_TRUE(integer_lit) << "expected integer_literal, got " << expr.get();
@@ -48,8 +45,7 @@ inline auto assert_integer_literal(const expression_ptr& expr, int64_t value)
     ASSERT_EQ(integer_lit->token_literal(), std::to_string(value));
 }
 
-inline void assert_literal_expression(const expression_ptr& expr,
-                                      const value_type& expected)
+auto assert_literal_expression(const expression_ptr& expr, const value_type& expected) -> void
 {
     std::visit(
         [&](auto&& arg)
@@ -82,38 +78,31 @@ auto assert_infix_expression(const expression_ptr& expr,
 
 auto assert_no_parse_errors(const parser& prsr)
 {
-    ASSERT_TRUE(prsr.errors().empty()) << testing::PrintToString(prsr.errors());
+    ASSERT_TRUE(prsr.errors().empty()) << "expected no errors, got: " << testing::PrintToString(prsr.errors());
 }
 
-auto assert_expression_statement(parser& prsr, const program_ptr& prgrm)
-    -> expression_statement*
+auto assert_expression_statement(parser& prsr, const program_ptr& prgrm) -> expression_statement*
 {
     assert_no_parse_errors(prsr);
     if (prgrm->statements.size() != 1) {
-        throw std::invalid_argument("expected one statement, got "
-                                    + std::to_string(prgrm->statements.size()));
+        throw std::invalid_argument("expected one statement, got " + std::to_string(prgrm->statements.size()));
     }
     auto* stmt = prgrm->statements[0].get();
     auto expr_stmt = dynamic_cast<expression_statement*>(stmt);
     if (!expr_stmt) {
-        throw std::invalid_argument("expected expression_statement, got "
-                                    + stmt->string());
+        throw std::invalid_argument("expected expression_statement, got " + stmt->string());
     }
     return expr_stmt;
 }
 
-auto assert_let_statement(statement* stmt,
-                          const std::string& expected_identifier)
-    -> let_statement*
+auto assert_let_statement(statement* stmt, const std::string& expected_identifier) -> let_statement*
 {
     auto* let_stmt = dynamic_cast<let_statement*>(stmt);
     if (!let_stmt) {
-        throw std::invalid_argument("expected let_statement, got "
-                                    + stmt->string());
+        throw std::invalid_argument("expected let_statement, got " + stmt->string());
     }
     if (let_stmt->name->token_literal() != expected_identifier) {
-        throw std::invalid_argument("expected identifier " + expected_identifier
-                                    + ", got " + let_stmt->name->string());
+        throw std::invalid_argument("expected identifier " + expected_identifier + ", got " + let_stmt->name->string());
     }
     return let_stmt;
 }
@@ -129,18 +118,15 @@ x + y;
 let result = add(five, ten);
 )r"};
     auto expected_tokens = std::vector<token> {
-        token {let, "let"},      token {ident, "five"},  token {assign, "="},
-        token {integer, "5"},    token {semicolon, ";"}, token {let, "let"},
-        token {ident, "ten"},    token {assign, "="},    token {integer, "10"},
-        token {semicolon, ";"},  token {let, "let"},     token {ident, "add"},
-        token {assign, "="},     token {function, "fn"}, token {lparen, "("},
-        token {ident, "x"},      token {comma, ","},     token {ident, "y"},
-        token {rparen, ")"},     token {lsquirly, "{"},  token {ident, "x"},
-        token {plus, "+"},       token {ident, "y"},     token {semicolon, ";"},
-        token {rsquirly, "}"},   token {semicolon, ";"}, token {let, "let"},
-        token {ident, "result"}, token {assign, "="},    token {ident, "add"},
-        token {lparen, "("},     token {ident, "five"},  token {comma, ","},
-        token {ident, "ten"},    token {rparen, ")"},    token {semicolon, ";"},
+        token {let, "let"},     token {ident, "five"},  token {assign, "="},  token {integer, "5"},
+        token {semicolon, ";"}, token {let, "let"},     token {ident, "ten"}, token {assign, "="},
+        token {integer, "10"},  token {semicolon, ";"}, token {let, "let"},   token {ident, "add"},
+        token {assign, "="},    token {function, "fn"}, token {lparen, "("},  token {ident, "x"},
+        token {comma, ","},     token {ident, "y"},     token {rparen, ")"},  token {lsquirly, "{"},
+        token {ident, "x"},     token {plus, "+"},      token {ident, "y"},   token {semicolon, ";"},
+        token {rsquirly, "}"},  token {semicolon, ";"}, token {let, "let"},   token {ident, "result"},
+        token {assign, "="},    token {ident, "add"},   token {lparen, "("},  token {ident, "five"},
+        token {comma, ","},     token {ident, "ten"},   token {rparen, ")"},  token {semicolon, ";"},
         token {eof, ""},
     };
     for (const auto& expected_token : expected_tokens) {
@@ -169,42 +155,24 @@ return false;
 10 != 9;
 )r"};
     auto expected_tokens = std::vector<token> {
-        token {let, "let"},       token {ident, "five"},
-        token {assign, "="},      token {integer, "5"},
-        token {semicolon, ";"},   token {let, "let"},
-        token {ident, "ten"},     token {assign, "="},
-        token {integer, "10"},    token {semicolon, ";"},
-        token {let, "let"},       token {ident, "add"},
-        token {assign, "="},      token {function, "fn"},
-        token {lparen, "("},      token {ident, "x"},
-        token {comma, ","},       token {ident, "y"},
-        token {rparen, ")"},      token {lsquirly, "{"},
-        token {ident, "x"},       token {plus, "+"},
-        token {ident, "y"},       token {semicolon, ";"},
-        token {rsquirly, "}"},    token {semicolon, ";"},
-        token {let, "let"},       token {ident, "result"},
-        token {assign, "="},      token {ident, "add"},
-        token {lparen, "("},      token {ident, "five"},
-        token {comma, ","},       token {ident, "ten"},
-        token {rparen, ")"},      token {semicolon, ";"},
-        token {exclamation, "!"}, token {minus, "-"},
-        token {slash, "/"},       token {asterisk, "*"},
-        token {integer, "5"},     token {semicolon, ";"},
-        token {integer, "5"},     token {less_than, "<"},
-        token {integer, "10"},    token {greater_than, ">"},
-        token {integer, "5"},     token {semicolon, ";"},
-        token {eef, "if"},        token {lparen, "("},
-        token {integer, "5"},     token {less_than, "<"},
-        token {integer, "10"},    token {rparen, ")"},
-        token {lsquirly, "{"},    token {ret, "return"},
-        token {tru, "true"},      token {semicolon, ";"},
-        token {rsquirly, "}"},    token {elze, "else"},
-        token {lsquirly, "{"},    token {ret, "return"},
-        token {fals, "false"},    token {semicolon, ";"},
-        token {rsquirly, "}"},    token {integer, "10"},
-        token {equals, "=="},     token {integer, "10"},
-        token {semicolon, ";"},   token {integer, "10"},
-        token {not_equals, "!="}, token {integer, "9"},
+        token {let, "let"},       token {ident, "five"},     token {assign, "="},      token {integer, "5"},
+        token {semicolon, ";"},   token {let, "let"},        token {ident, "ten"},     token {assign, "="},
+        token {integer, "10"},    token {semicolon, ";"},    token {let, "let"},       token {ident, "add"},
+        token {assign, "="},      token {function, "fn"},    token {lparen, "("},      token {ident, "x"},
+        token {comma, ","},       token {ident, "y"},        token {rparen, ")"},      token {lsquirly, "{"},
+        token {ident, "x"},       token {plus, "+"},         token {ident, "y"},       token {semicolon, ";"},
+        token {rsquirly, "}"},    token {semicolon, ";"},    token {let, "let"},       token {ident, "result"},
+        token {assign, "="},      token {ident, "add"},      token {lparen, "("},      token {ident, "five"},
+        token {comma, ","},       token {ident, "ten"},      token {rparen, ")"},      token {semicolon, ";"},
+        token {exclamation, "!"}, token {minus, "-"},        token {slash, "/"},       token {asterisk, "*"},
+        token {integer, "5"},     token {semicolon, ";"},    token {integer, "5"},     token {less_than, "<"},
+        token {integer, "10"},    token {greater_than, ">"}, token {integer, "5"},     token {semicolon, ";"},
+        token {eef, "if"},        token {lparen, "("},       token {integer, "5"},     token {less_than, "<"},
+        token {integer, "10"},    token {rparen, ")"},       token {lsquirly, "{"},    token {ret, "return"},
+        token {tru, "true"},      token {semicolon, ";"},    token {rsquirly, "}"},    token {elze, "else"},
+        token {lsquirly, "{"},    token {ret, "return"},     token {fals, "false"},    token {semicolon, ";"},
+        token {rsquirly, "}"},    token {integer, "10"},     token {equals, "=="},     token {integer, "10"},
+        token {semicolon, ";"},   token {integer, "10"},     token {not_equals, "!="}, token {integer, "9"},
         token {semicolon, ";"},   token {eof, ""},
 
     };
@@ -227,8 +195,7 @@ let foobar = 838383;
     ASSERT_EQ(program->statements.size(), 3);
     auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar"};
     for (size_t i = 0; i < 3; ++i) {
-        assert_let_statement(program->statements[i].get(),
-                             expected_identifiers[i]);
+        assert_let_statement(program->statements[i].get(), expected_identifiers[i]);
     }
 }
 
@@ -252,8 +219,7 @@ TEST(test, testLetStatements)
         auto prsr = parser {lexer {let.input}};
         auto prgrm = prsr.parse_program();
         assert_no_parse_errors(prsr);
-        auto* let_stmt = assert_let_statement(prgrm->statements[0].get(),
-                                              let.expected_identifier);
+        auto* let_stmt = assert_let_statement(prgrm->statements[0].get(), let.expected_identifier);
         assert_literal_expression(let_stmt->value, let.expected_value);
     }
 }
@@ -268,12 +234,7 @@ let 838383;
 )r"}};
     prsr.parse_program();
     auto errors = prsr.errors();
-    if (errors.empty()) {
-        FAIL();
-    }
-    for (const auto& err : errors) {
-        std::cerr << "err: " << err << "\n";
-    }
+    ASSERT_FALSE(errors.empty());
 }
 
 TEST(test, testReturnStatement)
@@ -294,39 +255,34 @@ return 993322;
         auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
         ASSERT_TRUE(ret_stmt);
         ASSERT_EQ(ret_stmt->tkn.literal, "return");
-        assert_literal_expression(ret_stmt->return_value,
-                                  expected_return_values[i]);
+        assert_literal_expression(ret_stmt->return_value, expected_return_values[i]);
     }
 }
 
 TEST(test, testString)
 {
     using enum token_type;
-    auto ltkn = token {
-        .type = let,
-        .literal = "let",
-    };
-    auto name = std::make_unique<identifier>();
-    name->tkn = token {
+    auto name = std::make_unique<identifier>(token {
         .type = ident,
         .literal = "myVar",
-    };
+    });
     name->value = "myVar";
 
-    auto value = std::make_unique<identifier>();
-    value->tkn = token {
+    auto value = std::make_unique<identifier>(token {
         .type = ident,
         .literal = "anotherVar",
-    };
+    });
     value->value = "anotherVar";
+
     program prgrm;
 
-    prgrm.statements.push_back(std::make_unique<let_statement>());
-    dynamic_cast<let_statement*>(prgrm.statements.back().get())->tkn = ltkn;
-    dynamic_cast<let_statement*>(prgrm.statements.back().get())->name =
-        std::move(name);
-    dynamic_cast<let_statement*>(prgrm.statements.back().get())->value =
-        std::move(value);
+    auto let_stmt = std::make_unique<let_statement>(token {
+        .type = let,
+        .literal = "let",
+    });
+    let_stmt->name = std::move(name);
+    let_stmt->value = std::move(value);
+    prgrm.statements.push_back(std::move(let_stmt));
 
     ASSERT_EQ(prgrm.string(), "let myVar = anotherVar;");
 }
@@ -404,10 +360,7 @@ TEST(test, testInfixExpressions)
         auto prgrm = prsr.parse_program();
         auto* expr_stmt = assert_expression_statement(prsr, prgrm);
 
-        assert_infix_expression(expr_stmt->expr,
-                                infix_test.left_value,
-                                infix_test.op,
-                                infix_test.right_value);
+        assert_infix_expression(expr_stmt->expr, infix_test.left_value, infix_test.op, infix_test.right_value);
     }
 }
 
@@ -490,8 +443,7 @@ TEST(test, testIfExpression)
     ASSERT_TRUE(if_expr->consequence);
     ASSERT_EQ(if_expr->consequence->statements.size(), 1);
 
-    auto* consequence = dynamic_cast<expression_statement*>(
-        if_expr->consequence->statements[0].get());
+    auto* consequence = dynamic_cast<expression_statement*>(if_expr->consequence->statements[0].get());
     ASSERT_TRUE(consequence);
     assert_identifier(consequence->expr, "x");
     ASSERT_FALSE(if_expr->alternative);
@@ -510,13 +462,11 @@ TEST(test, testIfElseExpression)
     ASSERT_TRUE(if_expr->consequence);
     ASSERT_EQ(if_expr->consequence->statements.size(), 1);
 
-    auto* consequence = dynamic_cast<expression_statement*>(
-        if_expr->consequence->statements[0].get());
+    auto* consequence = dynamic_cast<expression_statement*>(if_expr->consequence->statements[0].get());
     ASSERT_TRUE(consequence);
     assert_identifier(consequence->expr, "x");
 
-    auto* alternative = dynamic_cast<expression_statement*>(
-        if_expr->alternative->statements[0].get());
+    auto* alternative = dynamic_cast<expression_statement*>(if_expr->alternative->statements[0].get());
     ASSERT_TRUE(alternative);
     assert_identifier(alternative->expr, "y");
 }
@@ -536,8 +486,7 @@ TEST(test, testFunctionLiteral)
     assert_literal_expression(std::move(fn_literal->parameters[1]), "y");
 
     ASSERT_EQ(fn_literal->body->statements.size(), 1);
-    auto* body_stmt = dynamic_cast<expression_statement*>(
-        fn_literal->body->statements.at(0).get());
+    auto* body_stmt = dynamic_cast<expression_statement*>(fn_literal->body->statements.at(0).get());
 
     assert_infix_expression(body_stmt->expr, "x", "+", "y");
 }
@@ -558,14 +507,11 @@ TEST(test, testFunctionParameters)
         auto prsr = parser {lexer {parameter_test.input}};
         auto prgrm = prsr.parse_program();
         auto* expr_stmt = assert_expression_statement(prsr, prgrm);
-        auto* fn_literal =
-            dynamic_cast<function_literal*>(expr_stmt->expr.get());
+        auto* fn_literal = dynamic_cast<function_literal*>(expr_stmt->expr.get());
         ASSERT_TRUE(fn_literal);
-        ASSERT_EQ(fn_literal->parameters.size(),
-                  parameter_test.expected.size());
+        ASSERT_EQ(fn_literal->parameters.size(), parameter_test.expected.size());
         for (size_t index = 0; const auto& expected : parameter_test.expected) {
-            assert_literal_expression(std::move(fn_literal->parameters[index]),
-                                      expected);
+            assert_literal_expression(std::move(fn_literal->parameters[index]), expected);
             ++index;
         }
     }

@@ -6,8 +6,7 @@
 
 #include "token_type.hpp"
 
-using chart_literal_lookup_table =
-    std::array<token_type, std::numeric_limits<unsigned char>::max()>;
+using chart_literal_lookup_table = std::array<token_type, std::numeric_limits<unsigned char>::max()>;
 
 constexpr auto build_char_to_token_type_map() -> chart_literal_lookup_table
 {
@@ -84,8 +83,7 @@ auto lexer::next_token() -> token
     const auto as_uchar = static_cast<unsigned char>(m_byte);
     const auto char_token_type = char_literal_tokens[as_uchar];
     if (char_token_type != illegal) {
-        const auto peek_token_type =
-            char_literal_tokens[static_cast<unsigned char>(peek_char())];
+        const auto peek_token_type = char_literal_tokens[static_cast<unsigned char>(peek_char())];
         switch (char_token_type) {
             case assign:
                 if (peek_token_type == assign) {
@@ -113,8 +111,7 @@ auto lexer::next_token() -> token
         return read_integer();
     }
     auto literal = m_byte;
-    return read_char(),
-           token {token_type::illegal, std::string_view {&literal, 1}};
+    return read_char(), token {token_type::illegal, std::string_view {&literal, 1}};
 }
 
 auto lexer::read_char() -> void
@@ -130,8 +127,7 @@ auto lexer::read_char() -> void
 
 auto lexer::skip_whitespace() -> void
 {
-    while (m_byte == ' ' || m_byte == '\t' || m_byte == '\n' || m_byte == '\r')
-    {
+    while (m_byte == ' ' || m_byte == '\t' || m_byte == '\n' || m_byte == '\r') {
         read_char();
     }
 }
@@ -156,8 +152,7 @@ auto lexer::read_identifier_or_keyword() -> token
     const auto* const itr =
         std::find_if(keyword_tokens.begin(),
                      keyword_tokens.end(),
-                     [&identifier_or_keyword](auto pair) -> bool
-                     { return pair.first == identifier_or_keyword; });
+                     [&identifier_or_keyword](auto pair) -> bool { return pair.first == identifier_or_keyword; });
     if (itr != keyword_tokens.end()) {
         return token {itr->second, itr->first};
     }
