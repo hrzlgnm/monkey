@@ -72,11 +72,11 @@ auto assert_binary_expression(const expression_ptr& expr,
                               const token_type oprtr,
                               const expected_value_type& right) -> void
 {
-    auto* binray = dynamic_cast<binary_expression*>(expr.get());
-    ASSERT_TRUE(binray);
-    assert_literal_expression(binray->left, left);
-    ASSERT_EQ(binray->op, oprtr);
-    assert_literal_expression(binray->right, right);
+    auto* binary = dynamic_cast<binary_expression*>(expr.get());
+    ASSERT_TRUE(binary);
+    assert_literal_expression(binary->left, left);
+    ASSERT_EQ(binary->op, oprtr);
+    assert_literal_expression(binary->right, right);
 }
 
 auto assert_no_parse_errors(const parser& prsr)
@@ -327,7 +327,7 @@ TEST(test, testIntegerExpression)
     assert_literal_expression(expr_stmt->expr, 5);
 }
 
-TEST(test, testunaryExpressions)
+TEST(test, testUnaryExpressions)
 {
     using enum token_type;
     struct unary_test
@@ -356,33 +356,33 @@ TEST(test, testunaryExpressions)
     }
 }
 
-TEST(test, testbinrayExpressions)
+TEST(test, testBinaryExpressions)
 {
     using enum token_type;
-    struct binray_test
+    struct binary_test
     {
         std::string_view input;
         int64_t left_value;
         token_type op;
         int64_t right_value;
     };
-    std::array binray_tests {
-        binray_test {"5 + 5;", 5, plus, 5},
-        binray_test {"5 - 5;", 5, minus, 5},
-        binray_test {"5 * 5;", 5, asterisk, 5},
-        binray_test {"5 / 5;", 5, slash, 5},
-        binray_test {"5 > 5;", 5, greater_than, 5},
-        binray_test {"5 < 5;", 5, less_than, 5},
-        binray_test {"5 == 5;", 5, equals, 5},
-        binray_test {"5 != 5;", 5, not_equals, 5},
+    std::array binary_tests {
+        binary_test {"5 + 5;", 5, plus, 5},
+        binary_test {"5 - 5;", 5, minus, 5},
+        binary_test {"5 * 5;", 5, asterisk, 5},
+        binary_test {"5 / 5;", 5, slash, 5},
+        binary_test {"5 > 5;", 5, greater_than, 5},
+        binary_test {"5 < 5;", 5, less_than, 5},
+        binary_test {"5 == 5;", 5, equals, 5},
+        binary_test {"5 != 5;", 5, not_equals, 5},
     };
 
-    for (const auto& binray_test : binray_tests) {
-        auto prsr = parser {lexer {binray_test.input}};
+    for (const auto& binary_test : binary_tests) {
+        auto prsr = parser {lexer {binary_test.input}};
         auto prgrm = prsr.parse_program();
         auto* expr_stmt = assert_expression_statement(prsr, prgrm);
 
-        assert_binary_expression(expr_stmt->expr, binray_test.left_value, binray_test.op, binray_test.right_value);
+        assert_binary_expression(expr_stmt->expr, binary_test.left_value, binary_test.op, binary_test.right_value);
     }
 }
 
