@@ -20,6 +20,7 @@ add_library(lexereagen_lib
     OBJECT
         source/ast.cpp
         source/lexer.cpp
+        source/object.cpp
         source/parser.cpp
         source/token.cpp
         source/token_type.cpp

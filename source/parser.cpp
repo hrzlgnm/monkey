@@ -50,24 +50,24 @@ parser::parser(lexer lxr)
     next_token();
     next_token();
     using enum token_type;
-    register_prefix(ident, [this] { return parse_identifier(); });
-    register_prefix(integer, [this] { return parse_integer_literal(); });
-    register_prefix(exclamation, [this] { return parse_prefix_expression(); });
-    register_prefix(minus, [this] { return parse_prefix_expression(); });
-    register_prefix(tru, [this] { return parse_boolean(); });
-    register_prefix(fals, [this] { return parse_boolean(); });
-    register_prefix(lparen, [this] { return parse_grouped_expression(); });
-    register_prefix(eef, [this] { return parse_if_expression(); });
-    register_prefix(function, [this] { return parse_function_literal(); });
-    register_infix(plus, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(minus, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(slash, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(asterisk, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(equals, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(not_equals, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(less_than, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(greater_than, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
-    register_infix(lparen, [this](expression_ptr left) { return parse_call_expression(std::move(left)); });
+    register_unary(ident, [this] { return parse_identifier(); });
+    register_unary(integer, [this] { return parse_integer_literal(); });
+    register_unary(exclamation, [this] { return parse_unary_expression(); });
+    register_unary(minus, [this] { return parse_unary_expression(); });
+    register_unary(tru, [this] { return parse_boolean(); });
+    register_unary(fals, [this] { return parse_boolean(); });
+    register_unary(lparen, [this] { return parse_grouped_expression(); });
+    register_unary(eef, [this] { return parse_if_expression(); });
+    register_unary(function, [this] { return parse_function_literal(); });
+    register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(minus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(slash, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(asterisk, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(equals, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(not_equals, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(less_than, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(greater_than, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
+    register_binary(lparen, [this](expression_ptr left) { return parse_call_expression(std::move(left)); });
 }
 
 auto parser::parse_program() -> program_ptr
@@ -146,7 +146,6 @@ auto parser::parse_return_statement() -> statement_ptr
 
 auto parser::parse_expression_statement() -> statement_ptr
 {
-    using enum token_type;
     auto expr_stmt = std::make_unique<expression_statement>(m_current_token);
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
@@ -157,20 +156,20 @@ auto parser::parse_expression_statement() -> statement_ptr
 
 auto parser::parse_expression(int precedence) -> expression_ptr
 {
-    auto prefix = m_prefix_parsers[m_current_token.type];
-    if (!prefix) {
-        no_prefix_expression_error(m_current_token.type);
+    auto unary = m_unary_parsers[m_current_token.type];
+    if (!unary) {
+        no_unary_expression_error(m_current_token.type);
         return {};
     }
-    auto left_expr = prefix();
+    auto left_expr = unary();
     while (!peek_token_is(token_type::semicolon) && precedence < peek_precedence()) {
-        auto infix = m_infix_parsers[m_peek_token.type];
-        if (!infix) {
+        auto binary = m_binary_parsers[m_peek_token.type];
+        if (!binary) {
             return left_expr;
         }
         next_token();
 
-        left_expr = infix(std::move(left_expr));
+        left_expr = binary(std::move(left_expr));
     }
     return left_expr;
 }
@@ -194,10 +193,10 @@ auto parser::parse_integer_literal() -> expression_ptr
     return lit;
 }
 
-auto parser::parse_prefix_expression() -> expression_ptr
+auto parser::parse_unary_expression() -> expression_ptr
 {
-    auto pfx_expr = std::make_unique<prefix_expression>(m_current_token);
-    pfx_expr->op = m_current_token.literal;
+    auto pfx_expr = std::make_unique<unary_expression>(m_current_token);
+    pfx_expr->op = m_current_token.type;
 
     next_token();
     pfx_expr->right = parse_expression(prefix);
@@ -221,26 +220,27 @@ auto parser::parse_grouped_expression() -> expression_ptr
 
 auto parser::parse_if_expression() -> expression_ptr
 {
+    using enum token_type;
     auto expr = std::make_unique<if_expression>(m_current_token);
-    if (!expect_peek(token_type::lparen)) {
+    if (!expect_peek(lparen)) {
         return {};
     }
     next_token();
     expr->condition = parse_expression(lowest);
 
-    if (!expect_peek(token_type::rparen)) {
+    if (!expect_peek(rparen)) {
         return {};
     }
 
-    if (!expect_peek(token_type::lsquirly)) {
+    if (!expect_peek(lsquirly)) {
         return {};
     }
 
     expr->consequence = parse_block_statement();
 
-    if (peek_token_is(token_type::elze)) {
+    if (peek_token_is(elze)) {
         next_token();
-        if (!expect_peek(token_type::lsquirly)) {
+        if (!expect_peek(lsquirly)) {
             return {};
         }
         expr->alternative = parse_block_statement();
@@ -251,12 +251,13 @@ auto parser::parse_if_expression() -> expression_ptr
 
 auto parser::parse_function_literal() -> expression_ptr
 {
+    using enum token_type;
     auto literal = std::make_unique<function_literal>(m_current_token);
-    if (!expect_peek(token_type::lparen)) {
+    if (!expect_peek(lparen)) {
         return {};
     }
     literal->parameters = parse_function_parameters();
-    if (!expect_peek(token_type::lsquirly)) {
+    if (!expect_peek(lsquirly)) {
         return {};
     }
     literal->body = parse_block_statement();
@@ -330,10 +331,10 @@ auto parser::parse_call_arguments() -> std::vector<expression_ptr>
     return arguments;
 }
 
-auto parser::parse_infix_expression(expression_ptr left) -> expression_ptr
+auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
 {
-    auto infix_expr = std::make_unique<infix_expression>(m_current_token);
-    infix_expr->op = m_current_token.literal;
+    auto infix_expr = std::make_unique<binary_expression>(m_current_token);
+    infix_expr->op = m_current_token.type;
     infix_expr->left = std::move(left);
 
     auto precedence = current_precedence();
@@ -360,14 +361,14 @@ auto parser::peek_error(token_type type) -> void
     m_errors.push_back(strm.str());
 }
 
-auto parser::register_infix(token_type type, infix_parser infix) -> void
+auto parser::register_binary(token_type type, binary_parser binary) -> void
 {
-    m_infix_parsers[type] = std::move(infix);
+    m_binary_parsers[type] = std::move(binary);
 }
 
-auto parser::register_prefix(token_type type, prefix_parser prefix) -> void
+auto parser::register_unary(token_type type, unary_parser unary) -> void
 {
-    m_prefix_parsers[type] = std::move(prefix);
+    m_unary_parsers[type] = std::move(unary);
 }
 
 auto parser::cur_token_is(token_type type) const -> bool
@@ -380,7 +381,7 @@ auto parser::peek_token_is(token_type type) const -> bool
     return m_peek_token.type == type;
 }
 
-auto parser::no_prefix_expression_error(token_type type) -> void
+auto parser::no_unary_expression_error(token_type type) -> void
 {
     std::ostringstream strm;
     strm << "no prefix parse function for " << type << " found";

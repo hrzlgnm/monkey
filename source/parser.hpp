@@ -18,8 +18,8 @@ class parser final
     auto errors() const -> const std::vector<std::string>&;
 
   private:
-    using infix_parser = std::function<expression_ptr(expression_ptr)>;
-    using prefix_parser = std::function<expression_ptr()>;
+    using binary_parser = std::function<expression_ptr(expression_ptr)>;
+    using unary_parser = std::function<expression_ptr()>;
 
     auto next_token() -> void;
     auto parse_statement() -> statement_ptr;
@@ -30,8 +30,8 @@ class parser final
     auto parse_expression(int precedence) -> expression_ptr;
     auto parse_identifier() -> identifier_ptr;
     auto parse_integer_literal() -> expression_ptr;
-    auto parse_prefix_expression() -> expression_ptr;
-    auto parse_infix_expression(expression_ptr left) -> expression_ptr;
+    auto parse_unary_expression() -> expression_ptr;
+    auto parse_binary_expression(expression_ptr left) -> expression_ptr;
     auto parse_boolean() -> expression_ptr;
     auto parse_grouped_expression() -> expression_ptr;
     auto parse_if_expression() -> expression_ptr;
@@ -45,9 +45,9 @@ class parser final
     auto cur_token_is(token_type type) const -> bool;
     auto peek_token_is(token_type type) const -> bool;
     auto peek_error(token_type type) -> void;
-    auto register_infix(token_type type, infix_parser infix) -> void;
-    auto register_prefix(token_type type, prefix_parser prefix) -> void;
-    auto no_prefix_expression_error(token_type type) -> void;
+    auto register_binary(token_type type, binary_parser binary) -> void;
+    auto register_unary(token_type type, unary_parser unary) -> void;
+    auto no_unary_expression_error(token_type type) -> void;
     auto peek_precedence() const -> int;
     auto current_precedence() const -> int;
 
@@ -56,6 +56,6 @@ class parser final
     token m_peek_token {};
     std::vector<std::string> m_errors {};
 
-    std::unordered_map<token_type, prefix_parser> m_prefix_parsers;
-    std::unordered_map<token_type, infix_parser> m_infix_parsers;
+    std::unordered_map<token_type, unary_parser> m_unary_parsers;
+    std::unordered_map<token_type, binary_parser> m_binary_parsers;
 };

@@ -45,7 +45,8 @@ auto main() -> int
             print_parse_errors(prsr.errors());
             continue;
         }
-        std::cout << prgrm->string() << "\n";
+        auto evaluated = prgrm->eval();
+        std::cout << std::to_string(evaluated.value) << "\n";
         std::cout << prompt;
     }
 
