@@ -10,7 +10,7 @@ auto to_string(const value_type& value) -> std::string
                                   [](const integer_value val) -> std::string { return to_string(val); },
                                   [](const string_value& val) -> std::string { return "\"" + val + "\""; },
                                   [](const bool val) -> std::string { return val ? "true" : "false"; },
-                                  [](const auto& _) -> std::string { return "unknown"; }},
+                                  [](const auto&) -> std::string { return "unknown"; }},
                       value);
 }
 }  // namespace std

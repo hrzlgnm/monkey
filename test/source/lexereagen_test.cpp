@@ -646,13 +646,13 @@ TEST(test, testIfElseExpressions)
         object expected;
     };
     std::array expression_tests {
-        expression_test {"if (true) { 10 }", 10},
-        expression_test {"if (false) { 10 }", nullvalue {}},
-        expression_test {"if (1) { 10 }", 10},
-        expression_test {"if (1 < 2) { 10 }", 10},
-        expression_test {"if (1 > 2) { 10 }", nullvalue {}},
-        expression_test {"if (1 > 2) { 10 } else { 20 }", 20},
-        expression_test {"if (1 < 2) { 10 } else { 20 }", 10},
+        expression_test {"if (true) { 10 }", {10}},
+        expression_test {"if (false) { 10 }", {}},
+        expression_test {"if (1) { 10 }", {10}},
+        expression_test {"if (1 < 2) { 10 }", {10}},
+        expression_test {"if (1 > 2) { 10 }", {}},
+        expression_test {"if (1 > 2) { 10 } else { 20 }", {20}},
+        expression_test {"if (1 < 2) { 10 } else { 20 }", {10}},
     };
     for (const auto& test : expression_tests) {
         const auto evaluated = test_eval(test.input);
