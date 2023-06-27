@@ -1,4 +1,5 @@
 
+#include <cmath>
 #include <cstdint>
 #include <iostream>
 #include <memory>
@@ -13,11 +14,13 @@
 #include <gtest/gtest.h>
 
 #include "ast.hpp"
+#include "object.hpp"
 #include "parser.hpp"
+#include "token.hpp"
 #include "token_type.hpp"
 
 // NOLINTBEGIN
-using value_type = std::variant<int64_t, std::string, bool>;
+using expected_value_type = std::variant<int64_t, std::string, bool>;
 
 template<class>
 inline constexpr bool always_false_v {false};
@@ -45,7 +48,7 @@ auto assert_integer_literal(const expression_ptr& expr, int64_t value) -> void
     ASSERT_EQ(integer_lit->token_literal(), std::to_string(value));
 }
 
-auto assert_literal_expression(const expression_ptr& expr, const value_type& expected) -> void
+auto assert_literal_expression(const expression_ptr& expr, const expected_value_type& expected) -> void
 {
     std::visit(
         [&](auto&& arg)
@@ -64,16 +67,16 @@ auto assert_literal_expression(const expression_ptr& expr, const value_type& exp
         expected);
 }
 
-auto assert_infix_expression(const expression_ptr& expr,
-                             const value_type& left,
-                             const std::string& oprtr,
-                             const value_type& right) -> void
+auto assert_binary_expression(const expression_ptr& expr,
+                              const expected_value_type& left,
+                              const token_type oprtr,
+                              const expected_value_type& right) -> void
 {
-    auto* infix = dynamic_cast<infix_expression*>(expr.get());
-    ASSERT_TRUE(infix);
-    assert_literal_expression(infix->left, left);
-    ASSERT_EQ(infix->op, oprtr);
-    assert_literal_expression(infix->right, right);
+    auto* binary = dynamic_cast<binary_expression*>(expr.get());
+    ASSERT_TRUE(binary);
+    assert_literal_expression(binary->left, left);
+    ASSERT_EQ(binary->op, oprtr);
+    assert_literal_expression(binary->right, right);
 }
 
 auto assert_no_parse_errors(const parser& prsr)
@@ -105,6 +108,23 @@ auto assert_let_statement(statement* stmt, const std::string& expected_identifie
         throw std::invalid_argument("expected identifier " + expected_identifier + ", got " + let_stmt->name->string());
     }
     return let_stmt;
+}
+
+auto assert_integer_object(const object& obj, int64_t expected) -> void
+{
+    auto actual = obj.as<integer_value>();
+    ASSERT_EQ(actual, expected);
+}
+
+auto assert_boolean_object(const object& obj, bool expected) -> void
+{
+    auto actual = obj.as<bool>();
+    ASSERT_EQ(actual, expected);
+}
+
+auto assert_null_object(const object& obj) -> void
+{
+    ASSERT_TRUE(obj.is<nullvalue>());
 }
 
 TEST(test, lexing)
@@ -205,7 +225,7 @@ TEST(test, testLetStatements)
     {
         std::string_view input;
         std::string expected_identifier;
-        value_type expected_value;
+        expected_value_type expected_value;
     };
     std::array let_tests {
         // clang-format: off
@@ -307,60 +327,62 @@ TEST(test, testIntegerExpression)
     assert_literal_expression(expr_stmt->expr, 5);
 }
 
-TEST(test, testPrefixExpressions)
+TEST(test, testUnaryExpressions)
 {
-    struct prefix_test
+    using enum token_type;
+    struct unary_test
     {
         std::string_view input;
-        std::string op;
+        token_type op;
         int64_t integer_value;
     };
-    std::array prefix_tests {
+    std::array unary_tests {
         // clang-format: off
-        prefix_test {"!5;", "!", 5},
-        prefix_test {"-15;", "-", 15}
+        unary_test {"!5;", exclamation, 5},
+        unary_test {"-15;", minus, 15}
         // clang-format: on
     };
 
-    for (const auto& prefix_test : prefix_tests) {
-        auto prsr = parser {lexer {prefix_test.input}};
+    for (const auto& unary_test : unary_tests) {
+        auto prsr = parser {lexer {unary_test.input}};
         auto prgrm = prsr.parse_program();
         auto* expr_stmt = assert_expression_statement(prsr, prgrm);
         auto* expr = expr_stmt->expr.get();
-        auto* prefix = dynamic_cast<prefix_expression*>(expr);
-        ASSERT_TRUE(prefix);
-        ASSERT_EQ(prefix_test.op, prefix->op);
+        auto* unary = dynamic_cast<unary_expression*>(expr);
+        ASSERT_TRUE(unary);
+        ASSERT_EQ(unary_test.op, unary->op);
 
-        assert_literal_expression(prefix->right, prefix_test.integer_value);
+        assert_literal_expression(unary->right, unary_test.integer_value);
     }
 }
 
-TEST(test, testInfixExpressions)
+TEST(test, testBinaryExpressions)
 {
-    struct infix_test
+    using enum token_type;
+    struct binary_test
     {
         std::string_view input;
         int64_t left_value;
-        std::string op;
+        token_type op;
         int64_t right_value;
     };
-    std::array infix_tests {
-        infix_test {"5 + 5;", 5, "+", 5},
-        infix_test {"5 - 5;", 5, "-", 5},
-        infix_test {"5 * 5;", 5, "*", 5},
-        infix_test {"5 / 5;", 5, "/", 5},
-        infix_test {"5 > 5;", 5, ">", 5},
-        infix_test {"5 < 5;", 5, "<", 5},
-        infix_test {"5 == 5;", 5, "==", 5},
-        infix_test {"5 != 5;", 5, "!=", 5},
+    std::array binary_tests {
+        binary_test {"5 + 5;", 5, plus, 5},
+        binary_test {"5 - 5;", 5, minus, 5},
+        binary_test {"5 * 5;", 5, asterisk, 5},
+        binary_test {"5 / 5;", 5, slash, 5},
+        binary_test {"5 > 5;", 5, greater_than, 5},
+        binary_test {"5 < 5;", 5, less_than, 5},
+        binary_test {"5 == 5;", 5, equals, 5},
+        binary_test {"5 != 5;", 5, not_equals, 5},
     };
 
-    for (const auto& infix_test : infix_tests) {
-        auto prsr = parser {lexer {infix_test.input}};
+    for (const auto& binary_test : binary_tests) {
+        auto prsr = parser {lexer {binary_test.input}};
         auto prgrm = prsr.parse_program();
         auto* expr_stmt = assert_expression_statement(prsr, prgrm);
 
-        assert_infix_expression(expr_stmt->expr, infix_test.left_value, infix_test.op, infix_test.right_value);
+        assert_binary_expression(expr_stmt->expr, binary_test.left_value, binary_test.op, binary_test.right_value);
     }
 }
 
@@ -439,7 +461,7 @@ TEST(test, testIfExpression)
     auto expr_stmt = assert_expression_statement(prsr, prgrm);
     auto* if_expr = dynamic_cast<if_expression*>(expr_stmt->expr.get());
     ASSERT_TRUE(if_expr);
-    assert_infix_expression(if_expr->condition, "x", "<", "y");
+    assert_binary_expression(if_expr->condition, "x", token_type::less_than, "y");
     ASSERT_TRUE(if_expr->consequence);
     ASSERT_EQ(if_expr->consequence->statements.size(), 1);
 
@@ -458,7 +480,7 @@ TEST(test, testIfElseExpression)
     auto* if_expr = dynamic_cast<if_expression*>(expr_stmt->expr.get());
     ASSERT_TRUE(if_expr);
 
-    assert_infix_expression(if_expr->condition, "x", "<", "y");
+    assert_binary_expression(if_expr->condition, "x", token_type::less_than, "y");
     ASSERT_TRUE(if_expr->consequence);
     ASSERT_EQ(if_expr->consequence->statements.size(), 1);
 
@@ -488,7 +510,7 @@ TEST(test, testFunctionLiteral)
     ASSERT_EQ(fn_literal->body->statements.size(), 1);
     auto* body_stmt = dynamic_cast<expression_statement*>(fn_literal->body->statements.at(0).get());
 
-    assert_infix_expression(body_stmt->expr, "x", "+", "y");
+    assert_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
 
 TEST(test, testFunctionParameters)
@@ -527,8 +549,119 @@ TEST(test, testCallExpressionParsing)
     assert_identifier(call->function, "add");
     ASSERT_EQ(call->arguments.size(), 3);
     assert_literal_expression(call->arguments[0], 1);
-    assert_infix_expression(call->arguments[1], 2, "*", 3);
-    assert_infix_expression(call->arguments[2], 4, "+", 5);
+    assert_binary_expression(call->arguments[1], 2, token_type::asterisk, 3);
+    assert_binary_expression(call->arguments[2], 4, token_type::plus, 5);
+}
+
+auto test_eval(std::string_view input) -> object
+{
+    auto prsr = parser {lexer {input}};
+    auto prgrm = prsr.parse_program();
+    assert_no_parse_errors(prsr);
+    return prgrm->eval();
+}
+
+TEST(test, testEvalIntegerExpresssion)
+{
+    struct expression_test
+    {
+        std::string_view input;
+        int64_t expected;
+    };
+    std::array expression_tests {
+        expression_test {"5", 5},
+        expression_test {"10", 10},
+        expression_test {"-5", -5},
+        expression_test {"-10", -10},
+        expression_test {"5 + 5 + 5 + 5 - 10", 10},
+        expression_test {"2 * 2 * 2 * 2 * 2", 32},
+        expression_test {"-50 + 100 + -50", 0},
+        expression_test {"5 * 2 + 10", 20},
+        expression_test {"5 + 2 * 10", 25},
+        expression_test {"20 + 2 * -10", 0},
+        expression_test {"50 / 2 * 2 + 10", 60},
+        expression_test {"2 * (5 + 10)", 30},
+        expression_test {"3 * 3 * 3 + 10", 37},
+        expression_test {"3 * (3 * 3) + 10", 37},
+        expression_test {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+    };
+    for (const auto& test : expression_tests) {
+        const auto evaluated = test_eval(test.input);
+        assert_integer_object(evaluated, test.expected);
+    }
+}
+TEST(test, testEvalBooleanExpresssion)
+{
+    struct expression_test
+    {
+        std::string_view input;
+        bool expected;
+    };
+    std::array expression_tests {
+        expression_test {"true", true},
+        expression_test {"false", false},
+        expression_test {"1 < 2", true},
+        expression_test {"1 > 2", false},
+        expression_test {"1 < 1", false},
+        expression_test {"1 > 1", false},
+        expression_test {"1 == 1", true},
+        expression_test {"1 != 1", false},
+        expression_test {"1 == 2", false},
+        expression_test {"1 != 2", true},
+
+    };
+    for (const auto& test : expression_tests) {
+        const auto evaluated = test_eval(test.input);
+        assert_boolean_object(evaluated, test.expected);
+    }
+}
+
+TEST(test, testBangOperator)
+{
+    struct expression_test
+    {
+        std::string_view input;
+        bool expected;
+    };
+    std::array expression_tests {
+        expression_test {"!true", false},
+        expression_test {"!false", true},
+        expression_test {"!false", true},
+        expression_test {"!5", false},
+        expression_test {"!!true", true},
+        expression_test {"!!false", false},
+        expression_test {"!!5", true},
+    };
+    for (const auto& test : expression_tests) {
+        const auto evaluated = test_eval(test.input);
+        assert_boolean_object(evaluated, test.expected);
+    }
+}
+
+TEST(test, testIfElseExpressions)
+{
+    struct expression_test
+    {
+        std::string_view input;
+        object expected;
+    };
+    std::array expression_tests {
+        expression_test {"if (true) { 10 }", {10}},
+        expression_test {"if (false) { 10 }", {}},
+        expression_test {"if (1) { 10 }", {10}},
+        expression_test {"if (1 < 2) { 10 }", {10}},
+        expression_test {"if (1 > 2) { 10 }", {}},
+        expression_test {"if (1 > 2) { 10 } else { 20 }", {20}},
+        expression_test {"if (1 < 2) { 10 } else { 20 }", {10}},
+    };
+    for (const auto& test : expression_tests) {
+        const auto evaluated = test_eval(test.input);
+        if (test.expected.is<integer_value>()) {
+            assert_integer_object(evaluated, test.expected.as<integer_value>());
+        } else {
+            assert_null_object(evaluated);
+        }
+    }
 }
 
 // NOLINTEND

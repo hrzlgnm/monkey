@@ -4,29 +4,29 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
 {
     switch (type) {
         case token_type::asterisk:
-            return ostream << "asterisk";
+            return ostream << "*";
         case token_type::back_slash:
-            return ostream << "back_slash";
+            return ostream << "\\";
         case token_type::caret:
-            return ostream << "caret";
+            return ostream << "^";
         case token_type::rsquirly:
-            return ostream << "rsquirly";
+            return ostream << "}";
         case token_type::rbracket:
-            return ostream << "rbracket";
+            return ostream << "]";
         case token_type::rparen:
-            return ostream << "rparen";
+            return ostream << ")";
         case token_type::colon:
-            return ostream << "colon";
+            return ostream << ":";
         case token_type::comma:
-            return ostream << "comma";
+            return ostream << ",";
         case token_type::dot:
-            return ostream << "dot";
+            return ostream << ".";
         case token_type::assign:
-            return ostream << "assign";
+            return ostream << "=";
         case token_type::exclamation:
-            return ostream << "exclamation";
+            return ostream << "!";
         case token_type::greater_than:
-            return ostream << "greater_than";
+            return ostream << ">";
         case token_type::ident:
             return ostream << "identifier";
         case token_type::integer:
@@ -36,29 +36,29 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
         case token_type::function:
             return ostream << "fn";
         case token_type::less_than:
-            return ostream << "less_than";
+            return ostream << "<";
         case token_type::minus:
-            return ostream << "minus";
+            return ostream << "-";
         case token_type::lsquirly:
-            return ostream << "lsquirly";
+            return ostream << "{";
         case token_type::lbracket:
-            return ostream << "lbracket";
+            return ostream << "[";
         case token_type::lparen:
-            return ostream << "lparen";
+            return ostream << "(";
         case token_type::percent:
-            return ostream << "percent";
+            return ostream << "%";
         case token_type::pipe:
-            return ostream << "pipe";
+            return ostream << "|";
         case token_type::plus:
-            return ostream << "plus";
+            return ostream << "+";
         case token_type::question:
-            return ostream << "question";
+            return ostream << "?";
         case token_type::semicolon:
-            return ostream << "semicolon";
+            return ostream << ";";
         case token_type::slash:
-            return ostream << "slash";
+            return ostream << "/";
         case token_type::tilde:
-            return ostream << "tilde";
+            return ostream << "~";
         case token_type::illegal:
             return ostream << "illegal";
         case token_type::eof:
@@ -74,9 +74,9 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
         case token_type::ret:
             return ostream << "return";
         case token_type::equals:
-            return ostream << "equals";
+            return ostream << "==";
         case token_type::not_equals:
-            return ostream << "not_equals";
+            return ostream << "!=";
     }
     __builtin_unreachable();
 }
