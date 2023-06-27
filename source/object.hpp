@@ -44,7 +44,6 @@ struct object
     }
     value_type value;
     auto type_name() -> std::string;
-    ~object() = default;
 };
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
