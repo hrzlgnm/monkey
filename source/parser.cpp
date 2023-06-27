@@ -59,33 +59,15 @@ parser::parser(lexer lxr)
     register_prefix(lparen, [this] { return parse_grouped_expression(); });
     register_prefix(eef, [this] { return parse_if_expression(); });
     register_prefix(function, [this] { return parse_function_literal(); });
-    register_infix(plus,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(minus,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(slash,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(asterisk,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(equals,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(not_equals,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(less_than,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(greater_than,
-                   [this](expression_ptr left)
-                   { return parse_infix_expression(std::move(left)); });
-    register_infix(lparen,
-                   [this](expression_ptr left)
-                   { return parse_call_expression(std::move(left)); });
+    register_infix(plus, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(minus, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(slash, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(asterisk, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(equals, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(not_equals, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(less_than, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(greater_than, [this](expression_ptr left) { return parse_infix_expression(std::move(left)); });
+    register_infix(lparen, [this](expression_ptr left) { return parse_call_expression(std::move(left)); });
 }
 
 auto parser::parse_program() -> program_ptr
@@ -181,8 +163,7 @@ auto parser::parse_expression(int precedence) -> expression_ptr
         return {};
     }
     auto left_expr = prefix();
-    while (!peek_token_is(token_type::semicolon)
-           && precedence < peek_precedence()) {
+    while (!peek_token_is(token_type::semicolon) && precedence < peek_precedence()) {
         auto infix = m_infix_parsers[m_peek_token.type];
         if (!infix) {
             return left_expr;
@@ -193,10 +174,10 @@ auto parser::parse_expression(int precedence) -> expression_ptr
     }
     return left_expr;
 }
+
 auto parser::parse_identifier() -> identifier_ptr
 {
-    return std::make_unique<identifier>(m_current_token,
-                                        m_current_token.literal);
+    return std::make_unique<identifier>(m_current_token, m_current_token.literal);
 }
 
 auto parser::parse_integer_literal() -> expression_ptr
@@ -222,11 +203,12 @@ auto parser::parse_prefix_expression() -> expression_ptr
     pfx_expr->right = parse_expression(prefix);
     return pfx_expr;
 }
+
 auto parser::parse_boolean() -> expression_ptr
 {
-    return std::make_unique<boolean>(m_current_token,
-                                     cur_token_is(token_type::tru));
+    return std::make_unique<boolean>(m_current_token, cur_token_is(token_type::tru));
 }
+
 auto parser::parse_grouped_expression() -> expression_ptr
 {
     next_token();
@@ -283,19 +265,20 @@ auto parser::parse_function_literal() -> expression_ptr
 
 auto parser::parse_function_parameters() -> std::vector<identifier_ptr>
 {
+    using enum token_type;
     std::vector<identifier_ptr> identifiers;
-    if (peek_token_is(token_type::rparen)) {
+    if (peek_token_is(rparen)) {
         next_token();
         return identifiers;
     }
     next_token();
     identifiers.push_back(parse_identifier());
-    while (peek_token_is(token_type::comma)) {
+    while (peek_token_is(comma)) {
         next_token();
         next_token();
         identifiers.push_back(parse_identifier());
     }
-    if (!expect_peek(token_type::rparen)) {
+    if (!expect_peek(rparen)) {
         return {};
     }
     return identifiers;
@@ -303,10 +286,10 @@ auto parser::parse_function_parameters() -> std::vector<identifier_ptr>
 
 auto parser::parse_block_statement() -> block_statement_ptr
 {
+    using enum token_type;
     auto block = std::make_unique<block_statement>(m_current_token);
     next_token();
-    while (!cur_token_is(token_type::rsquirly)
-           && !cur_token_is(token_type::eof)) {
+    while (!cur_token_is(rsquirly) && !cur_token_is(eof)) {
         auto stmt = parse_statement();
         if (stmt) {
             block->statements.push_back(std::move(stmt));
@@ -328,19 +311,20 @@ auto parser::parse_call_expression(expression_ptr function) -> expression_ptr
 auto parser::parse_call_arguments() -> std::vector<expression_ptr>
 {
     std::vector<expression_ptr> arguments;
-    if (peek_token_is(token_type::rparen)) {
+    using enum token_type;
+    if (peek_token_is(rparen)) {
         next_token();
         return arguments;
     }
     next_token();
     arguments.push_back(parse_expression(lowest));
 
-    while (peek_token_is(token_type::comma)) {
+    while (peek_token_is(comma)) {
         next_token();
         next_token();
         arguments.push_back(parse_expression(lowest));
     }
-    if (!expect_peek(token_type::rparen)) {
+    if (!expect_peek(rparen)) {
         return {};
     }
     return arguments;
@@ -372,8 +356,7 @@ auto parser::expect_peek(token_type type) -> bool
 auto parser::peek_error(token_type type) -> void
 {
     std::ostringstream strm;
-    strm << "expected next token to be " << type << ", got "
-         << m_peek_token.type << " instead";
+    strm << "expected next token to be " << type << ", got " << m_peek_token.type << " instead";
     m_errors.push_back(strm.str());
 }
 
