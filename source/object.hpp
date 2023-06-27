@@ -6,7 +6,7 @@
 #include <variant>
 
 // helper type for std::visit
-template<class... Ts>
+template<typename... Ts>
 struct overloaded : Ts...
 {
     using Ts::operator()...;
