@@ -47,7 +47,7 @@ struct object
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
 {
-    return std::visit(overloaded {[](const nullvalue&, const nullvalue&) { return true; },
+    return std::visit(overloaded {[](const nullvalue&, const nullvalue&) -> bool { return true; },
                                   [](const bool val1, const bool val2) { return val1 == val2; },
                                   [](const integer_value val1, const integer_value val2) { return val1 == val2; },
                                   [](const string_value& val1, const string_value& val2) { return val1 == val2; },
