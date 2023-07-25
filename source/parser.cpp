@@ -136,7 +136,7 @@ auto parser::parse_return_statement() -> statement_ptr
     auto stmt = std::make_unique<return_statement>(m_current_token);
 
     next_token();
-    stmt->return_value = parse_expression(lowest);
+    stmt->value = parse_expression(lowest);
 
     if (peek_token_is(semicolon)) {
         next_token();

@@ -81,7 +81,7 @@ struct return_statement : statement
     auto string() const -> std::string override;
     auto eval() const -> object override;
 
-    std::unique_ptr<expression> return_value {};
+    std::unique_ptr<expression> value {};
 };
 
 struct expression_statement : statement

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -19,7 +20,8 @@ struct nullvalue
 };
 using integer_value = std::int64_t;
 using string_value = std::string;
-using value_type = std::variant<nullvalue, bool, integer_value, string_value>;
+using return_value = std::any;
+using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value>;
 
 namespace std
 {
