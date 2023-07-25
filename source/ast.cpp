@@ -242,6 +242,9 @@ auto block_statement::eval() const -> object
     object result;
     for (const auto& statement : statements) {
         result = statement->eval();
+        if (result.is<return_value>()) {
+            return result;
+        }
     }
     return result;
 }
