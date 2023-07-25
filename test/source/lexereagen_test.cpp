@@ -275,7 +275,7 @@ return 993322;
         auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
         ASSERT_TRUE(ret_stmt);
         ASSERT_EQ(ret_stmt->tkn.literal, "return");
-        assert_literal_expression(ret_stmt->return_value, expected_return_values[i]);
+        assert_literal_expression(ret_stmt->value, expected_return_values[i]);
     }
 }
 
@@ -664,4 +664,28 @@ TEST(test, testIfElseExpressions)
     }
 }
 
+TEST(test, testReturnStatemets)
+{
+    struct return_test
+    {
+        std::string_view input;
+        integer_value expected;
+    };
+    std::array return_tests {return_test {"return 10;", 10},
+                             return_test {"return 10; 9;", 10},
+                             return_test {"return 2 * 5; 9;", 10},
+                             return_test {"9; return 2 * 5; 9;", 10},
+                             return_test {R"r(
+if (10 > 1) {
+    if (10 > 1) {
+        return 10;
+    }
+    return 1;
+})r",
+                                          10}};
+    for (const auto& test : return_tests) {
+        const auto evaluated = test_eval(test.input);
+        assert_integer_object(evaluated, test.expected);
+    }
+}
 // NOLINTEND

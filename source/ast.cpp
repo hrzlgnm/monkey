@@ -57,6 +57,9 @@ auto program::eval() const -> object
     object result;
     for (const auto& statement : statements) {
         result = statement->eval();
+        if (result.is<return_value>()) {
+            return std::any_cast<object>(result.as<return_value>());
+        }
     }
     return result;
 }
@@ -96,8 +99,8 @@ auto return_statement::string() const -> std::string
 {
     std::stringstream strm;
     strm << token_literal() << " ";
-    if (return_value) {
-        strm << return_value->string();
+    if (value) {
+        strm << value->string();
     }
     strm << ';';
     return strm.str();
@@ -105,7 +108,10 @@ auto return_statement::string() const -> std::string
 
 auto return_statement::eval() const -> object
 {
-    return eval_not_implemented_yet(typeid(*this).name());
+    if (value) {
+        return {.value = std::make_any<object>(value->eval())};
+    }
+    return {};
 }
 
 auto expression_statement::string() const -> std::string
@@ -236,6 +242,9 @@ auto block_statement::eval() const -> object
     object result;
     for (const auto& statement : statements) {
         result = statement->eval();
+        if (result.is<return_value>()) {
+            return result;
+        }
     }
     return result;
 }
