@@ -19,6 +19,7 @@ include(cmake/variables.cmake)
 add_library(lexereagen_lib 
     OBJECT
         source/ast.cpp
+        source/environment.cpp
         source/lexer.cpp
         source/object.cpp
         source/parser.cpp

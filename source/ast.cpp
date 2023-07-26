@@ -12,9 +12,14 @@
 #include "token.hpp"
 #include "token_type.hpp"
 
+template<typename T>
+void unused(T /*unused*/)
+{
+}
+
 auto eval_not_implemented_yet(const std::string& cls) -> object
 {
-    throw std::runtime_error(cls + "::eval() not implemented yet");
+    throw std::runtime_error(cls + "::eval(environment &env) not implemented yet");
 }
 
 statement::statement(token tokn)
@@ -54,11 +59,11 @@ auto program::string() const -> std::string
     return strm.str();
 }
 
-auto program::eval() const -> object
+auto program::eval(environment& env) const -> object
 {
     object result;
     for (const auto& statement : statements) {
-        result = statement->eval();
+        result = statement->eval(env);
         if (result.is<return_value>()) {
             return std::any_cast<object>(result.as<return_value>());
         }
@@ -74,9 +79,13 @@ identifier::identifier(token tokn, std::string_view val)
     , value {val}
 {
 }
-auto identifier::eval() const -> object
+auto identifier::eval(environment& env) const -> object
 {
-    return eval_not_implemented_yet(typeid(*this).name());
+    auto val = env.get(value);
+    if (!val) {
+        return {error {.message = fmt::format("identifier not found: {}", value)}};
+    }
+    return val.value();
 }
 
 auto identifier::string() const -> std::string
@@ -95,9 +104,13 @@ auto let_statement::string() const -> std::string
     return strm.str();
 }
 
-auto let_statement::eval() const -> object
+auto let_statement::eval(environment& env) const -> object
 {
-    return eval_not_implemented_yet(typeid(*this).name());
+    auto val = value->eval(env);
+    if (val.is<error>()) {
+        return val;
+    }
+    return env.set(std::string(name->value), val);
 }
 
 auto return_statement::string() const -> std::string
@@ -111,10 +124,10 @@ auto return_statement::string() const -> std::string
     return strm.str();
 }
 
-auto return_statement::eval() const -> object
+auto return_statement::eval(environment& env) const -> object
 {
     if (value) {
-        auto evaluated = value->eval();
+        auto evaluated = value->eval(env);
         if (evaluated.is<error>()) {
             return evaluated;
         }
@@ -131,10 +144,10 @@ auto expression_statement::string() const -> std::string
     return {};
 }
 
-auto expression_statement::eval() const -> object
+auto expression_statement::eval(environment& env) const -> object
 {
     if (expr) {
-        return expr->eval();
+        return expr->eval(env);
     }
     return {};
 }
@@ -145,8 +158,9 @@ boolean::boolean(token tokn, bool val)
 {
 }
 
-auto boolean::eval() const -> object
+auto boolean::eval(environment& env) const -> object
 {
+    unused(env);
     return object {value};
 }
 
@@ -160,8 +174,9 @@ auto integer_literal::string() const -> std::string
     return std::string {tkn.literal};
 }
 
-auto integer_literal::eval() const -> object
+auto integer_literal::eval(environment& env) const -> object
 {
+    unused(env);
     return object {value};
 }
 
@@ -175,10 +190,10 @@ auto unary_expression::string() const -> std::string
     return strm.str();
 }
 
-auto unary_expression::eval() const -> object
+auto unary_expression::eval(environment& env) const -> object
 {
     using enum token_type;
-    auto evaluated_value = right->eval();
+    auto evaluated_value = right->eval(env);
     if (evaluated_value.is<error>()) {
         return evaluated_value;
     }
@@ -239,14 +254,14 @@ auto eval_integer_binary_expression(token_type oper, const object& left, const o
     }
 }
 
-auto binary_expression::eval() const -> object
+auto binary_expression::eval(environment& env) const -> object
 {
     using enum token_type;
-    auto evaluated_left = left->eval();
+    auto evaluated_left = left->eval(env);
     if (evaluated_left.is<error>()) {
         return evaluated_left;
     }
-    auto evaluated_right = right->eval();
+    auto evaluated_right = right->eval(env);
     if (evaluated_right.is<error>()) {
         return evaluated_right;
     }
@@ -272,11 +287,11 @@ auto block_statement::string() const -> std::string
     return strm.str();
 }
 
-auto block_statement::eval() const -> object
+auto block_statement::eval(environment& env) const -> object
 {
     object result;
     for (const auto& stmt : statements) {
-        result = stmt->eval();
+        result = stmt->eval(env);
         if (result.is<return_value>() || result.is<error>()) {
             return result;
         }
@@ -299,17 +314,17 @@ inline auto is_truthy(const object& obj) -> bool
     return !obj.is<nullvalue>() && (!obj.is<bool>() || obj.as<bool>());
 }
 
-auto if_expression::eval() const -> object
+auto if_expression::eval(environment& env) const -> object
 {
-    auto evaluated_condition = condition->eval();
+    auto evaluated_condition = condition->eval(env);
     if (evaluated_condition.is<error>()) {
         return evaluated_condition;
     }
     if (is_truthy(evaluated_condition)) {
-        return consequence->eval();
+        return consequence->eval(env);
     }
     if (alternative) {
-        return alternative->eval();
+        return alternative->eval(env);
     }
     return {};
 }
@@ -331,8 +346,9 @@ auto function_literal::string() const -> std::string
     return strm.str();
 }
 
-auto function_literal::eval() const -> object
+auto function_literal::eval(environment& env) const -> object
 {
+    unused(env);
     return eval_not_implemented_yet(typeid(*this).name());
 }
 
@@ -354,7 +370,8 @@ auto call_expression::string() const -> std::string
     return strm.str();
 }
 
-auto call_expression::eval() const -> object
+auto call_expression::eval(environment& env) const -> object
 {
+    unused(env);
     return eval_not_implemented_yet(typeid(*this).name());
 }
