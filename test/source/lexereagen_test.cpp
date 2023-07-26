@@ -688,4 +688,57 @@ if (10 > 1) {
         assert_integer_object(evaluated, test.expected);
     }
 }
+
+TEST(test, testErrorHandling)
+{
+    struct error_test
+    {
+        std::string_view input;
+        std::string expectedMessage;
+    };
+    std::array error_tests {
+
+        error_test {
+            "5 + true;",
+            "type mismatch: Integer + bool",
+        },
+        error_test {
+            "5 + true; 5;",
+            "type mismatch: Integer + bool",
+        },
+        error_test {
+            "-true",
+            "unknown operator: -bool",
+        },
+        error_test {
+            "true + false;",
+            "unknown operator: bool + bool",
+        },
+        error_test {
+            "5; true + false; 5",
+            "unknown operator: bool + bool",
+        },
+        error_test {
+            "if (10 > 1) { true + false; }",
+            "unknown operator: bool + bool",
+        },
+        error_test {
+            R"r(
+if (10 > 1) {
+if (10 > 1) {
+return true + false;
+}
+return 1;
+}
+   )r",
+            "unknown operator: bool + bool",
+        },
+    };
+    for (const auto& test : error_tests) {
+        const auto evaluated = test_eval(test.input);
+        EXPECT_TRUE(evaluated.is<error>())
+            << test.input << "expected an error, got " << evaluated.type_name() << " instead";
+        EXPECT_EQ(evaluated.as<error>().message, test.expectedMessage);
+    }
+}
 // NOLINTEND

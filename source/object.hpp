@@ -18,10 +18,14 @@ overloaded(Ts...) -> overloaded<Ts...>;
 struct nullvalue
 {
 };
+struct error
+{
+    std::string message;
+};
 using integer_value = std::int64_t;
 using string_value = std::string;
 using return_value = std::any;
-using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value>;
+using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value, error>;
 
 namespace std
 {
@@ -45,7 +49,7 @@ struct object
         return std::get<T>(value);
     }
     value_type value;
-    auto type_name() -> std::string;
+    auto type_name() const -> std::string;
 };
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool

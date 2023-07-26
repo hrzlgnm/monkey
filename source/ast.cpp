@@ -6,6 +6,8 @@
 
 #include "ast.hpp"
 
+#include <fmt/core.h>
+
 #include "object.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
@@ -60,6 +62,9 @@ auto program::eval() const -> object
         if (result.is<return_value>()) {
             return std::any_cast<object>(result.as<return_value>());
         }
+        if (result.is<error>()) {
+            return result;
+        }
     }
     return result;
 }
@@ -109,7 +114,11 @@ auto return_statement::string() const -> std::string
 auto return_statement::eval() const -> object
 {
     if (value) {
-        return {.value = std::make_any<object>(value->eval())};
+        auto evaluated = value->eval();
+        if (evaluated.is<error>()) {
+            return evaluated;
+        }
+        return {.value = std::make_any<object>(evaluated)};
     }
     return {};
 }
@@ -170,8 +179,14 @@ auto unary_expression::eval() const -> object
 {
     using enum token_type;
     auto evaluated_value = right->eval();
+    if (evaluated_value.is<error>()) {
+        return evaluated_value;
+    }
     switch (op) {
         case minus:
+            if (!evaluated_value.is<integer_value>()) {
+                return {error {.message = fmt::format("unknown operator: -{}", evaluated_value.type_name())}};
+            }
             return {-evaluated_value.as<integer_value>()};
         case exclamation:
             if (!evaluated_value.is<bool>()) {
@@ -179,9 +194,8 @@ auto unary_expression::eval() const -> object
             }
             return {!evaluated_value.as<bool>()};
         default:
-            std::ostringstream ostrm;
-            ostrm << op;
-            return eval_not_implemented_yet(ostrm.str() + " " + typeid(*this).name());
+            return {
+                error {.message = fmt::format("unknown operator: {}{}", to_string(op), evaluated_value.type_name())}};
     }
 }
 
@@ -198,34 +212,55 @@ auto binary_expression::string() const -> std::string
     return strm.str();
 }
 
+auto eval_integer_binary_expression(token_type oper, const object& left, const object& right) -> object
+{
+    using enum token_type;
+    auto left_int = left.as<integer_value>();
+    auto right_int = right.as<integer_value>();
+    switch (oper) {
+        case plus:
+            return {left_int + right_int};
+        case minus:
+            return {left_int - right_int};
+        case asterisk:
+            return {left_int * right_int};
+        case slash:
+            return {left_int / right_int};
+        case less_than:
+            return {left_int < right_int};
+        case greater_than:
+            return {left_int > right_int};
+        case equals:
+            return {left_int == right_int};
+        case not_equals:
+            return {left_int != right_int};
+        default:
+            return {};
+    }
+}
+
 auto binary_expression::eval() const -> object
 {
     using enum token_type;
     auto evaluated_left = left->eval();
-    auto evaluated_right = right->eval();
-
-    switch (op) {
-        case plus:
-            return {evaluated_left.as<integer_value>() + evaluated_right.as<integer_value>()};
-        case minus:
-            return {evaluated_left.as<integer_value>() - evaluated_right.as<integer_value>()};
-        case asterisk:
-            return {evaluated_left.as<integer_value>() * evaluated_right.as<integer_value>()};
-        case slash:
-            return {evaluated_left.as<integer_value>() / evaluated_right.as<integer_value>()};
-        case less_than:
-            return {evaluated_left.as<integer_value>() < evaluated_right.as<integer_value>()};
-        case greater_than:
-            return {evaluated_left.as<integer_value>() > evaluated_right.as<integer_value>()};
-        case equals:
-            return {evaluated_left == evaluated_right};
-        case not_equals:
-            return {evaluated_left != evaluated_right};
-        default:
-            std::ostringstream ostrm;
-            ostrm << evaluated_left.type_name() << " " << op << " " << evaluated_right.type_name();
-            return eval_not_implemented_yet(ostrm.str() + " " + typeid(*this).name());
+    if (evaluated_left.is<error>()) {
+        return evaluated_left;
     }
+    auto evaluated_right = right->eval();
+    if (evaluated_right.is<error>()) {
+        return evaluated_right;
+    }
+    if (evaluated_left.type_name() != evaluated_right.type_name()) {
+        return {error {
+            .message = fmt::format(
+                "type mismatch: {} {} {}", evaluated_left.type_name(), to_string(op), evaluated_right.type_name())}};
+    }
+    if (evaluated_left.is<integer_value>() && evaluated_right.is<integer_value>()) {
+        return eval_integer_binary_expression(op, evaluated_left, evaluated_right);
+    }
+    return {error {
+        .message = fmt::format(
+            "unknown operator: {} {} {}", evaluated_left.type_name(), to_string(op), evaluated_right.type_name())}};
 }
 
 auto block_statement::string() const -> std::string
@@ -240,9 +275,9 @@ auto block_statement::string() const -> std::string
 auto block_statement::eval() const -> object
 {
     object result;
-    for (const auto& statement : statements) {
-        result = statement->eval();
-        if (result.is<return_value>()) {
+    for (const auto& stmt : statements) {
+        result = stmt->eval();
+        if (result.is<return_value>() || result.is<error>()) {
             return result;
         }
     }
@@ -267,6 +302,9 @@ inline auto is_truthy(const object& obj) -> bool
 auto if_expression::eval() const -> object
 {
     auto evaluated_condition = condition->eval();
+    if (evaluated_condition.is<error>()) {
+        return evaluated_condition;
+    }
     if (is_truthy(evaluated_condition)) {
         return consequence->eval();
     }

@@ -10,12 +10,13 @@ auto to_string(const value_type& value) -> std::string
                                   [](const integer_value val) -> std::string { return to_string(val); },
                                   [](const string_value& val) -> std::string { return "\"" + val + "\""; },
                                   [](const bool val) -> std::string { return val ? "true" : "false"; },
+                                  [](const error& val) -> std::string { return "ERROR: " + val.message; },
                                   [](const auto&) -> std::string { return "unknown"; }},
                       value);
 }
 }  // namespace std
 
-auto object::type_name() -> std::string
+auto object::type_name() const -> std::string
 {
     return std::visit(
         overloaded {
@@ -23,6 +24,7 @@ auto object::type_name() -> std::string
             [](const bool) { return "bool"; },
             [](const integer_value) { return "Integer"; },
             [](const string_value&) { return "String"; },
+            [](const error&) { return "Error"; },
             [](const auto&) { return "unknown"; },
         },
         value);
