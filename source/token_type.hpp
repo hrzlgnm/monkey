@@ -53,3 +53,4 @@ enum class token_type
 };
 
 auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&;
+auto to_string(token_type tokt) -> std::string;

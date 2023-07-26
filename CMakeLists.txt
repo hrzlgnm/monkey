@@ -10,7 +10,7 @@ project(
     HOMEPAGE_URL "https://github.com/hrzlgnm/lexereagen"
     LANGUAGES CXX
 )
-
+find_package(fmt)
 include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
 
@@ -32,6 +32,7 @@ target_precompile_headers(lexereagen_lib
         <iostream>
         <cstdint>
         <memory>
+        <fmt/core.h>
         <string>
         <string_view>
 )
@@ -41,6 +42,7 @@ target_include_directories(lexereagen_lib ${warning_guard}
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>"
 )
 target_compile_features(lexereagen_lib PUBLIC cxx_std_20)
+target_link_libraries(lexereagen_lib PUBLIC fmt)
 
 # ---- Declare executable ----
 
