@@ -737,7 +737,7 @@ return 1;
     for (const auto& test : error_tests) {
         const auto evaluated = test_eval(test.input);
         EXPECT_TRUE(evaluated.is<error>())
-            << test.input << "expecte an error, got " << evaluated.type_name() << " instead";
+            << test.input << "expected an error, got " << evaluated.type_name() << " instead";
         EXPECT_EQ(evaluated.as<error>().message, test.expectedMessage);
     }
 }
