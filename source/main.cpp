@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "environment.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 
@@ -45,7 +46,8 @@ auto main() -> int
             print_parse_errors(prsr.errors());
             continue;
         }
-        auto evaluated = prgrm->eval();
+        environment env;
+        auto evaluated = prgrm->eval(env);
         std::cout << std::to_string(evaluated.value) << "\n";
         std::cout << prompt;
     }
