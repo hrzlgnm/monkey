@@ -38,6 +38,7 @@ auto main() -> int
     std::cout << prompt;
 
     auto input = std::string {};
+    environment env;
     while (getline(std::cin, input)) {
         auto lxr = lexer {input};
         auto prsr = parser {lxr};
@@ -46,7 +47,6 @@ auto main() -> int
             print_parse_errors(prsr.errors());
             continue;
         }
-        environment env;
         auto evaluated = prgrm->eval(env);
         std::cout << std::to_string(evaluated.value) << "\n";
         std::cout << prompt;
