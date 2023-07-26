@@ -1,4 +1,3 @@
-
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -557,8 +556,9 @@ auto test_eval(std::string_view input) -> object
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
+    environment env;
     assert_no_parse_errors(prsr);
-    return prgrm->eval();
+    return prgrm->eval(env);
 }
 
 TEST(test, testEvalIntegerExpresssion)
@@ -733,12 +733,35 @@ return 1;
    )r",
             "unknown operator: bool + bool",
         },
-    };
+        error_test {
+            "foobar",
+            "identifier not found: foobar",
+        }};
     for (const auto& test : error_tests) {
         const auto evaluated = test_eval(test.input);
         EXPECT_TRUE(evaluated.is<error>())
             << test.input << "expected an error, got " << evaluated.type_name() << " instead";
         EXPECT_EQ(evaluated.as<error>().message, test.expectedMessage);
+    }
+}
+
+TEST(test, testIntegerLetStatements)
+{
+    struct let_test
+    {
+        std::string_view input;
+        integer_value expected;
+    };
+
+    std::array let_tests {
+        let_test {"let a = 5; a;", 5},
+        let_test {"let a = 5 * 5; a;", 25},
+        let_test {"let a = 5; let b = a; b;", 5},
+        let_test {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+    };
+
+    for (const auto& test : let_tests) {
+        assert_integer_object(test_eval(test.input), test.expected);
     }
 }
 // NOLINTEND
