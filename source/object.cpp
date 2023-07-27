@@ -11,6 +11,7 @@ auto to_string(const value_type& value) -> std::string
                                   [](const string_value& val) -> std::string { return "\"" + val + "\""; },
                                   [](const bool val) -> std::string { return val ? "true" : "false"; },
                                   [](const error& val) -> std::string { return "ERROR: " + val.message; },
+                                  [](const func&) -> std::string { return "function"; },
                                   [](const auto&) -> std::string { return "unknown"; }},
                       value);
 }
@@ -25,6 +26,7 @@ auto object::type_name() const -> std::string
             [](const integer_value) { return "Integer"; },
             [](const string_value&) { return "String"; },
             [](const error&) { return "Error"; },
+            [](const func&) { return "function"; },
             [](const auto&) { return "unknown"; },
         },
         value);

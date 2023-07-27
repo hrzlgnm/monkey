@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -8,9 +9,13 @@
 
 #include <fmt/core.h>
 
+#include "environment.hpp"
+#include "node.hpp"
 #include "object.hpp"
+#include "program.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
+#include "value_type.hpp"
 
 template<typename T>
 void unused(T /*unused*/)
@@ -19,7 +24,7 @@ void unused(T /*unused*/)
 
 auto eval_not_implemented_yet(const std::string& cls) -> object
 {
-    throw std::runtime_error(cls + "::eval(environment &env) not implemented yet");
+    return {error {.message = fmt::format("cannot evaluate: {}", cls)}};
 }
 
 statement::statement(token tokn)
@@ -59,7 +64,7 @@ auto program::string() const -> std::string
     return strm.str();
 }
 
-auto program::eval(environment& env) const -> object
+auto program::eval(environment_ptr env) const -> object
 {
     object result;
     for (const auto& statement : statements) {
@@ -79,9 +84,9 @@ identifier::identifier(token tokn, std::string_view val)
     , value {val}
 {
 }
-auto identifier::eval(environment& env) const -> object
+auto identifier::eval(environment_ptr env) const -> object
 {
-    auto val = env.get(value);
+    auto val = env->get(value);
     if (!val) {
         return {error {.message = fmt::format("identifier not found: {}", value)}};
     }
@@ -104,13 +109,13 @@ auto let_statement::string() const -> std::string
     return strm.str();
 }
 
-auto let_statement::eval(environment& env) const -> object
+auto let_statement::eval(environment_ptr env) const -> object
 {
     auto val = value->eval(env);
     if (val.is<error>()) {
         return val;
     }
-    return env.set(std::string(name->value), val);
+    return env->set(std::string(name->value), val);
 }
 
 auto return_statement::string() const -> std::string
@@ -124,7 +129,7 @@ auto return_statement::string() const -> std::string
     return strm.str();
 }
 
-auto return_statement::eval(environment& env) const -> object
+auto return_statement::eval(environment_ptr env) const -> object
 {
     if (value) {
         auto evaluated = value->eval(env);
@@ -144,7 +149,7 @@ auto expression_statement::string() const -> std::string
     return {};
 }
 
-auto expression_statement::eval(environment& env) const -> object
+auto expression_statement::eval(environment_ptr env) const -> object
 {
     if (expr) {
         return expr->eval(env);
@@ -158,7 +163,7 @@ boolean::boolean(token tokn, bool val)
 {
 }
 
-auto boolean::eval(environment& env) const -> object
+auto boolean::eval(environment_ptr env) const -> object
 {
     unused(env);
     return object {value};
@@ -174,7 +179,7 @@ auto integer_literal::string() const -> std::string
     return std::string {tkn.literal};
 }
 
-auto integer_literal::eval(environment& env) const -> object
+auto integer_literal::eval(environment_ptr env) const -> object
 {
     unused(env);
     return object {value};
@@ -190,7 +195,7 @@ auto unary_expression::string() const -> std::string
     return strm.str();
 }
 
-auto unary_expression::eval(environment& env) const -> object
+auto unary_expression::eval(environment_ptr env) const -> object
 {
     using enum token_type;
     auto evaluated_value = right->eval(env);
@@ -254,7 +259,7 @@ auto eval_integer_binary_expression(token_type oper, const object& left, const o
     }
 }
 
-auto binary_expression::eval(environment& env) const -> object
+auto binary_expression::eval(environment_ptr env) const -> object
 {
     using enum token_type;
     auto evaluated_left = left->eval(env);
@@ -287,7 +292,7 @@ auto block_statement::string() const -> std::string
     return strm.str();
 }
 
-auto block_statement::eval(environment& env) const -> object
+auto block_statement::eval(environment_ptr env) const -> object
 {
     object result;
     for (const auto& stmt : statements) {
@@ -314,7 +319,7 @@ inline auto is_truthy(const object& obj) -> bool
     return !obj.is<nullvalue>() && (!obj.is<bool>() || obj.as<bool>());
 }
 
-auto if_expression::eval(environment& env) const -> object
+auto if_expression::eval(environment_ptr env) const -> object
 {
     auto evaluated_condition = condition->eval(env);
     if (evaluated_condition.is<error>()) {
@@ -346,10 +351,13 @@ auto function_literal::string() const -> std::string
     return strm.str();
 }
 
-auto function_literal::eval(environment& env) const -> object
+auto function_literal::eval(environment_ptr env) const -> object
 {
-    unused(env);
-    return eval_not_implemented_yet(typeid(*this).name());
+    auto function_object = std::make_shared<fun>();
+    function_object->parameters = parameters;
+    function_object->body = body;
+    function_object->env = env;
+    return {function_object};
 }
 
 auto call_expression::string() const -> std::string
@@ -370,8 +378,59 @@ auto call_expression::string() const -> std::string
     return strm.str();
 }
 
-auto call_expression::eval(environment& env) const -> object
+auto evaluate_expressions(const std::vector<expression_ptr>& expressions, const environment_ptr& env)
+    -> std::vector<object>
 {
-    unused(env);
-    return eval_not_implemented_yet(typeid(*this).name());
+    std::vector<object> result;
+    for (const auto& expr : expressions) {
+        const auto evaluated = expr->eval(env);
+        if (evaluated.is<error>()) {
+            return {evaluated};
+        }
+        result.emplace_back(evaluated);
+    }
+    return result;
+}
+
+auto extended_function_environment(const object& funci, const std::vector<object>& args) -> environment_ptr
+{
+    const auto& as_func = funci.as<func>();
+    auto env = std::make_shared<enclosing_environment>(as_func->env);
+    size_t idx = 0;
+    for (const auto& parameter : as_func->parameters) {
+        env->set(parameter->value, args[idx]);
+        idx++;
+    }
+    return env;
+}
+
+auto unwrap_result(const object& obj) -> object
+{
+    if (obj.is<return_value>()) {
+        return std::any_cast<object>(obj.as<return_value>());
+    }
+    return obj;
+}
+
+auto apply_function(const object& funct, const std::vector<object>& args) -> object
+{
+    if (!funct.is<func>()) {
+        return {error {.message = fmt::format("not a function: {}", funct.type_name())}};
+    }
+    auto extended_env = extended_function_environment(funct, args);
+    auto evaluated = funct.as<func>()->body->eval(extended_env);
+    return unwrap_result(evaluated);
+}
+
+auto call_expression::eval(environment_ptr env) const -> object
+{
+    auto evaluated = function->eval(env);
+    if (evaluated.is<error>()) {
+        return evaluated;
+    }
+    auto args = evaluate_expressions(arguments, env);
+    if (args.size() == 1 && args[0].is<error>()) {
+        return args[0];
+    }
+    return apply_function(evaluated, args);
 }

@@ -38,7 +38,7 @@ auto main() -> int
     std::cout << prompt;
 
     auto input = std::string {};
-    environment env;
+    auto env = std::make_shared<environment>();
     while (getline(std::cin, input)) {
         auto lxr = lexer {input};
         auto prsr = parser {lxr};

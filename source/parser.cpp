@@ -146,7 +146,7 @@ auto parser::parse_return_statement() -> statement_ptr
 
 auto parser::parse_expression_statement() -> statement_ptr
 {
-    auto expr_stmt = std::make_unique<expression_statement>(m_current_token);
+    auto expr_stmt = std::make_shared<expression_statement>(m_current_token);
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -288,7 +288,7 @@ auto parser::parse_function_parameters() -> std::vector<identifier_ptr>
 auto parser::parse_block_statement() -> block_statement_ptr
 {
     using enum token_type;
-    auto block = std::make_unique<block_statement>(m_current_token);
+    auto block = std::make_shared<block_statement>(m_current_token);
     next_token();
     while (!cur_token_is(rsquirly) && !cur_token_is(eof)) {
         auto stmt = parse_statement();
