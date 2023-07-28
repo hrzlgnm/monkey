@@ -23,9 +23,8 @@ auto environment::set(const std::string_view& name, const object& val) -> object
     return set(std::string(name), val);
 }
 
-enclosing_environment::enclosing_environment(environment_ptr outer_env)
-
-    : outer(std::move(outer_env))
+enclosing_environment::enclosing_environment(const weak_environment_ptr& outer_env)
+    : outer(outer_env)
 {
 }
 
@@ -33,11 +32,8 @@ auto enclosing_environment::get(const std::string& name) const -> std::optional<
 {
     auto itr = store.find(name);
     if (itr == store.end()) {
-        itr = outer->store.find(name);
-        if (itr != outer->store.end()) {
-            return itr->second;
-        }
-        return {};
+        auto outer_env = outer.lock();
+        return outer_env->get(name);
     }
     return itr->second;
 }

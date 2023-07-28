@@ -35,7 +35,7 @@ using string_value = std::string;
 using return_value = std::any;
 
 struct environment;
-using environment_ptr = std::shared_ptr<environment>;
+using weak_environment_ptr = std::weak_ptr<environment>;
 
 struct fun
 {
@@ -48,7 +48,7 @@ struct fun
 
     std::vector<identifier_ptr> parameters;
     block_statement_ptr body {};
-    environment_ptr env {};
+    weak_environment_ptr env {};
 };
 using func = std::shared_ptr<fun>;
 using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value, error, func>;
@@ -56,4 +56,4 @@ using value_type = std::variant<nullvalue, bool, integer_value, string_value, re
 namespace std
 {
 auto to_string(const value_type&) -> std::string;
-}
+}  // namespace std
