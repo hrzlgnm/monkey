@@ -24,9 +24,11 @@
 #include "parser.hpp"
 #include "program.hpp"
 #include "statements.hpp"
+#include "string_literal.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
 #include "unary_expression.hpp"
+#include "value_type.hpp"
 
 // NOLINTBEGIN
 using expected_value_type = std::variant<int64_t, std::string, bool>;
@@ -182,27 +184,29 @@ return false;
 }
 10 == 10;
 10 != 9;
+"foobar"
+"foo bar"
 )r"};
     auto expected_tokens = std::vector<token> {
-        token {let, "let"},       token {ident, "five"},     token {assign, "="},      token {integer, "5"},
-        token {semicolon, ";"},   token {let, "let"},        token {ident, "ten"},     token {assign, "="},
-        token {integer, "10"},    token {semicolon, ";"},    token {let, "let"},       token {ident, "add"},
-        token {assign, "="},      token {function, "fn"},    token {lparen, "("},      token {ident, "x"},
-        token {comma, ","},       token {ident, "y"},        token {rparen, ")"},      token {lsquirly, "{"},
-        token {ident, "x"},       token {plus, "+"},         token {ident, "y"},       token {semicolon, ";"},
-        token {rsquirly, "}"},    token {semicolon, ";"},    token {let, "let"},       token {ident, "result"},
-        token {assign, "="},      token {ident, "add"},      token {lparen, "("},      token {ident, "five"},
-        token {comma, ","},       token {ident, "ten"},      token {rparen, ")"},      token {semicolon, ";"},
-        token {exclamation, "!"}, token {minus, "-"},        token {slash, "/"},       token {asterisk, "*"},
-        token {integer, "5"},     token {semicolon, ";"},    token {integer, "5"},     token {less_than, "<"},
-        token {integer, "10"},    token {greater_than, ">"}, token {integer, "5"},     token {semicolon, ";"},
-        token {eef, "if"},        token {lparen, "("},       token {integer, "5"},     token {less_than, "<"},
-        token {integer, "10"},    token {rparen, ")"},       token {lsquirly, "{"},    token {ret, "return"},
-        token {tru, "true"},      token {semicolon, ";"},    token {rsquirly, "}"},    token {elze, "else"},
-        token {lsquirly, "{"},    token {ret, "return"},     token {fals, "false"},    token {semicolon, ";"},
-        token {rsquirly, "}"},    token {integer, "10"},     token {equals, "=="},     token {integer, "10"},
-        token {semicolon, ";"},   token {integer, "10"},     token {not_equals, "!="}, token {integer, "9"},
-        token {semicolon, ";"},   token {eof, ""},
+        token {let, "let"},       token {ident, "five"},     token {assign, "="},       token {integer, "5"},
+        token {semicolon, ";"},   token {let, "let"},        token {ident, "ten"},      token {assign, "="},
+        token {integer, "10"},    token {semicolon, ";"},    token {let, "let"},        token {ident, "add"},
+        token {assign, "="},      token {function, "fn"},    token {lparen, "("},       token {ident, "x"},
+        token {comma, ","},       token {ident, "y"},        token {rparen, ")"},       token {lsquirly, "{"},
+        token {ident, "x"},       token {plus, "+"},         token {ident, "y"},        token {semicolon, ";"},
+        token {rsquirly, "}"},    token {semicolon, ";"},    token {let, "let"},        token {ident, "result"},
+        token {assign, "="},      token {ident, "add"},      token {lparen, "("},       token {ident, "five"},
+        token {comma, ","},       token {ident, "ten"},      token {rparen, ")"},       token {semicolon, ";"},
+        token {exclamation, "!"}, token {minus, "-"},        token {slash, "/"},        token {asterisk, "*"},
+        token {integer, "5"},     token {semicolon, ";"},    token {integer, "5"},      token {less_than, "<"},
+        token {integer, "10"},    token {greater_than, ">"}, token {integer, "5"},      token {semicolon, ";"},
+        token {eef, "if"},        token {lparen, "("},       token {integer, "5"},      token {less_than, "<"},
+        token {integer, "10"},    token {rparen, ")"},       token {lsquirly, "{"},     token {ret, "return"},
+        token {tru, "true"},      token {semicolon, ";"},    token {rsquirly, "}"},     token {elze, "else"},
+        token {lsquirly, "{"},    token {ret, "return"},     token {fals, "false"},     token {semicolon, ";"},
+        token {rsquirly, "}"},    token {integer, "10"},     token {equals, "=="},      token {integer, "10"},
+        token {semicolon, ";"},   token {integer, "10"},     token {not_equals, "!="},  token {integer, "9"},
+        token {semicolon, ";"},   token {string, "foobar"},  token {string, "foo bar"}, token {eof, ""},
 
     };
     for (const auto& expected_token : expected_tokens) {
@@ -562,6 +566,17 @@ TEST(test, testCallExpressionParsing)
     assert_binary_expression(call->arguments[2], 4, token_type::plus, 5);
 }
 
+TEST(test, testStringLiteralExpression)
+{
+    auto input = "\"hello world\";";
+    auto prsr = parser {lexer {input}};
+    auto prgrm = prsr.parse_program();
+    auto* expr_stmt = assert_expression_statement(prsr, prgrm);
+    auto* str = dynamic_cast<string_literal*>(expr_stmt->expr.get());
+    ASSERT_TRUE(str);
+    ASSERT_EQ(str->value, "hello world");
+}
+
 auto test_eval(std::string_view input) -> object
 {
     auto prsr = parser {lexer {input}};
@@ -600,6 +615,7 @@ TEST(test, testEvalIntegerExpresssion)
         assert_integer_object(evaluated, test.expected);
     }
 }
+
 TEST(test, testEvalBooleanExpresssion)
 {
     struct expression_test
@@ -624,6 +640,21 @@ TEST(test, testEvalBooleanExpresssion)
         const auto evaluated = test_eval(test.input);
         assert_boolean_object(evaluated, test.expected);
     }
+}
+
+TEST(test, testEvalStringExpression)
+{
+    auto evaluated = test_eval("\"Hello World!\"");
+    ASSERT_TRUE(evaluated.is<string_value>());
+    ASSERT_EQ(evaluated.as<string_value>(), "Hello World!");
+}
+
+TEST(test, testEvalStringConcatenation)
+{
+    auto evaluated = test_eval("\"Hello\" + \" \" + \"World!\"");
+    ASSERT_TRUE(evaluated.is<string_value>()) << "expected a string, got " << evaluated.type_name() << " instead";
+
+    ASSERT_EQ(evaluated.as<string_value>(), "Hello World!");
 }
 
 TEST(test, testBangOperator)
@@ -746,7 +777,12 @@ return 1;
         error_test {
             "foobar",
             "identifier not found: foobar",
+        },
+        error_test {
+            "\"Hello\" - \"World\"",
+            "unknown operator: String - String",
         }};
+
     for (const auto& test : error_tests) {
         const auto evaluated = test_eval(test.input);
         EXPECT_TRUE(evaluated.is<error>())
@@ -802,4 +838,5 @@ TEST(test, testFunctionApplication)
         assert_integer_object(test_eval(test.input), test.expected);
     }
 }
+
 // NOLINTEND    using statement::statement;
