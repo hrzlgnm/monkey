@@ -197,7 +197,7 @@ auto parser::parse_integer_literal() -> expression_ptr
     try {
         lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
-        m_errors.push_back(fmt::format("could not parse {} as integer", m_current_token.literal));
+        new_error("could not parse {} as integer", m_current_token.literal);
         return {};
     }
     return lit;
@@ -373,7 +373,7 @@ auto parser::expect_peek(token_type type) -> bool
 
 auto parser::peek_error(token_type type) -> void
 {
-    m_errors.push_back(fmt::format("expected next token to be {}, got {} instead", type, m_peek_token.type));
+    new_error("expected next token to be {}, got {} instead", type, m_peek_token.type);
 }
 
 auto parser::register_binary(token_type type, binary_parser binary) -> void
@@ -398,7 +398,7 @@ auto parser::peek_token_is(token_type type) const -> bool
 
 auto parser::no_unary_expression_error(token_type type) -> void
 {
-    m_errors.push_back(fmt::format("no prefix parse function for {} found", type));
+    new_error("no prefix parse function for {} found", type);
 }
 
 auto parser::peek_precedence() const -> int

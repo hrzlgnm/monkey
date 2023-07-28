@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <fmt/core.h>
+
 #include "expression.hpp"
 #include "identifier.hpp"
 #include "lexer.hpp"
@@ -53,6 +55,12 @@ class parser final
     auto no_unary_expression_error(token_type type) -> void;
     auto peek_precedence() const -> int;
     auto current_precedence() const -> int;
+
+    template<typename... T>
+    auto new_error(fmt::format_string<T...> fmt, T&&... args)
+    {
+        m_errors.push_back(fmt::format(fmt, std::forward<T>(args)...));
+    }
 
     lexer m_lxr;
     token m_current_token {};
