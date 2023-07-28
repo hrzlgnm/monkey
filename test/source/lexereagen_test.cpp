@@ -12,11 +12,21 @@
 
 #include <gtest/gtest.h>
 
-#include "ast.hpp"
+#include "binary_expression.hpp"
+#include "boolean.hpp"
+#include "call_expression.hpp"
+#include "environment.hpp"
+#include "function_literal.hpp"
+#include "identifier.hpp"
+#include "if_expression.hpp"
+#include "integer_literal.hpp"
 #include "object.hpp"
 #include "parser.hpp"
+#include "program.hpp"
+#include "statements.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
+#include "unary_expression.hpp"
 
 // NOLINTBEGIN
 using expected_value_type = std::variant<int64_t, std::string, bool>;
@@ -503,8 +513,8 @@ TEST(test, testFunctionLiteral)
 
     ASSERT_EQ(fn_literal->parameters.size(), 2);
 
-    assert_literal_expression(std::move(fn_literal->parameters[0]), "x");
-    assert_literal_expression(std::move(fn_literal->parameters[1]), "y");
+    assert_literal_expression(fn_literal->parameters[0], "x");
+    assert_literal_expression(fn_literal->parameters[1], "y");
 
     ASSERT_EQ(fn_literal->body->statements.size(), 1);
     auto* body_stmt = dynamic_cast<expression_statement*>(fn_literal->body->statements.at(0).get());
@@ -556,7 +566,7 @@ auto test_eval(std::string_view input) -> object
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
-    environment env;
+    auto env = std::make_shared<environment>();
     assert_no_parse_errors(prsr);
     return prgrm->eval(env);
 }
@@ -764,4 +774,32 @@ TEST(test, testIntegerLetStatements)
         assert_integer_object(test_eval(test.input), test.expected);
     }
 }
-// NOLINTEND
+
+TEST(test, testFunctionObject)
+{
+    auto input = "fn(x) {x + 2; };";
+    auto evaluated = test_eval(input);
+    ASSERT_TRUE(evaluated.is<func>()) << "expected a function object, got " << std::to_string(evaluated.value)
+                                      << " instead ";
+}
+
+TEST(test, testFunctionApplication)
+{
+    struct func_test
+    {
+        std::string_view input;
+        int64_t expected;
+    };
+    std::array func_tests {
+        func_test {"let identity = fn(x) { x; }; identity(5);", 5},
+        func_test {"let identity = fn(x) { return x; }; identity(5);", 5},
+        func_test {"let double = fn(x) { x * 2; }; double(5);", 10},
+        func_test {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+        func_test {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+        func_test {"fn(x) { x; }(5)", 5},
+    };
+    for (const auto test : func_tests) {
+        assert_integer_object(test_eval(test.input), test.expected);
+    }
+}
+// NOLINTEND    using statement::statement;

@@ -15,16 +15,25 @@ include(cmake/project-is-top-level.cmake)
 include(cmake/variables.cmake)
 
 # ---- Declare library ----
-
-add_library(lexereagen_lib 
+add_library(lexereagen_lib
     OBJECT
-        source/ast.cpp
+        source/binary_expression.cpp
+        source/boolean.cpp
+        source/call_expression.cpp
         source/environment.cpp
+        source/expression.cpp
+        source/function_literal.cpp
+        source/identifier.cpp
+        source/if_expression.cpp
+        source/integer_literal.cpp
         source/lexer.cpp
         source/object.cpp
         source/parser.cpp
+        source/program.cpp
+        source/statements.cpp
         source/token.cpp
         source/token_type.cpp
+        source/unary_expression.cpp
 )
 
 target_precompile_headers(lexereagen_lib

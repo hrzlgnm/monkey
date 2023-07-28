@@ -3,13 +3,23 @@
 #include <iterator>
 #include <map>
 #include <memory>
-#include <sstream>
 
 #include "parser.hpp"
 
-#include "ast.hpp"
+#include <fmt/core.h>
+
+#include "binary_expression.hpp"
+#include "boolean.hpp"
+#include "call_expression.hpp"
+#include "function_literal.hpp"
+#include "identifier.hpp"
+#include "if_expression.hpp"
+#include "integer_literal.hpp"
+#include "program.hpp"
+#include "statements.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
+#include "unary_expression.hpp"
 
 enum precedence
 {
@@ -146,7 +156,7 @@ auto parser::parse_return_statement() -> statement_ptr
 
 auto parser::parse_expression_statement() -> statement_ptr
 {
-    auto expr_stmt = std::make_unique<expression_statement>(m_current_token);
+    auto expr_stmt = std::make_shared<expression_statement>(m_current_token);
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -185,9 +195,7 @@ auto parser::parse_integer_literal() -> expression_ptr
     try {
         lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
-        std::stringstream strm;
-        strm << "could not parse " << m_current_token.literal << " as integer";
-        m_errors.push_back(strm.str());
+        m_errors.push_back(fmt::format("could not parse {} as integer", m_current_token.literal));
         return {};
     }
     return lit;
@@ -288,7 +296,7 @@ auto parser::parse_function_parameters() -> std::vector<identifier_ptr>
 auto parser::parse_block_statement() -> block_statement_ptr
 {
     using enum token_type;
-    auto block = std::make_unique<block_statement>(m_current_token);
+    auto block = std::make_shared<block_statement>(m_current_token);
     next_token();
     while (!cur_token_is(rsquirly) && !cur_token_is(eof)) {
         auto stmt = parse_statement();
@@ -356,9 +364,7 @@ auto parser::expect_peek(token_type type) -> bool
 
 auto parser::peek_error(token_type type) -> void
 {
-    std::ostringstream strm;
-    strm << "expected next token to be " << type << ", got " << m_peek_token.type << " instead";
-    m_errors.push_back(strm.str());
+    m_errors.push_back(fmt::format("expected next token to be {}, got {} instead", type, m_peek_token.type));
 }
 
 auto parser::register_binary(token_type type, binary_parser binary) -> void
@@ -383,9 +389,7 @@ auto parser::peek_token_is(token_type type) const -> bool
 
 auto parser::no_unary_expression_error(token_type type) -> void
 {
-    std::ostringstream strm;
-    strm << "no prefix parse function for " << type << " found";
-    m_errors.push_back(strm.str());
+    m_errors.push_back(fmt::format("no prefix parse function for {} found", type));
 }
 
 auto parser::peek_precedence() const -> int
