@@ -23,8 +23,8 @@ auto environment::set(const std::string_view& name, const object& val) -> object
     return set(std::string(name), val);
 }
 
-enclosing_environment::enclosing_environment(const weak_environment_ptr& outer_env)
-    : outer(outer_env)
+enclosing_environment::enclosing_environment(weak_environment_ptr outer_env)
+    : outer(std::move(outer_env))
 {
 }
 

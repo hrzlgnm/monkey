@@ -20,4 +20,4 @@ struct node
     virtual auto string() const -> std::string = 0;
     virtual auto eval(environment_ptr env) const -> object = 0;
 };
-using node_ptr = std::unique_ptr<node>;
+using node_ptr = std::shared_ptr<node>;

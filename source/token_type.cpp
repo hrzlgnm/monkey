@@ -1,5 +1,3 @@
-#include <sstream>
-
 #include "token_type.hpp"
 
 auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
@@ -81,11 +79,4 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "!=";
     }
     __builtin_unreachable();
-}
-
-auto to_string(token_type tokt) -> std::string
-{
-    std::ostringstream strm;
-    strm << tokt;
-    return strm.str();
 }

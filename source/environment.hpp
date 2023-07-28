@@ -27,7 +27,7 @@ using weak_environment_ptr = std::weak_ptr<environment>;
 
 struct enclosing_environment : environment
 {
-    explicit enclosing_environment(const weak_environment_ptr& outer_env);
+    explicit enclosing_environment(weak_environment_ptr outer_env);
     auto get(const std::string& name) const -> std::optional<object> override;
     weak_environment_ptr outer;
 };

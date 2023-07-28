@@ -12,12 +12,21 @@
 
 #include <gtest/gtest.h>
 
-#include "ast.hpp"
+#include "binary_expression.hpp"
+#include "boolean.hpp"
+#include "call_expression.hpp"
 #include "environment.hpp"
+#include "function_literal.hpp"
+#include "identifier.hpp"
+#include "if_expression.hpp"
+#include "integer_literal.hpp"
 #include "object.hpp"
 #include "parser.hpp"
+#include "program.hpp"
+#include "statements.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
+#include "unary_expression.hpp"
 
 // NOLINTBEGIN
 using expected_value_type = std::variant<int64_t, std::string, bool>;
