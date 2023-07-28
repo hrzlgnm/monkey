@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdexcept>
+#include <utility>
+
+#include <fmt/core.h>
 
 #include "value_type.hpp"
 
@@ -23,6 +26,12 @@ struct object
     value_type value {};
     auto type_name() const -> std::string;
 };
+
+template<typename... T>
+auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
+{
+    return {error {.message = fmt::format(fmt, std::forward<T>(args)...)}};
+}
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
 {
