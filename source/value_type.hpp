@@ -8,6 +8,7 @@
 #include <variant>
 #include <vector>
 
+#include "environment_fwd.hpp"
 #include "identifier.hpp"
 #include "node.hpp"
 #include "statements.hpp"
@@ -33,9 +34,6 @@ struct error
 using integer_value = std::int64_t;
 using string_value = std::string;
 using return_value = std::any;
-
-struct environment;
-using weak_environment_ptr = std::weak_ptr<environment>;
 
 struct fun
 {

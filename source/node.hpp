@@ -4,8 +4,7 @@
 #include <string>
 #include <string_view>
 
-struct environment;
-using environment_ptr = std::shared_ptr<environment>;
+#include "environment_fwd.hpp"
 
 struct object;
 struct node

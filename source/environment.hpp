@@ -3,6 +3,7 @@
 #include <optional>
 #include <unordered_map>
 
+#include "environment_fwd.hpp"
 #include "object.hpp"
 
 struct environment
@@ -21,9 +22,6 @@ struct environment
 
     std::unordered_map<std::string, object> store;
 };
-
-using environment_ptr = std::shared_ptr<environment>;
-using weak_environment_ptr = std::weak_ptr<environment>;
 
 struct enclosing_environment : environment
 {
