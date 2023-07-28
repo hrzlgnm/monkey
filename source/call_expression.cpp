@@ -46,7 +46,7 @@ auto unwrap_result(const object& obj) -> object
 auto apply_function(const object& funct, const std::vector<object>& args) -> object
 {
     if (!funct.is<func>()) {
-        return {error {.message = fmt::format("not a function: {}", funct.type_name())}};
+        return make_error("not a function: {}", funct.type_name());
     }
     auto extended_env = extended_function_environment(funct, args);
     auto evaluated = funct.as<func>()->body->eval(extended_env);

@@ -11,7 +11,7 @@ auto identifier::eval(environment_ptr env) const -> object
 {
     auto val = env->get(value);
     if (!val) {
-        return {error {.message = fmt::format("identifier not found: {}", value)}};
+        return make_error("identifier not found: {}", value);
     }
     return val.value();
 }

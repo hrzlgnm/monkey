@@ -40,8 +40,7 @@ auto eval_string_binary_expression(token_type oper, const object& left, const ob
 {
     using enum token_type;
     if (oper != plus) {
-        return {
-            error {.message = fmt::format("unknown operator: {} {} {}", left.type_name(), oper, right.type_name())}};
+        return make_error("unknown operator: {} {} {}", left.type_name(), oper, right.type_name());
     }
     const auto& left_str = left.as<string_value>();
     const auto& right_str = right.as<string_value>();
@@ -60,8 +59,7 @@ auto binary_expression::eval(environment_ptr env) const -> object
         return evaluated_right;
     }
     if (evaluated_left.type_name() != evaluated_right.type_name()) {
-        return {error {.message = fmt::format(
-                           "type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name())}};
+        return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
     }
     if (evaluated_left.is<integer_value>() && evaluated_right.is<integer_value>()) {
         return eval_integer_binary_expression(op, evaluated_left, evaluated_right);
@@ -69,6 +67,5 @@ auto binary_expression::eval(environment_ptr env) const -> object
     if (evaluated_left.is<string_value>() && evaluated_right.is<string_value>()) {
         return eval_string_binary_expression(op, evaluated_left, evaluated_right);
     }
-    return {error {.message = fmt::format(
-                       "unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name())}};
+    return make_error("unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
 }

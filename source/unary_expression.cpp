@@ -20,7 +20,7 @@ auto unary_expression::eval(environment_ptr env) const -> object
     switch (op) {
         case minus:
             if (!evaluated_value.is<integer_value>()) {
-                return {error {.message = fmt::format("unknown operator: -{}", evaluated_value.type_name())}};
+                return make_error("unknown operator: -{}", evaluated_value.type_name());
             }
             return {-evaluated_value.as<integer_value>()};
         case exclamation:
@@ -29,6 +29,6 @@ auto unary_expression::eval(environment_ptr env) const -> object
             }
             return {!evaluated_value.as<bool>()};
         default:
-            return {error {.message = fmt::format("unknown operator: {}{}", op, evaluated_value.type_name())}};
+            return make_error("unknown operator: {}{}", op, evaluated_value.type_name());
     }
 }
