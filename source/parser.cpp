@@ -17,6 +17,7 @@
 #include "integer_literal.hpp"
 #include "program.hpp"
 #include "statements.hpp"
+#include "string_literal.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
 #include "unary_expression.hpp"
@@ -69,6 +70,7 @@ parser::parser(lexer lxr)
     register_unary(lparen, [this] { return parse_grouped_expression(); });
     register_unary(eef, [this] { return parse_if_expression(); });
     register_unary(function, [this] { return parse_function_literal(); });
+    register_unary(string, [this] { return parse_string_literal(); });
     register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(minus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(slash, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
@@ -350,6 +352,13 @@ auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
     infix_expr->right = parse_expression(precedence);
 
     return infix_expr;
+}
+
+auto parser::parse_string_literal() -> expression_ptr
+{
+    auto lit = std::make_shared<string_literal>(m_current_token);
+    lit->value = m_current_token.literal;
+    return lit;
 }
 
 auto parser::expect_peek(token_type type) -> bool

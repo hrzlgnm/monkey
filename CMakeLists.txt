@@ -31,6 +31,7 @@ add_library(lexereagen_lib
         source/parser.cpp
         source/program.cpp
         source/statements.cpp
+        source/string_literal.cpp
         source/token.cpp
         source/token_type.cpp
         source/unary_expression.cpp

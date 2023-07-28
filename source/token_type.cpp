@@ -31,6 +31,8 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "identifier";
         case token_type::integer:
             return ostream << "integer";
+        case token_type::string:
+            return ostream << "string";
         case token_type::let:
             return ostream << "let";
         case token_type::function:

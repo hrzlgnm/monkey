@@ -4,6 +4,7 @@
 
 #include "lexer.hpp"
 
+#include "token.hpp"
 #include "token_type.hpp"
 
 using chart_literal_lookup_table = std::array<token_type, std::numeric_limits<unsigned char>::max()>;
@@ -104,6 +105,9 @@ auto lexer::next_token() -> token
                    std::string_view {&m_input.at(m_position - 1), 1},
                };
     }
+    if (m_byte == '"') {
+        return read_string();
+    }
     if (is_letter(m_byte)) {
         return read_identifier_or_keyword();
     }
@@ -168,4 +172,18 @@ auto lexer::read_integer() -> token
     auto end = m_position;
     auto count = end - position;
     return token {token_type::integer, m_input.substr(position, count)};
+}
+
+auto lexer::read_string() -> token
+{
+    const auto position = m_position + 1;
+    while (true) {
+        read_char();
+        if (m_byte == '"' || m_byte == '\0') {
+            break;
+        }
+    }
+    auto end = m_position;
+    auto count = end - position;
+    return read_char(), token {token_type::string, m_input.substr(position, count)};
 }

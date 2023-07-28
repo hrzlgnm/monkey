@@ -43,6 +43,7 @@ enum class token_type
     // multi character tokens
     ident,
     integer,
+    string,
 
     // keywords
     let,
