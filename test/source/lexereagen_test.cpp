@@ -592,7 +592,6 @@ auto test_eval(std::string_view input) -> object
     auto env = std::make_shared<environment>();
     assert_no_parse_errors(prsr);
     auto result = prgrm->eval(env);
-
     // break the cycle
     env->store.clear();
     return result;

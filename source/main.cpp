@@ -59,7 +59,7 @@ auto main() -> int
         std::copy(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
         std::cout << prompt;
     }
-    // break the shared ptr cycle
+    // break the cycle
     globals->store.clear();
     return 0;
 }
