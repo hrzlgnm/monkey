@@ -7,7 +7,6 @@
 #include "environment.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "statements.hpp"
 #include "util.hpp"
 
 constexpr auto prompt = ">> ";
