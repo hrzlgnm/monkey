@@ -35,14 +35,6 @@ auto extended_function_environment(const object& funci, const std::vector<object
     return env;
 }
 
-auto unwrap_return_value(const object& obj) -> object
-{
-    if (obj.is<return_value>()) {
-        return std::any_cast<object>(obj.as<return_value>());
-    }
-    return obj;
-}
-
 auto apply_function(const object& funct, const std::vector<object>& args) -> object
 {
     if (!funct.is<func>()) {

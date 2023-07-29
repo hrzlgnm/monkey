@@ -14,12 +14,20 @@ auto to_string(const value_type& value) -> std::string
                                   [](const bool val) -> std::string { return val ? "true" : "false"; },
                                   [](const error& val) -> std::string { return "ERROR: " + val.message; },
                                   [](const return_value& val) -> std::string
-                                  { return "return value: " + std::to_string(std::any_cast<object>(val).value); },
+                                  { return "return value: " + std::string {val.type().name()}; },
                                   [](const func&) -> std::string { return "function"; },
                                   [](const auto&) -> std::string { return "unknown"; }},
                       value);
 }
 }  // namespace std
+
+auto unwrap_return_value(const object& obj) -> object
+{
+    if (obj.is<return_value>()) {
+        return std::any_cast<object>(obj.as<return_value>());
+    }
+    return obj;
+}
 
 auto object::type_name() const -> std::string
 {
