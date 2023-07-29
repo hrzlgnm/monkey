@@ -833,6 +833,7 @@ TEST(eval, testFunctionApplication)
         func_test {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
         func_test {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
         func_test {"fn(x) { x; }(5)", 5},
+        func_test {"let c = fn(x) { x + 2; }; c(2 + c(4))", 10},
     };
     for (const auto test : func_tests) {
         assert_integer_object(test_eval(test.input), test.expected);
