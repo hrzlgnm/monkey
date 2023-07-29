@@ -6,7 +6,7 @@
 
 #include <fmt/format.h>
 
-#include "environment.hpp"
+#include "environment_fwd.hpp"
 
 template<typename T>
 auto join(const std::vector<std::shared_ptr<T>>& nodes, std::string_view sep = {}) -> std::string

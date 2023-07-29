@@ -6,7 +6,6 @@
 #include <fmt/core.h>
 
 #include "value_type.hpp"
-struct object;
 
 struct object
 {
