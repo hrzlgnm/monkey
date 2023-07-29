@@ -35,6 +35,7 @@ add_library(lexereagen_lib
         source/token.cpp
         source/token_type.cpp
         source/unary_expression.cpp
+        source/util.cpp
 )
 
 target_precompile_headers(lexereagen_lib

@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdint>
+#include <deque>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -28,6 +29,7 @@
 #include "token.hpp"
 #include "token_type.hpp"
 #include "unary_expression.hpp"
+#include "util.hpp"
 #include "value_type.hpp"
 
 // NOLINTBEGIN
@@ -136,6 +138,12 @@ auto assert_boolean_object(const object& obj, bool expected) -> void
 auto assert_nil_object(const object& obj) -> void
 {
     ASSERT_TRUE(obj.is_nil());
+}
+
+auto assert_string_object(const object& obj, const std::string& expected) -> void
+{
+    auto actual = obj.as<string_value>();
+    ASSERT_EQ(actual, expected);
 }
 
 TEST(lexing, lexing)
@@ -838,6 +846,29 @@ TEST(eval, testFunctionApplication)
     for (const auto test : func_tests) {
         assert_integer_object(test_eval(test.input), test.expected);
     }
+}
+
+auto test_multi_eval(std::deque<std::string>& inputs) -> object
+{
+    auto locals = std::make_shared<environment>();
+    object result;
+    while (!inputs.empty()) {
+        auto prsr = parser {lexer {inputs.front()}};
+        auto prgrm = prsr.parse_program();
+        assert_no_parse_errors(prsr);
+        result = prgrm->eval(locals);
+        inputs.pop_front();
+    }
+    return result;
+}
+
+TEST(eval, testMultipleEvaluationsWithSameEnvAndDestroyedSources)
+{
+    auto input1 {"let makeGreeter = fn(greeting) { fn(name) { greeting + \" \" + name + \"!\" } };"};
+    auto input2 {"let hello = makeGreeter(\"hello\");"};
+    auto input3 {"hello(\"banana\");"};
+    std::deque<std::string> inputs {input1, input2, input3};
+    assert_string_object(test_multi_eval(inputs), "hello banana!");
 }
 
 // NOLINTEND    using statement::statement;

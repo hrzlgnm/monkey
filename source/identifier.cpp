@@ -1,6 +1,7 @@
 #include "identifier.hpp"
 
 #include "environment.hpp"
+#include "util.hpp"
 
 identifier::identifier(token tokn, std::string_view val)
     : expression {tokn}

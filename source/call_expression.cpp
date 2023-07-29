@@ -26,7 +26,7 @@ auto evaluate_expressions(const std::vector<expression_ptr>& expressions, const 
 auto extended_function_environment(const object& funci, const std::vector<object>& args) -> environment_ptr
 {
     const auto& as_func = funci.as<func>();
-    auto env = std::make_shared<environment>(as_func->env.lock());
+    auto env = std::make_shared<environment>(as_func->env);
     size_t idx = 0;
     for (const auto& parameter : as_func->parameters) {
         env->set(parameter->value, args[idx]);
@@ -35,7 +35,7 @@ auto extended_function_environment(const object& funci, const std::vector<object
     return env;
 }
 
-auto unwrap_result(const object& obj) -> object
+auto unwrap_return_value(const object& obj) -> object
 {
     if (obj.is<return_value>()) {
         return std::any_cast<object>(obj.as<return_value>());
@@ -50,7 +50,7 @@ auto apply_function(const object& funct, const std::vector<object>& args) -> obj
     }
     auto extended_env = extended_function_environment(funct, args);
     auto evaluated = funct.as<func>()->body->eval(extended_env);
-    return unwrap_result(evaluated);
+    return unwrap_return_value(evaluated);
 }
 
 auto call_expression::eval(environment_ptr env) const -> object

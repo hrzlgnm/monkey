@@ -9,7 +9,7 @@ struct identifier : expression
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 
-    std::string_view value;
+    std::string value;
 };
 
 using identifier_ptr = std::shared_ptr<identifier>;
