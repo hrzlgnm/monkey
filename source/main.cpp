@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "environment.hpp"
-#include "environment_fwd.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "statements.hpp"
