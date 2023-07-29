@@ -752,11 +752,11 @@ TEST(eval, testErrorHandling)
 
         error_test {
             "5 + true;",
-            "type mismatch: Integer + bool",
+            "type mismatch: integer + bool",
         },
         error_test {
             "5 + true; 5;",
-            "type mismatch: Integer + bool",
+            "type mismatch: integer + bool",
         },
         error_test {
             "-true",
@@ -791,7 +791,7 @@ return 1;
         },
         error_test {
             "\"Hello\" - \"World\"",
-            "unknown operator: String - String",
+            "unknown operator: string - string",
         }};
 
     for (const auto& test : error_tests) {

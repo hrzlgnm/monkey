@@ -27,9 +27,10 @@ auto object::type_name() const -> std::string
         overloaded {
             [](const nullvalue&) { return "nil"; },
             [](const bool) { return "bool"; },
-            [](const integer_value) { return "Integer"; },
-            [](const string_value&) { return "String"; },
-            [](const error&) { return "Error"; },
+            [](const integer_value) { return "integer"; },
+            [](const string_value&) { return "string"; },
+            [](const error&) { return "error"; },
+            [](const return_value&) { return "return value"; },
             [](const func&) { return "function"; },
             [](const auto&) { return "unknown"; },
         },
