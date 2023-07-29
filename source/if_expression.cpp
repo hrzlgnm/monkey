@@ -14,7 +14,7 @@ auto if_expression::string() const -> std::string
 
 inline auto is_truthy(const object& obj) -> bool
 {
-    return !obj.is<nullvalue>() && (!obj.is<bool>() || obj.as<bool>());
+    return !obj.is_nil() && (!obj.is<bool>() || obj.as<bool>());
 }
 
 auto if_expression::eval(environment_ptr env) const -> object

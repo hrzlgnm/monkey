@@ -133,9 +133,9 @@ auto assert_boolean_object(const object& obj, bool expected) -> void
     ASSERT_EQ(actual, expected);
 }
 
-auto assert_null_object(const object& obj) -> void
+auto assert_nil_object(const object& obj) -> void
 {
-    ASSERT_TRUE(obj.is<nullvalue>());
+    ASSERT_TRUE(obj.is_nil());
 }
 
 TEST(lexing, lexing)
@@ -700,7 +700,7 @@ TEST(eval, testIfElseExpressions)
         if (test.expected.is<integer_value>()) {
             assert_integer_object(evaluated, test.expected.as<integer_value>());
         } else {
-            assert_null_object(evaluated);
+            assert_nil_object(evaluated);
         }
     }
 }
