@@ -859,6 +859,8 @@ auto test_multi_eval(std::deque<std::string>& inputs) -> object
         result = prgrm->eval(locals);
         inputs.pop_front();
     }
+    // break the shared ptr cycle
+    locals->store.clear();
     return result;
 }
 
