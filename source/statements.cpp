@@ -9,6 +9,7 @@
 
 #include "environment.hpp"
 #include "object.hpp"
+#include "util.hpp"
 
 using std::string;
 
@@ -72,10 +73,7 @@ auto expression_statement::eval(environment_ptr env) const -> object
 
 auto block_statement::string() const -> std::string
 {
-    auto strs = std::vector<std::string>();
-    std::transform(
-        statements.cbegin(), statements.cend(), std::back_inserter(strs), [](auto stmt) { return stmt->string(); });
-    return fmt::format("{}", fmt::join(strs.cbegin(), strs.cend(), ""));
+    return join(statements);
 }
 
 auto block_statement::eval(environment_ptr env) const -> object
