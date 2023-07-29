@@ -2,8 +2,6 @@
 
 #include "object.hpp"
 
-#include "util.hpp"
-
 namespace std
 {
 auto to_string(const value_type& value) -> std::string
