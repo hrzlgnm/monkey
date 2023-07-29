@@ -43,7 +43,6 @@ auto main() -> int
 
     auto input = std::string {};
     auto globals = std::make_shared<environment>();
-    std::vector<statement_ptr> statements;
     while (getline(std::cin, input)) {
         auto lxr = lexer {input};
         auto prsr = parser {lxr};
@@ -56,7 +55,6 @@ auto main() -> int
         if (!evaluated.is_nil()) {
             std::cout << std::to_string(evaluated.value) << "\n";
         }
-        std::copy(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
         std::cout << prompt;
     }
     // break the cycle
