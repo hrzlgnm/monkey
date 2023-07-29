@@ -30,6 +30,8 @@ struct object
     auto type_name() const -> std::string;
 };
 
+auto unwrap_return_value(const object& obj) -> object;
+
 template<typename... T>
 auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 {

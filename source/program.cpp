@@ -24,7 +24,7 @@ auto program::eval(environment_ptr env) const -> object
     for (const auto& statement : statements) {
         result = statement->eval(env);
         if (result.is<return_value>()) {
-            return std::any_cast<object>(result.as<return_value>());
+            return unwrap_return_value(result);
         }
         if (result.is<error>()) {
             return result;

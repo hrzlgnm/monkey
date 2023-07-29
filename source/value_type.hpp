@@ -46,7 +46,7 @@ struct fun
 
     std::vector<identifier_ptr> parameters;
     block_statement_ptr body {};
-    weak_environment_ptr env {};
+    environment_ptr env {};
 };
 using func = std::shared_ptr<fun>;
 using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value, error, func>;
