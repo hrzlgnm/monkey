@@ -48,7 +48,9 @@ auto main() -> int
             continue;
         }
         auto evaluated = prgrm->eval(env);
-        std::cout << std::to_string(evaluated.value) << "\n";
+        if (!evaluated.is<nullvalue>()) {
+            std::cout << std::to_string(evaluated.value) << "\n";
+        }
         std::cout << prompt;
     }
 

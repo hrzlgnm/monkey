@@ -26,7 +26,7 @@ auto evaluate_expressions(const std::vector<expression_ptr>& expressions, const 
 auto extended_function_environment(const object& funci, const std::vector<object>& args) -> environment_ptr
 {
     const auto& as_func = funci.as<func>();
-    auto env = std::make_shared<enclosing_environment>(as_func->env);
+    auto env = std::make_shared<environment>(as_func->env.lock());
     size_t idx = 0;
     for (const auto& parameter : as_func->parameters) {
         env->set(parameter->value, args[idx]);

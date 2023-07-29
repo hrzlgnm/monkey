@@ -1,39 +1,33 @@
 #include "environment.hpp"
 
-auto environment::get(const std::string_view& name) const -> std::optional<object>
+#include "environment_fwd.hpp"
+
+environment::environment(environment_ptr parent_env)
+    : parent(std::move(parent_env))
 {
-    return get(std::string(name));
 }
 
-auto environment::get(const std::string& name) const -> std::optional<object>
+static const object nil {nullvalue {}};
+
+auto environment::get(std::string_view name) const -> object
 {
-    auto itr = store.find(name);
-    if (itr != store.end()) {
-        return itr->second;
+    for (auto ptr = shared_from_this(); ptr; ptr = ptr->parent) {
+        if (const auto itr = ptr->store.find(std::string {name}); itr != ptr->store.end()) {
+            return itr->second;
+        }
     }
-    return {};
-}
-auto environment::set(const std::string& name, const object& val) -> object
-{
-    return store[name] = val;
+    return nil;
 }
 
-auto environment::set(const std::string_view& name, const object& val) -> object
+auto environment::set(std::string_view name, object&& val) -> void
 {
-    return set(std::string(name), val);
-}
-
-enclosing_environment::enclosing_environment(weak_environment_ptr outer_env)
-    : outer(std::move(outer_env))
-{
-}
-
-auto enclosing_environment::get(const std::string& name) const -> std::optional<object>
-{
-    auto itr = store.find(name);
-    if (itr == store.end()) {
-        auto outer_env = outer.lock();
-        return outer_env->get(name);
+    if (const auto itr = store.find(std::string {name}); itr != store.end()) {
+        itr->second = std::move(val);
+    } else {
+        store.emplace(std::string(name), val);
     }
-    return itr->second;
+}
+auto environment::set(std::string_view name, const object& val) -> void
+{
+    store[std::string {name}] = val;
 }

@@ -138,7 +138,7 @@ auto assert_null_object(const object& obj) -> void
     ASSERT_TRUE(obj.is<nullvalue>());
 }
 
-TEST(test, lexing)
+TEST(lexing, lexing)
 {
     using enum token_type;
     auto lxr = lexer {R"r(let five = 5;
@@ -166,7 +166,7 @@ let result = add(five, ten);
     }
 }
 
-TEST(test, lexingMoreTokens)
+TEST(lexing, lexingMoreTokens)
 {
     using enum token_type;
     auto lxr = lexer {R"r(let five = 5;
@@ -215,7 +215,7 @@ return false;
     }
 }
 
-TEST(test, testLetStatement)
+TEST(parsing, testLetStatement)
 {
     using enum token_type;
     auto prsr = parser {lexer {
@@ -232,7 +232,7 @@ let foobar = 838383;
     }
 }
 
-TEST(test, testLetStatements)
+TEST(parsing, testLetStatements)
 {
     struct let_test
     {
@@ -257,7 +257,7 @@ TEST(test, testLetStatements)
     }
 }
 
-TEST(test, parseError)
+TEST(parsing, parseError)
 {
     using enum token_type;
     auto prsr = parser {lexer {
@@ -270,7 +270,7 @@ let 838383;
     ASSERT_FALSE(errors.empty());
 }
 
-TEST(test, testReturnStatement)
+TEST(parsing, testReturnStatement)
 {
     using enum token_type;
     auto prsr = parser {lexer {
@@ -292,7 +292,7 @@ return 993322;
     }
 }
 
-TEST(test, testString)
+TEST(parsing, testString)
 {
     using enum token_type;
     auto name = std::make_unique<identifier>(token {
@@ -320,7 +320,7 @@ TEST(test, testString)
     ASSERT_EQ(prgrm.string(), "let myVar = anotherVar;");
 }
 
-TEST(test, testIdentfierExpression)
+TEST(parsing, testIdentfierExpression)
 {
     const auto* input = "foobar;";
     auto prsr = parser {lexer {input}};
@@ -330,7 +330,7 @@ TEST(test, testIdentfierExpression)
     assert_literal_expression(expr_stmt->expr, std::string {"foobar"});
 }
 
-TEST(test, testIntegerExpression)
+TEST(parsing, testIntegerExpression)
 {
     const auto* input = "5;";
     auto prsr = parser {lexer {input}};
@@ -340,7 +340,7 @@ TEST(test, testIntegerExpression)
     assert_literal_expression(expr_stmt->expr, 5);
 }
 
-TEST(test, testUnaryExpressions)
+TEST(parsing, testUnaryExpressions)
 {
     using enum token_type;
     struct unary_test
@@ -369,7 +369,7 @@ TEST(test, testUnaryExpressions)
     }
 }
 
-TEST(test, testBinaryExpressions)
+TEST(parsing, testBinaryExpressions)
 {
     using enum token_type;
     struct binary_test
@@ -399,7 +399,7 @@ TEST(test, testBinaryExpressions)
     }
 }
 
-TEST(test, testOperatorPrecedenceParsing)
+TEST(parsing, testOperatorPrecedenceParsing)
 {
     struct oper_test
     {
@@ -466,7 +466,7 @@ TEST(test, testOperatorPrecedenceParsing)
     }
 }
 
-TEST(test, testIfExpression)
+TEST(parsing, testIfExpression)
 {
     const char* input = "if (x < y) { x }";
     auto prsr = parser {lexer {input}};
@@ -484,7 +484,7 @@ TEST(test, testIfExpression)
     ASSERT_FALSE(if_expr->alternative);
 }
 
-TEST(test, testIfElseExpression)
+TEST(parsing, testIfElseExpression)
 {
     const char* input = "if (x < y) { x } else { y }";
     auto prsr = parser {lexer {input}};
@@ -506,7 +506,7 @@ TEST(test, testIfElseExpression)
     assert_identifier(alternative->expr, "y");
 }
 
-TEST(test, testFunctionLiteral)
+TEST(parsing, testFunctionLiteral)
 {
     const char* input = "fn(x, y) { x + y; }";
     auto prsr = parser {lexer {input}};
@@ -526,7 +526,7 @@ TEST(test, testFunctionLiteral)
     assert_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
 
-TEST(test, testFunctionParameters)
+TEST(parsing, testFunctionParameters)
 {
     struct parameters_test
     {
@@ -552,7 +552,7 @@ TEST(test, testFunctionParameters)
     }
 }
 
-TEST(test, testCallExpressionParsing)
+TEST(parsing, testCallExpressionParsing)
 {
     auto prsr = parser {lexer {"add(1, 2 * 3, 4 + 5);"}};
     auto prgrm = prsr.parse_program();
@@ -566,7 +566,7 @@ TEST(test, testCallExpressionParsing)
     assert_binary_expression(call->arguments[2], 4, token_type::plus, 5);
 }
 
-TEST(test, testStringLiteralExpression)
+TEST(parsing, testStringLiteralExpression)
 {
     auto input = "\"hello world\";";
     auto prsr = parser {lexer {input}};
@@ -586,7 +586,7 @@ auto test_eval(std::string_view input) -> object
     return prgrm->eval(env);
 }
 
-TEST(test, testEvalIntegerExpresssion)
+TEST(eval, testEvalIntegerExpresssion)
 {
     struct expression_test
     {
@@ -616,7 +616,7 @@ TEST(test, testEvalIntegerExpresssion)
     }
 }
 
-TEST(test, testEvalBooleanExpresssion)
+TEST(eval, testEvalBooleanExpresssion)
 {
     struct expression_test
     {
@@ -642,14 +642,14 @@ TEST(test, testEvalBooleanExpresssion)
     }
 }
 
-TEST(test, testEvalStringExpression)
+TEST(eval, testEvalStringExpression)
 {
     auto evaluated = test_eval("\"Hello World!\"");
     ASSERT_TRUE(evaluated.is<string_value>());
     ASSERT_EQ(evaluated.as<string_value>(), "Hello World!");
 }
 
-TEST(test, testEvalStringConcatenation)
+TEST(eval, testEvalStringConcatenation)
 {
     auto evaluated = test_eval("\"Hello\" + \" \" + \"World!\"");
     ASSERT_TRUE(evaluated.is<string_value>()) << "expected a string, got " << evaluated.type_name() << " instead";
@@ -657,7 +657,7 @@ TEST(test, testEvalStringConcatenation)
     ASSERT_EQ(evaluated.as<string_value>(), "Hello World!");
 }
 
-TEST(test, testBangOperator)
+TEST(eval, testBangOperator)
 {
     struct expression_test
     {
@@ -679,7 +679,7 @@ TEST(test, testBangOperator)
     }
 }
 
-TEST(test, testIfElseExpressions)
+TEST(eval, testIfElseExpressions)
 {
     struct expression_test
     {
@@ -705,7 +705,7 @@ TEST(test, testIfElseExpressions)
     }
 }
 
-TEST(test, testReturnStatemets)
+TEST(eval, testReturnStatemets)
 {
     struct return_test
     {
@@ -730,7 +730,7 @@ if (10 > 1) {
     }
 }
 
-TEST(test, testErrorHandling)
+TEST(eval, testErrorHandling)
 {
     struct error_test
     {
@@ -786,12 +786,12 @@ return 1;
     for (const auto& test : error_tests) {
         const auto evaluated = test_eval(test.input);
         EXPECT_TRUE(evaluated.is<error>())
-            << test.input << "expected an error, got " << evaluated.type_name() << " instead";
+            << test.input << ": expected an error, got " << evaluated.type_name() << " instead";
         EXPECT_EQ(evaluated.as<error>().message, test.expectedMessage);
     }
 }
 
-TEST(test, testIntegerLetStatements)
+TEST(eval, testIntegerLetStatements)
 {
     struct let_test
     {
@@ -811,7 +811,7 @@ TEST(test, testIntegerLetStatements)
     }
 }
 
-TEST(test, testFunctionObject)
+TEST(eval, testFunctionObject)
 {
     auto input = "fn(x) {x + 2; };";
     auto evaluated = test_eval(input);
@@ -819,7 +819,7 @@ TEST(test, testFunctionObject)
                                       << " instead ";
 }
 
-TEST(test, testFunctionApplication)
+TEST(eval, testFunctionApplication)
 {
     struct func_test
     {

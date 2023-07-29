@@ -9,6 +9,7 @@
 
 struct object
 {
+    constexpr auto is_nil() const -> bool { return is<nullvalue>(); }
     template<typename T>
     constexpr auto is() const -> bool
     {
