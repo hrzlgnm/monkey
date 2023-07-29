@@ -10,10 +10,10 @@ identifier::identifier(token tokn, std::string_view val)
 auto identifier::eval(environment_ptr env) const -> object
 {
     auto val = env->get(value);
-    if (!val) {
+    if (val.is_nil()) {
         return make_error("identifier not found: {}", value);
     }
-    return val.value();
+    return val;
 }
 
 auto identifier::string() const -> std::string

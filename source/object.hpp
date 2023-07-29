@@ -10,10 +10,13 @@
 struct object
 {
     template<typename T>
-    constexpr auto is() const -> bool
+    inline constexpr auto is() const -> bool
     {
         return std::holds_alternative<T>(value);
     }
+
+    inline constexpr auto is_nil() const -> bool { return is<nullvalue>(); }
+
     template<typename T>
     auto as() const -> const T&
     {

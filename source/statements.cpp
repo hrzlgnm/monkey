@@ -33,7 +33,8 @@ auto let_statement::eval(environment_ptr env) const -> object
     if (val.is<error>()) {
         return val;
     }
-    return env->set(std::string(name->value), val);
+    env->set(name->value, std::move(val));
+    return {};
 }
 
 auto return_statement::string() const -> std::string
