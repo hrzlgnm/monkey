@@ -591,7 +591,11 @@ auto test_eval(std::string_view input) -> object
     auto prgrm = prsr.parse_program();
     auto env = std::make_shared<environment>();
     assert_no_parse_errors(prsr);
-    return prgrm->eval(env);
+    auto result = prgrm->eval(env);
+
+    // break the cycle
+    env->store.clear();
+    return result;
 }
 
 TEST(eval, testEvalIntegerExpresssion)
