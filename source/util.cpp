@@ -1,4 +1,5 @@
 #include "util.hpp"
+
 #include "environment.hpp"
 
 auto debug_env(const environment_ptr& env) -> void
