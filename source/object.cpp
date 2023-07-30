@@ -2,6 +2,8 @@
 
 #include "object.hpp"
 
+#include "value_type.hpp"
+
 namespace std
 {
 auto to_string(const value_type& value) -> std::string
@@ -13,7 +15,7 @@ auto to_string(const value_type& value) -> std::string
                                   [](const error& val) -> std::string { return "ERROR: " + val.message; },
                                   [](const return_value& val) -> std::string
                                   { return "return value: " + std::string {val.type().name()}; },
-                                  [](const func&) -> std::string { return "function"; },
+                                  [](const bound_function& func) -> std::string { return func.first->string(); },
                                   [](const auto&) -> std::string { return "unknown"; }},
                       value);
 }
@@ -37,7 +39,7 @@ auto object::type_name() const -> std::string
             [](const string_value&) { return "string"; },
             [](const error&) { return "error"; },
             [](const return_value&) { return "return value"; },
-            [](const func&) { return "function"; },
+            [](const bound_function&) { return "function"; },
             [](const auto&) { return "unknown"; },
         },
         value);

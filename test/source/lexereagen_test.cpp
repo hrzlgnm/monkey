@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <deque>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 #include <string_view>
@@ -15,9 +16,11 @@
 
 #include "binary_expression.hpp"
 #include "boolean.hpp"
+#include "builtin_function_expression.hpp"
 #include "call_expression.hpp"
 #include "environment.hpp"
-#include "function_literal.hpp"
+#include "environment_fwd.hpp"
+#include "function_expression.hpp"
 #include "identifier.hpp"
 #include "if_expression.hpp"
 #include "integer_literal.hpp"
@@ -94,7 +97,7 @@ auto assert_binary_expression(const expression_ptr& expr,
 
 auto assert_no_parse_errors(const parser& prsr)
 {
-    ASSERT_TRUE(prsr.errors().empty()) << "expected no errors, got: " << testing::PrintToString(prsr.errors());
+    EXPECT_TRUE(prsr.errors().empty()) << "expected no errors, got: " << testing::PrintToString(prsr.errors());
 }
 
 auto assert_expression_statement(parser& prsr, const program_ptr& prgrm) -> expression_statement*
@@ -125,6 +128,7 @@ auto assert_let_statement(statement* stmt, const std::string& expected_identifie
 
 auto assert_integer_object(const object& obj, int64_t expected) -> void
 {
+    ASSERT_TRUE(obj.is<integer_value>()) << "got " << obj.type_name() << " instead";
     auto actual = obj.as<integer_value>();
     ASSERT_EQ(actual, expected);
 }
@@ -142,8 +146,16 @@ auto assert_nil_object(const object& obj) -> void
 
 auto assert_string_object(const object& obj, const std::string& expected) -> void
 {
+    ASSERT_TRUE(obj.is<string_value>()) << "got " << obj.type_name() << " instead";
     auto actual = obj.as<string_value>();
     ASSERT_EQ(actual, expected);
+}
+
+auto assert_error_object(const object& obj, const std::string& expected_error_message) -> void
+{
+    ASSERT_TRUE(obj.is<error>()) << "got " << obj.type_name() << " instead";
+    auto actual = obj.as<error>();
+    EXPECT_EQ(actual.message, expected_error_message);
 }
 
 TEST(lexing, lexing)
@@ -194,6 +206,7 @@ return false;
 10 != 9;
 "foobar"
 "foo bar"
+ ""
 )r"};
     auto expected_tokens = std::vector<token> {
         token {let, "let"},       token {ident, "five"},     token {assign, "="},       token {integer, "5"},
@@ -214,7 +227,8 @@ return false;
         token {lsquirly, "{"},    token {ret, "return"},     token {fals, "false"},     token {semicolon, ";"},
         token {rsquirly, "}"},    token {integer, "10"},     token {equals, "=="},      token {integer, "10"},
         token {semicolon, ";"},   token {integer, "10"},     token {not_equals, "!="},  token {integer, "9"},
-        token {semicolon, ";"},   token {string, "foobar"},  token {string, "foo bar"}, token {eof, ""},
+        token {semicolon, ";"},   token {string, "foobar"},  token {string, "foo bar"}, token {string, ""},
+        token {eof, ""},
 
     };
     for (const auto& expected_token : expected_tokens) {
@@ -520,16 +534,17 @@ TEST(parsing, testFunctionLiteral)
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
     auto* expr_stmt = assert_expression_statement(prsr, prgrm);
-    auto* fn_literal = dynamic_cast<function_literal*>(expr_stmt->expr.get());
+    auto* fn_literal = dynamic_cast<function_expression*>(expr_stmt->expr.get());
     ASSERT_TRUE(fn_literal);
 
     ASSERT_EQ(fn_literal->parameters.size(), 2);
 
-    assert_literal_expression(fn_literal->parameters[0], "x");
-    assert_literal_expression(fn_literal->parameters[1], "y");
+    ASSERT_EQ(fn_literal->parameters[0], "x");
+    ASSERT_EQ(fn_literal->parameters[1], "y");
 
-    ASSERT_EQ(fn_literal->body->statements.size(), 1);
-    auto* body_stmt = dynamic_cast<expression_statement*>(fn_literal->body->statements.at(0).get());
+    auto block = std::dynamic_pointer_cast<block_statement>(fn_literal->body);
+    ASSERT_EQ(block->statements.size(), 1);
+    auto* body_stmt = dynamic_cast<expression_statement*>(block->statements.at(0).get());
 
     assert_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
@@ -550,11 +565,11 @@ TEST(parsing, testFunctionParameters)
         auto prsr = parser {lexer {parameter_test.input}};
         auto prgrm = prsr.parse_program();
         auto* expr_stmt = assert_expression_statement(prsr, prgrm);
-        auto* fn_literal = dynamic_cast<function_literal*>(expr_stmt->expr.get());
+        auto* fn_literal = dynamic_cast<function_expression*>(expr_stmt->expr.get());
         ASSERT_TRUE(fn_literal);
         ASSERT_EQ(fn_literal->parameters.size(), parameter_test.expected.size());
         for (size_t index = 0; const auto& expected : parameter_test.expected) {
-            assert_literal_expression(std::move(fn_literal->parameters[index]), expected);
+            ASSERT_EQ(fn_literal->parameters[index], expected);
             ++index;
         }
     }
@@ -590,6 +605,9 @@ auto test_eval(std::string_view input) -> object
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
     auto env = std::make_shared<environment>();
+    for (const auto& builtin : builtin_function_expression::builtins) {
+        env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
+    }
     assert_no_parse_errors(prsr);
     auto result = prgrm->eval(env);
     // break the shared ptr cycle
@@ -826,8 +844,8 @@ TEST(eval, testFunctionObject)
 {
     auto input = "fn(x) {x + 2; };";
     auto evaluated = test_eval(input);
-    ASSERT_TRUE(evaluated.is<func>()) << "expected a function object, got " << std::to_string(evaluated.value)
-                                      << " instead ";
+    ASSERT_TRUE(evaluated.is<bound_function>())
+        << "expected a function object, got " << std::to_string(evaluated.value) << " instead ";
 }
 
 TEST(eval, testFunctionApplication)
@@ -854,12 +872,14 @@ TEST(eval, testFunctionApplication)
 auto test_multi_eval(std::deque<std::string>& inputs) -> object
 {
     auto locals = std::make_shared<environment>();
+    auto statements = std::vector<statement_ptr>();
     object result;
     while (!inputs.empty()) {
         auto prsr = parser {lexer {inputs.front()}};
         auto prgrm = prsr.parse_program();
         assert_no_parse_errors(prsr);
         result = prgrm->eval(locals);
+        std::copy(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
         inputs.pop_front();
     }
     // break the shared ptr cycle
@@ -876,4 +896,26 @@ TEST(eval, testMultipleEvaluationsWithSameEnvAndDestroyedSources)
     assert_string_object(test_multi_eval(inputs), "hello banana!");
 }
 
+TEST(eval, testBuiltinFunctions)
+{
+    struct builtin_test
+    {
+        std::string_view input;
+        std::variant<std::int64_t, std::string> expected;
+    };
+    std::array tests {
+        builtin_test {R"XXX(len(""))XXX", 0},
+        builtin_test {R"XXX(len("four"))XXX", 4},
+        builtin_test {R"XXX(len("hello world"))XXX", 11},
+        builtin_test {R"XXX(len(1))XXX", "argument of type integer to len() is not supported"},
+        builtin_test {R"XXX(len("one", "two"))XXX", "wrong number of arguments to len(): expected=1, got=2"},
+    };
+    for (auto test : tests) {
+        auto evaluated = test_eval(test.input);
+        std::visit(overloaded {[&evaluated](const integer_value val) { assert_integer_object(evaluated, val); },
+                               [&evaluated](const std::string& val) { assert_error_object(evaluated, val); },
+                               [](const auto& val) { FAIL(); }},
+                   test.expected);
+    }
+}
 // NOLINTEND    using statement::statement;

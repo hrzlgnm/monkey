@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -24,3 +25,6 @@ template<typename T>
 void unused(T /*unused*/)
 {
 }
+
+template<typename V>
+using string_map = std::map<std::string, V, std::less<>>;
