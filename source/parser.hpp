@@ -39,8 +39,8 @@ class parser final
     auto parse_boolean() -> expression_ptr;
     auto parse_grouped_expression() -> expression_ptr;
     auto parse_if_expression() -> expression_ptr;
-    auto parse_function_literal() -> expression_ptr;
-    auto parse_function_parameters() -> std::vector<identifier_ptr>;
+    auto parse_function_expression() -> expression_ptr;
+    auto parse_function_parameters() -> std::vector<std::string>;
     auto parse_block_statement() -> block_statement_ptr;
     auto parse_call_expression(expression_ptr function) -> expression_ptr;
     auto parse_call_arguments() -> std::vector<expression_ptr>;

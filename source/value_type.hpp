@@ -8,19 +8,20 @@
 #include <variant>
 #include <vector>
 
+#include "callable_expression.hpp"
 #include "environment_fwd.hpp"
 #include "identifier.hpp"
 #include "node.hpp"
 #include "statements.hpp"
 
 // helper type for std::visit
-template<typename... Ts>
-struct overloaded : Ts...
+template<typename... T>
+struct overloaded : T...
 {
-    using Ts::operator()...;
+    using T::operator()...;
 };
-template<class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
+template<class... T>
+overloaded(T...) -> overloaded<T...>;
 
 struct nullvalue
 {
@@ -31,25 +32,15 @@ struct error
     std::string message;
 };
 
+struct object;
+
 using integer_value = std::int64_t;
 using string_value = std::string;
 using return_value = std::any;
 
-struct fun
-{
-    fun() = default;
-    fun(const fun&) = delete;
-    fun(fun&&) = delete;
-    ~fun() = default;
-    auto operator=(const fun&) -> fun& = delete;
-    auto operator=(fun&&) -> fun& = delete;
+using bound_function = std::pair<const callable_expression*, environment_ptr>;
 
-    std::vector<identifier_ptr> parameters;
-    block_statement_ptr body {};
-    environment_ptr env {};
-};
-using func = std::shared_ptr<fun>;
-using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value, error, func>;
+using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value, error, bound_function>;
 
 namespace std
 {

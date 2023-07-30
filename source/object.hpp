@@ -44,6 +44,7 @@ inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
                                   [](const bool val1, const bool val2) { return val1 == val2; },
                                   [](const integer_value val1, const integer_value val2) { return val1 == val2; },
                                   [](const string_value& val1, const string_value& val2) { return val1 == val2; },
+                                  [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
                                   [](const auto&, const auto&) { return false; }},
                       lhs.value,
                       rhs.value);

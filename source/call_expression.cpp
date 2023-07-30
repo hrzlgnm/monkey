@@ -1,14 +1,17 @@
+#include <complex>
+
 #include "call_expression.hpp"
 
 #include "environment.hpp"
 #include "object.hpp"
 #include "util.hpp"
+#include "value_type.hpp"
 
 auto call_expression::string() const -> std::string
 {
     return fmt::format("{}({})", function->string(), join(arguments, ", "));
 }
-
+/*
 auto evaluate_expressions(const std::vector<expression_ptr>& expressions, const environment_ptr& env)
     -> std::vector<object>
 {
@@ -44,6 +47,7 @@ auto apply_function(const object& funct, const std::vector<object>& args) -> obj
     auto evaluated = funct.as<func>()->body->eval(extended_env);
     return unwrap_return_value(evaluated);
 }
+*/
 
 auto call_expression::eval(environment_ptr env) const -> object
 {
@@ -51,9 +55,6 @@ auto call_expression::eval(environment_ptr env) const -> object
     if (evaluated.is<error>()) {
         return evaluated;
     }
-    auto args = evaluate_expressions(arguments, env);
-    if (args.size() == 1 && args[0].is<error>()) {
-        return args[0];
-    }
-    return apply_function(evaluated, args);
+    auto [fn, closure_env] = evaluated.as<bound_function>();
+    return fn->call(closure_env, env, arguments);
 }

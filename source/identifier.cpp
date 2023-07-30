@@ -18,5 +18,5 @@ auto identifier::eval(environment_ptr env) const -> object
 
 auto identifier::string() const -> std::string
 {
-    return {value.data(), value.size()};
+    return value;
 }

@@ -10,10 +10,6 @@ struct object;
 struct node
 {
     node() = default;
-    node(const node&) = delete;
-    node(node&&) = delete;
-    auto operator=(const node&) -> node& = delete;
-    auto operator=(node&&) -> node& = delete;
     virtual ~node() = default;
     virtual auto token_literal() const -> std::string_view = 0;
     virtual auto string() const -> std::string = 0;

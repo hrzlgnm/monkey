@@ -11,7 +11,7 @@
 #include "binary_expression.hpp"
 #include "boolean.hpp"
 #include "call_expression.hpp"
-#include "function_literal.hpp"
+#include "function_expression.hpp"
 #include "identifier.hpp"
 #include "if_expression.hpp"
 #include "integer_literal.hpp"
@@ -69,7 +69,7 @@ parser::parser(lexer lxr)
     register_unary(fals, [this] { return parse_boolean(); });
     register_unary(lparen, [this] { return parse_grouped_expression(); });
     register_unary(eef, [this] { return parse_if_expression(); });
-    register_unary(function, [this] { return parse_function_literal(); });
+    register_unary(function, [this] { return parse_function_expression(); });
     register_unary(string, [this] { return parse_string_literal(); });
     register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(minus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
@@ -259,40 +259,39 @@ auto parser::parse_if_expression() -> expression_ptr
     return expr;
 }
 
-auto parser::parse_function_literal() -> expression_ptr
+auto parser::parse_function_expression() -> expression_ptr
 {
     using enum token_type;
-    auto literal = std::make_unique<function_literal>(m_current_token);
     if (!expect_peek(lparen)) {
         return {};
     }
-    literal->parameters = parse_function_parameters();
+    auto parameters = parse_function_parameters();
     if (!expect_peek(lsquirly)) {
         return {};
     }
-    literal->body = parse_block_statement();
-    return literal;
+    auto body = parse_block_statement();
+    return std::make_shared<function_expression>(std::move(parameters), std::move(body));
 }
 
-auto parser::parse_function_parameters() -> std::vector<identifier_ptr>
+auto parser::parse_function_parameters() -> std::vector<std::string>
 {
     using enum token_type;
-    std::vector<identifier_ptr> identifiers;
+    std::vector<std::string> parameters;
     if (peek_token_is(rparen)) {
         next_token();
-        return identifiers;
+        return parameters;
     }
     next_token();
-    identifiers.push_back(parse_identifier());
+    parameters.push_back(parse_identifier()->value);
     while (peek_token_is(comma)) {
         next_token();
         next_token();
-        identifiers.push_back(parse_identifier());
+        parameters.push_back(parse_identifier()->value);
     }
     if (!expect_peek(rparen)) {
         return {};
     }
-    return identifiers;
+    return parameters;
 }
 
 auto parser::parse_block_statement() -> block_statement_ptr
