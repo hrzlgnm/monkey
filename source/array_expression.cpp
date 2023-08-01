@@ -10,6 +10,13 @@ auto array_expression::string() const -> std::string
 
 auto array_expression::eval(environment_ptr env) const -> object
 {
-    unused(env);
-    return {};
+    array result;
+    for (const auto& element : elements) {
+        auto evaluated = element->eval(env);
+        if (evaluated.is<error>()) {
+            return evaluated;
+        }
+        result.push_back(std::move(evaluated));
+    }
+    return {result};
 }

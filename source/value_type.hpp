@@ -36,10 +36,12 @@ struct object;
 using integer_value = std::int64_t;
 using string_value = std::string;
 using return_value = std::any;
+using array = std::vector<object>;
 
 using bound_function = std::pair<const callable_expression*, environment_ptr>;
 
-using value_type = std::variant<nullvalue, bool, integer_value, string_value, return_value, error, bound_function>;
+using value_type =
+    std::variant<nullvalue, bool, integer_value, string_value, return_value, error, bound_function, array>;
 
 namespace std
 {
