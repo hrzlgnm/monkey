@@ -412,7 +412,7 @@ TEST(parsing, testFunctionLiteral)
     ASSERT_EQ(fn_expr->parameters[0], "x");
     ASSERT_EQ(fn_expr->parameters[1], "y");
 
-    auto block = std::dynamic_pointer_cast<block_statement>(fn_expr->body);
+    auto* block = dynamic_cast<block_statement*>(fn_expr->body.get());
     ASSERT_EQ(block->statements.size(), 1);
     auto* body_stmt = dynamic_cast<expression_statement*>(block->statements.at(0).get());
 

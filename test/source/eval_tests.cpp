@@ -327,7 +327,9 @@ auto test_multi_eval(std::deque<std::string>& inputs) -> object
         auto prgrm = prsr.parse_program();
         assert_no_parse_errors(prsr);
         result = prgrm->eval(locals);
-        std::copy(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
+        for (auto& stmt : prgrm->statements) {
+            statements.push_back(std::move(stmt));
+        }
         inputs.pop_front();
     }
     locals->break_cycle();

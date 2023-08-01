@@ -7,9 +7,9 @@
 #include "object.hpp"
 #include "value_type.hpp"
 
-std::vector<builtin_function_expression> builtin_function_expression::builtins {
-    {std::string("len"),
-     std::vector<std::string> {"val"},
+const std::vector<builtin_function_expression> builtin_function_expression::builtins {
+    {"len",
+     {"val"},
      [](const std::vector<object>& arguments) -> object
      {
          if (arguments.size() != 1) {
@@ -43,9 +43,10 @@ auto builtin_function_expression::call(environment_ptr /*closure_env*/,
                    arguments.cend(),
                    std::back_inserter(args),
                    [&caller_env](const expression_ptr& expr) { return expr->eval(caller_env); });
-    return body(args);
+    return body(std::move(args));
 };
+
 auto builtin_function_expression::string() const -> std::string
 {
-    return "builtin_function_expression";
+    return fmt::format("{}(){}", name, "{...}");
 };

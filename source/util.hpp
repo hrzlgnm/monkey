@@ -11,7 +11,7 @@
 #include "environment_fwd.hpp"
 
 template<typename T>
-auto join(const std::vector<std::shared_ptr<T>>& nodes, std::string_view sep = {}) -> std::string
+auto join(const std::vector<std::unique_ptr<T>>& nodes, std::string_view sep = {}) -> std::string
 {
     auto strs = std::vector<std::string>();
     std::transform(

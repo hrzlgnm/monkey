@@ -2,13 +2,11 @@
 
 #include <vector>
 
-#include "node.hpp"
+#include "expression.hpp"
 #include "statements.hpp"
 
-struct program : node
+struct program : expression
 {
-    using node::node;
-    auto token_literal() const -> std::string_view override;
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 

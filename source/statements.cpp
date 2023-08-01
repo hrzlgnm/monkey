@@ -11,21 +11,9 @@
 #include "object.hpp"
 #include "util.hpp"
 
-using std::string;
-
-statement::statement(token tokn)
-    : tkn {tokn}
-{
-}
-
-auto statement::token_literal() const -> std::string_view
-{
-    return tkn.literal;
-}
-
 auto let_statement::string() const -> std::string
 {
-    return fmt::format("{} {} = {};", token_literal(), name->string(), value ? value->string() : std::string());
+    return fmt::format("{} {} = {};", tkn.literal, name->string(), value ? value->string() : std::string());
 }
 
 auto let_statement::eval(environment_ptr env) const -> object
@@ -40,7 +28,7 @@ auto let_statement::eval(environment_ptr env) const -> object
 
 auto return_statement::string() const -> std::string
 {
-    return fmt::format("{} {};", token_literal(), value ? value->string() : std::string());
+    return fmt::format("{} {};", tkn.literal, value ? value->string() : std::string());
 }
 
 auto return_statement::eval(environment_ptr env) const -> object
