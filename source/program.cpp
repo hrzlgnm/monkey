@@ -7,7 +7,7 @@
 
 auto program::string() const -> std::string
 {
-    return join(statements);
+    return fmt::format("{}", join(statements));
 }
 
 auto program::eval(environment_ptr env) const -> object

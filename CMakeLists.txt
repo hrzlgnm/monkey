@@ -28,6 +28,7 @@ add_library(lexereagen_lib
         source/function_expression.cpp
         source/identifier.cpp
         source/if_expression.cpp
+        source/index_expression.cpp
         source/integer_literal.cpp
         source/lexer.cpp
         source/object.cpp

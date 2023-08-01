@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <iterator>
 #include <string>
 
 #include "object.hpp"
@@ -16,6 +18,16 @@ auto to_string(const value_type& value) -> std::string
                                   [](const return_value& val) -> std::string
                                   { return "return value: " + std::string {val.type().name()}; },
                                   [](const bound_function& func) -> std::string { return func.first->string(); },
+                                  [](const ::array& arr) -> std::string
+                                  {
+                                      std::vector<std::string> result;
+                                      std::transform(arr.cbegin(),
+                                                     arr.cend(),
+                                                     std::back_inserter(result),
+                                                     [](const object& obj) -> std::string
+                                                     { return std::to_string(obj.value); });
+                                      return fmt::format("[{}]", fmt::join(result, ", "));
+                                  },
                                   [](const auto&) -> std::string { return "unknown"; }},
                       value);
 }
@@ -40,6 +52,7 @@ auto object::type_name() const -> std::string
             [](const error&) { return "error"; },
             [](const return_value&) { return "return value"; },
             [](const bound_function&) { return "function"; },
+            [](const array&) { return "array"; },
             [](const auto&) { return "unknown"; },
         },
         value);

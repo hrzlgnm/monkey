@@ -6,6 +6,7 @@
 #include "call_expression.hpp"
 #include "function_expression.hpp"
 #include "if_expression.hpp"
+#include "index_expression.hpp"
 #include "integer_literal.hpp"
 #include "parser.hpp"
 #include "program.hpp"
@@ -23,7 +24,9 @@ auto assert_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
-    assert_no_parse_errors(prsr);
+    if (assert_no_parse_errors(prsr)) {
+        std::cerr << "while parsing: `" << input << "`";
+    };
     return {std::move(prgrm), std::move(prsr)};
 }
 
@@ -182,16 +185,14 @@ return 10;
 return 993322;
 )r");
     ASSERT_EQ(prgrm->statements.size(), 3);
-    // NOLINTBEGIN
     std::array expected_return_values {5, 10, 993322};
     for (int i = 0; i < 3; ++i) {
         auto* stmt = prgrm->statements[i].get();
         auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
         ASSERT_TRUE(ret_stmt);
         ASSERT_EQ(ret_stmt->tkn.literal, "return");
-        assert_literal_expression(ret_stmt->value, expected_return_values[i]);
+        assert_literal_expression(ret_stmt->value, expected_return_values.at(i));
     }
-    // NOLINTEND
 }
 
 TEST(parsing, testString)
@@ -248,12 +249,7 @@ TEST(parsing, testUnaryExpressions)
         token_type op;
         int64_t integer_value;
     };
-    std::array unary_tests {
-        // clang-format: off
-        unary_test {"!5;", exclamation, 5},
-        unary_test {"-15;", minus, 15}
-        // clang-format: on
-    };
+    std::array unary_tests {unary_test {"!5;", exclamation, 5}, unary_test {"-15;", minus, 15}};
 
     for (const auto& unary_test : unary_tests) {
         auto [prgrm, _] = assert_program(unary_test.input);
@@ -303,6 +299,54 @@ TEST(parsing, testOperatorPrecedenceParsing)
     };
     std::array operator_precedence_tests {
         oper_test {
+            "-a * b",
+            "((-a) * b)",
+        },
+        oper_test {
+            "!-a",
+            "(!(-a))",
+        },
+        oper_test {
+            "a + b + c",
+            "((a + b) + c)",
+        },
+        oper_test {
+            "a + b - c",
+            "((a + b) - c)",
+        },
+        oper_test {
+            "a * b * c",
+            "((a * b) * c)",
+        },
+        oper_test {
+            "a * b / c",
+            "((a * b) / c)",
+        },
+        oper_test {
+            "a + b / c",
+            "(a + (b / c))",
+        },
+        oper_test {
+            "a + b * c + d / e - f",
+            "(((a + (b * c)) + (d / e)) - f)",
+        },
+        oper_test {
+            "3 + 4; -5 * 5",
+            "(3 + 4)((-5) * 5)",
+        },
+        oper_test {
+            "5 > 4 == 3 < 4",
+            "((5 > 4) == (3 < 4))",
+        },
+        oper_test {
+            "5 < 4 != 3 > 4",
+            "((5 < 4) != (3 > 4))",
+        },
+        oper_test {
+            "3 + 4 * 5 == 3 * 1 + 4 * 5",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        },
+        oper_test {
             "true",
             "true",
         },
@@ -323,13 +367,16 @@ TEST(parsing, testOperatorPrecedenceParsing)
             "((1 + (2 + 3)) + 4)",
         },
         oper_test {
-
             "(5 + 5) * 2",
             "((5 + 5) * 2)",
         },
         oper_test {
             "2 / (5 + 5)",
             "(2 / (5 + 5))",
+        },
+        oper_test {
+            "(5 + 5) * 2 * (5 + 5)",
+            "(((5 + 5) * 2) * (5 + 5))",
         },
         oper_test {
             "-(5 + 5)",
@@ -351,19 +398,18 @@ TEST(parsing, testOperatorPrecedenceParsing)
             "add(a + b + c * d / f + g)",
             "add((((a + b) + ((c * d) / f)) + g))",
         },
-        /* oper_test {
+        oper_test {
             "a * [1, 2, 3, 4][b * c] * d",
             "((a * ([1, 2, 3, 4][(b * c)])) * d)",
         },
-                oper_test {
-                    "add(a * b[2], b[1], 2 * [1, 2][1])",
-                    "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
-                },*/
-
+        oper_test {
+            "add(a * b[2], b[1], 2 * [1, 2][1])",
+            "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+        },
     };
     for (const auto& [input, expected] : operator_precedence_tests) {
         auto [prgrm, _] = assert_program(input);
-        ASSERT_EQ(expected, prgrm->string());
+        EXPECT_EQ(expected, prgrm->string()) << "with input " << input;
     }
 }
 
@@ -471,6 +517,14 @@ TEST(parsing, testArrayExpression)
     assert_integer_literal(array_expr->elements[0], 1);
     assert_binary_expression(array_expr->elements[1], 2, token_type::asterisk, 2);
     assert_binary_expression(array_expr->elements[2], 3, token_type::plus, 3);
+}
+
+TEST(parsing, testIndexEpxression)
+{
+    auto [prgrm, _] = assert_program("myArray[1+1]");
+    auto* idx_expr = assert_expression<index_expression>(prgrm);
+    assert_identifier(idx_expr->left, "myArray");
+    assert_binary_expression(idx_expr->index, 1, token_type::plus, 1);
 }
 
 // NOLINTEND(*-magic-numbers)

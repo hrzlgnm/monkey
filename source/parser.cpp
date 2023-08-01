@@ -16,6 +16,7 @@
 #include "function_expression.hpp"
 #include "identifier.hpp"
 #include "if_expression.hpp"
+#include "index_expression.hpp"
 #include "integer_literal.hpp"
 #include "program.hpp"
 #include "statements.hpp"
@@ -33,6 +34,7 @@ enum precedence
     product,
     prefix,
     call,
+    idx,
 };
 
 auto precedence_of_token(token_type type) -> int
@@ -52,6 +54,8 @@ auto precedence_of_token(token_type type) -> int
             return product;
         case token_type::lparen:
             return call;
+        case token_type::lbracket:
+            return idx;
         default:
             return lowest;
     }
@@ -83,6 +87,7 @@ parser::parser(lexer lxr)
     register_binary(less_than, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(greater_than, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(lparen, [this](expression_ptr left) { return parse_call_expression(std::move(left)); });
+    register_binary(lbracket, [this](expression_ptr left) { return parse_index_expression(std::move(left)); });
 }
 
 auto parser::parse_program() -> program_ptr
@@ -191,7 +196,7 @@ auto parser::parse_expression(int precedence) -> expression_ptr
 
 auto parser::parse_identifier() -> identifier_ptr
 {
-    return std::make_unique<identifier>(m_current_token, m_current_token.literal);
+    return std::make_unique<identifier>(m_current_token, std::string {m_current_token.literal});
 }
 
 auto parser::parse_integer_literal() -> expression_ptr
@@ -357,9 +362,11 @@ auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr
         next_token();
         list.push_back(parse_expression(lowest));
     }
+
     if (!expect_peek(end)) {
         return {};
     }
+
     return list;
 }
 
@@ -368,6 +375,20 @@ auto parser::parse_array_expression() -> expression_ptr
     auto array_expr = std::make_unique<array_expression>(m_current_token);
     array_expr->elements = parse_expression_list(token_type::rbracket);
     return array_expr;
+}
+
+auto parser::parse_index_expression(expression_ptr left) -> expression_ptr
+{
+    auto index_expr = std::make_unique<index_expression>(m_current_token);
+    index_expr->left = std::move(left);
+    next_token();
+    index_expr->index = parse_expression(lowest);
+
+    if (!expect_peek(token_type::rbracket)) {
+        return {};
+    }
+
+    return index_expr;
 }
 
 auto parser::expect_peek(token_type type) -> bool

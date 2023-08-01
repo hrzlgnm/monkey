@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <stdexcept>
 #include <utility>
 
@@ -40,12 +41,15 @@ auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
 {
-    return std::visit(overloaded {[](const nullvalue, const nullvalue) { return true; },
-                                  [](const bool val1, const bool val2) { return val1 == val2; },
-                                  [](const integer_value val1, const integer_value val2) { return val1 == val2; },
-                                  [](const string_value& val1, const string_value& val2) { return val1 == val2; },
-                                  [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
-                                  [](const auto&, const auto&) { return false; }},
-                      lhs.value,
-                      rhs.value);
+    return std::visit(
+        overloaded {[](const nullvalue, const nullvalue) { return true; },
+                    [](const bool val1, const bool val2) { return val1 == val2; },
+                    [](const integer_value val1, const integer_value val2) { return val1 == val2; },
+                    [](const string_value& val1, const string_value& val2) { return val1 == val2; },
+                    [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
+                    [](const array& arr1, const array& arr2)
+                    { return arr1.size() == arr2.size() && std::equal(arr1.cbegin(), arr1.cend(), arr2.begin()); },
+                    [](const auto&, const auto&) { return false; }},
+        lhs.value,
+        rhs.value);
 }

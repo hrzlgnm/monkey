@@ -1,4 +1,3 @@
-#include <cmath>
 #include <cstdint>
 #include <deque>
 #include <iostream>
@@ -367,5 +366,70 @@ TEST(eval, testBuiltinFunctions)
                    test.expected);
     }
 }
+TEST(eval, testArrayExpression)
+{
+    auto evaluated = test_eval("[1, 2 * 2, 3 + 3]");
+    ASSERT_TRUE(evaluated.is<array>()) << "got: " << evaluated.type_name() << " instead";
 
+    assert_integer_object(evaluated.as<array>()[0], 1);
+    assert_integer_object(evaluated.as<array>()[1], 4);
+    assert_integer_object(evaluated.as<array>()[2], 6);
+}
+
+TEST(eval, testIndexOperatorExpressions)
+{
+    struct test
+    {
+        std::string_view input;
+        value_type expected;
+    };
+    std::array tests {
+        test {
+            "[1, 2, 3][0]",
+            1,
+        },
+        test {
+            "[1, 2, 3][1]",
+            2,
+        },
+        test {
+            "[1, 2, 3][2]",
+            3,
+        },
+        test {
+            "let i = 0; [1][i];",
+            1,
+        },
+        test {
+            "[1, 2, 3][1 + 1];",
+            3,
+        },
+        test {
+            "let myArray = [1, 2, 3]; myArray[2];",
+            3,
+        },
+        test {
+            "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+            6,
+        },
+        test {
+            "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+            2,
+        },
+        test {
+            "[1, 2, 3][3]",
+            nullvalue {},
+        },
+        test {
+            "[1, 2, 3][-1]",
+            nullvalue {},
+        },
+    };
+
+    for (const auto& [input, expected] : tests) {
+        auto evaluated = test_eval(input);
+        EXPECT_EQ(object {evaluated.value}, object {expected})
+            << "expected " << std::to_string(expected) << ", got " << evaluated.type_name();
+    }
+}
 // NOLINTEND(*-magic-numbers)

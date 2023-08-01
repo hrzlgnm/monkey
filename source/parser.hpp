@@ -5,8 +5,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include <fmt/core.h>
-
 #include "expression.hpp"
 #include "identifier.hpp"
 #include "lexer.hpp"
@@ -45,6 +43,7 @@ class parser final
     auto parse_call_expression(expression_ptr function) -> expression_ptr;
     auto parse_string_literal() -> expression_ptr;
     auto parse_array_expression() -> expression_ptr;
+    auto parse_index_expression(expression_ptr left) -> expression_ptr;
 
     auto parse_expression_list(token_type end) -> std::vector<expression_ptr>;
     auto expect_peek(token_type type) -> bool;
