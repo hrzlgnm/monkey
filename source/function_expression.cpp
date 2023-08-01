@@ -21,7 +21,6 @@ auto function_expression::call(environment_ptr closure_env,
                                const std::vector<expression_ptr>& arguments) const -> object
 {
     auto locals = std::make_shared<environment>(closure_env);
-    auto arg_itr = arguments.begin();
     for (auto arg_itr = arguments.begin(); const auto& parameter : parameters) {
         if (arg_itr != arguments.end()) {
             const auto& arg = *(arg_itr++);
