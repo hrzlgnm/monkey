@@ -121,14 +121,14 @@ TEST(eval, testEvalBooleanExpresssion)
 
 TEST(eval, testEvalStringExpression)
 {
-    auto evaluated = test_eval("\"Hello World!\"");
+    auto evaluated = test_eval(R"("Hello World!")");
     ASSERT_TRUE(evaluated.is<string_value>());
     ASSERT_EQ(evaluated.as<string_value>(), "Hello World!");
 }
 
 TEST(eval, testEvalStringConcatenation)
 {
-    auto evaluated = test_eval("\"Hello\" + \" \" + \"World!\"");
+    auto evaluated = test_eval(R"("Hello" + " " + "World!")");
     ASSERT_TRUE(evaluated.is<string_value>()) << "expected a string, got " << evaluated.type_name() << " instead";
 
     ASSERT_EQ(evaluated.as<string_value>(), "Hello World!");
@@ -212,7 +212,7 @@ TEST(eval, testErrorHandling)
     struct error_test
     {
         std::string_view input;
-        std::string expectedMessage;
+        std::string expected_message;
     };
     std::array error_tests {
 
@@ -264,7 +264,7 @@ return 1;
         const auto evaluated = test_eval(test.input);
         EXPECT_TRUE(evaluated.is<error>())
             << test.input << ": expected an error, got " << evaluated.type_name() << " instead";
-        EXPECT_EQ(evaluated.as<error>().message, test.expectedMessage);
+        EXPECT_EQ(evaluated.as<error>().message, test.expected_message);
     }
 }
 
@@ -290,7 +290,7 @@ TEST(eval, testIntegerLetStatements)
 
 TEST(eval, testFunctionObject)
 {
-    auto input = "fn(x) {x + 2; };";
+    const auto* input = "fn(x) {x + 2; };";
     auto evaluated = test_eval(input);
     ASSERT_TRUE(evaluated.is<bound_function>())
         << "expected a function object, got " << std::to_string(evaluated.value) << " instead ";
@@ -351,11 +351,11 @@ TEST(eval, testBuiltinFunctions)
         std::variant<std::int64_t, std::string> expected;
     };
     std::array tests {
-        builtin_test {R"XXX(len(""))XXX", 0},
-        builtin_test {R"XXX(len("four"))XXX", 4},
-        builtin_test {R"XXX(len("hello world"))XXX", 11},
-        builtin_test {R"XXX(len(1))XXX", "argument of type integer to len() is not supported"},
-        builtin_test {R"XXX(len("one", "two"))XXX", "wrong number of arguments to len(): expected=1, got=2"},
+        builtin_test {R"(len(""))", 0},
+        builtin_test {R"(len("four"))", 4},
+        builtin_test {R"(len("hello world"))", 11},
+        builtin_test {R"(len(1))", "argument of type integer to len() is not supported"},
+        builtin_test {R"(len("one", "two"))", "wrong number of arguments to len(): expected=1, got=2"},
     };
     for (auto test : tests) {
         auto evaluated = test_eval(test.input);
