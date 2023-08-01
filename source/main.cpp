@@ -57,7 +57,6 @@ auto main() -> int
         }
         std::cout << prompt;
     }
-    // break the cycle
-    globals->store.clear();
+    globals->break_cycle();
     return 0;
 }

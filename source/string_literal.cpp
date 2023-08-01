@@ -5,7 +5,7 @@
 
 auto string_literal::string() const -> std::string
 {
-    return std::string {tkn.literal};
+    return value;
 }
 
 auto string_literal::eval(environment_ptr env) const -> object

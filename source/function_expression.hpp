@@ -16,10 +16,6 @@ struct function_expression : callable_expression
               environment_ptr caller_env,
               const std::vector<expression_ptr>& arguments) const -> object override;
 
-    inline auto shared_from_this() -> std::shared_ptr<function_expression>
-    {
-        return std::static_pointer_cast<function_expression>(callable_expression::shared_from_this());
-    }
     environment_ptr parent_env;
     statement_ptr body;
 };

@@ -17,7 +17,7 @@ constexpr auto build_char_to_token_type_map() -> chart_literal_lookup_table
     arr['*'] = asterisk;
     arr['^'] = caret;
     arr['}'] = rsquirly;
-    arr[']'] = lbracket;
+    arr[']'] = rbracket;
     arr[')'] = rparen;
     arr[':'] = colon;
     arr[','] = comma;

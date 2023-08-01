@@ -6,7 +6,7 @@ Checks: "*,\
     -google-readability-todo,\
     -altera-*,\
     -fuchsia-*,\
-    fuchsia-multiple-inheritance,\
+    -fuchsia-multiple-inheritance,\
     -llvm-header-guard,\
     -llvm-include-order,\
     -llvmlibc-*,\
