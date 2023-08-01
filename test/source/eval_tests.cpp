@@ -25,6 +25,7 @@ auto assert_integer_object(const object& obj, int64_t expected) -> void
 
 auto assert_boolean_object(const object& obj, bool expected) -> void
 {
+    ASSERT_TRUE(obj.is<bool>()) << "got " << obj.type_name() << " instead ";
     auto actual = obj.as<bool>();
     ASSERT_EQ(actual, expected);
 }
