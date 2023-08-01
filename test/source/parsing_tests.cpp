@@ -121,8 +121,7 @@ auto assert_let_statement(statement* stmt, const std::string& expected_identifie
     return let_stmt;
 }
 
-// NOLINTBEGIN(*magic*)
-
+// NOLINTBEGIN(*-magic-numbers)
 TEST(parsing, testLetStatement)
 {
     using enum token_type;
@@ -473,4 +472,5 @@ TEST(parsing, testArrayExpression)
     assert_binary_expression(array_expr->elements[1], 2, token_type::asterisk, 2);
     assert_binary_expression(array_expr->elements[2], 3, token_type::plus, 3);
 }
-// NOLINTEND(*magic*)
+
+// NOLINTEND(*-magic-numbers)
