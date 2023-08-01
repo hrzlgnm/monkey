@@ -43,9 +43,10 @@ class parser final
     auto parse_function_parameters() -> std::vector<std::string>;
     auto parse_block_statement() -> block_statement_ptr;
     auto parse_call_expression(expression_ptr function) -> expression_ptr;
-    auto parse_call_arguments() -> std::vector<expression_ptr>;
     auto parse_string_literal() -> expression_ptr;
+    auto parse_array_expression() -> expression_ptr;
 
+    auto parse_expression_list(token_type end) -> std::vector<expression_ptr>;
     auto expect_peek(token_type type) -> bool;
     auto cur_token_is(token_type type) const -> bool;
     auto peek_token_is(token_type type) const -> bool;

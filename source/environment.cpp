@@ -1,13 +1,16 @@
 #include "environment.hpp"
 
-#include "environment_fwd.hpp"
-
 environment::environment(environment_ptr parent_env)
     : parent(std::move(parent_env))
 {
 }
 
 static const object nil {nullvalue {}};
+
+auto environment::break_cycle() -> void
+{
+    store.clear();
+}
 
 auto environment::get(std::string_view name) const -> object
 {

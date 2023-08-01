@@ -4,9 +4,7 @@
 #include "environment_fwd.hpp"
 #include "expression.hpp"
 
-struct callable_expression
-    : expression
-    , std::enable_shared_from_this<callable_expression>
+struct callable_expression : expression
 {
     ~callable_expression() override = default;
 

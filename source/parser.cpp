@@ -8,9 +8,11 @@
 
 #include <fmt/core.h>
 
+#include "array_expression.hpp"
 #include "binary_expression.hpp"
 #include "boolean.hpp"
 #include "call_expression.hpp"
+#include "expression.hpp"
 #include "function_expression.hpp"
 #include "identifier.hpp"
 #include "if_expression.hpp"
@@ -71,6 +73,7 @@ parser::parser(lexer lxr)
     register_unary(eef, [this] { return parse_if_expression(); });
     register_unary(function, [this] { return parse_function_expression(); });
     register_unary(string, [this] { return parse_string_literal(); });
+    register_unary(lbracket, [this] { return parse_array_expression(); });
     register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(minus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(slash, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
@@ -314,43 +317,21 @@ auto parser::parse_call_expression(expression_ptr function) -> expression_ptr
 {
     auto call = std::make_unique<call_expression>(m_current_token);
     call->function = std::move(function);
-    call->arguments = parse_call_arguments();
+    call->arguments = parse_expression_list(token_type::rparen);
     return call;
-}
-
-auto parser::parse_call_arguments() -> std::vector<expression_ptr>
-{
-    std::vector<expression_ptr> arguments;
-    using enum token_type;
-    if (peek_token_is(rparen)) {
-        next_token();
-        return arguments;
-    }
-    next_token();
-    arguments.push_back(parse_expression(lowest));
-
-    while (peek_token_is(comma)) {
-        next_token();
-        next_token();
-        arguments.push_back(parse_expression(lowest));
-    }
-    if (!expect_peek(rparen)) {
-        return {};
-    }
-    return arguments;
 }
 
 auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
 {
-    auto infix_expr = std::make_unique<binary_expression>(m_current_token);
-    infix_expr->op = m_current_token.type;
-    infix_expr->left = std::move(left);
+    auto bin_expr = std::make_shared<binary_expression>(m_current_token);
+    bin_expr->op = m_current_token.type;
+    bin_expr->left = std::move(left);
 
     auto precedence = current_precedence();
     next_token();
-    infix_expr->right = parse_expression(precedence);
+    bin_expr->right = parse_expression(precedence);
 
-    return infix_expr;
+    return bin_expr;
 }
 
 auto parser::parse_string_literal() -> expression_ptr
@@ -358,6 +339,35 @@ auto parser::parse_string_literal() -> expression_ptr
     auto lit = std::make_shared<string_literal>(m_current_token);
     lit->value = m_current_token.literal;
     return lit;
+}
+
+auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr>
+{
+    using enum token_type;
+    auto list = std::vector<expression_ptr>();
+    if (peek_token_is(end)) {
+        next_token();
+        return list;
+    }
+    next_token();
+    list.push_back(parse_expression(lowest));
+
+    while (peek_token_is(comma)) {
+        next_token();
+        next_token();
+        list.push_back(parse_expression(lowest));
+    }
+    if (!expect_peek(end)) {
+        return {};
+    }
+    return list;
+}
+
+auto parser::parse_array_expression() -> expression_ptr
+{
+    auto array_expr = std::make_shared<array_expression>(m_current_token);
+    array_expr->elements = parse_expression_list(token_type::rbracket);
+    return array_expr;
 }
 
 auto parser::expect_peek(token_type type) -> bool

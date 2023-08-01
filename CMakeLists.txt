@@ -17,6 +17,7 @@ include(cmake/variables.cmake)
 # ---- Declare library ----
 add_library(lexereagen_lib
     OBJECT
+        source/array_expression.cpp
         source/binary_expression.cpp
         source/boolean.cpp
         source/builtin_function_expression.cpp
