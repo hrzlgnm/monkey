@@ -20,13 +20,13 @@ auto to_string(const value_type& value) -> std::string
                                   [](const bound_function& func) -> std::string { return func.first->string(); },
                                   [](const ::array& arr) -> std::string
                                   {
-                                      std::vector<std::string> r;
+                                      std::vector<std::string> result;
                                       std::transform(arr.cbegin(),
                                                      arr.cend(),
-                                                     std::back_inserter(r),
-                                                     [](const object& o) -> std::string
-                                                     { return std::to_string(o.value); });
-                                      return fmt::format("[{}]", fmt::join(r, ", "));
+                                                     std::back_inserter(result),
+                                                     [](const object& obj) -> std::string
+                                                     { return std::to_string(obj.value); });
+                                      return fmt::format("[{}]", fmt::join(result, ", "));
                                   },
                                   [](const auto&) -> std::string { return "unknown"; }},
                       value);
