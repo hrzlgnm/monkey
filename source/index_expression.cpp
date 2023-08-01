@@ -10,6 +10,5 @@ auto index_expression::string() const -> std::string
 
 auto index_expression::eval(environment_ptr env) const -> object
 {
-    unused(env);
     return {};
 }

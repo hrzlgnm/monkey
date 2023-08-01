@@ -1,4 +1,3 @@
-#include <cmath>
 #include <cstdint>
 #include <deque>
 #include <iostream>
