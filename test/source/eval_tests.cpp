@@ -15,7 +15,7 @@
 #include "parser.hpp"
 #include "testutils.hpp"
 
-// NOLINTBEGIN(*-magic-*)
+// NOLINTBEGIN(*-magic-numbers)
 auto assert_integer_object(const object& obj, int64_t expected) -> void
 {
     ASSERT_TRUE(obj.is<integer_value>()) << "got " << obj.type_name() << " instead";
@@ -37,7 +37,7 @@ auto assert_nil_object(const object& obj) -> void
 auto assert_string_object(const object& obj, const std::string& expected) -> void
 {
     ASSERT_TRUE(obj.is<string_value>()) << "got " << obj.type_name() << " instead";
-    auto actual = obj.as<string_value>();
+    const auto& actual = obj.as<string_value>();
     ASSERT_EQ(actual, expected);
 }
 
@@ -255,7 +255,7 @@ return 1;
             "identifier not found: foobar",
         },
         error_test {
-            "\"Hello\" - \"World\"",
+            R"("Hello" - "World")",
             "unknown operator: string - string",
         }};
 
@@ -335,9 +335,9 @@ auto test_multi_eval(std::deque<std::string>& inputs) -> object
 
 TEST(eval, testMultipleEvaluationsWithSameEnvAndDestroyedSources)
 {
-    auto input1 {"let makeGreeter = fn(greeting) { fn(name) { greeting + \" \" + name + \"!\" } };"};
-    auto input2 {"let hello = makeGreeter(\"hello\");"};
-    auto input3 {"hello(\"banana\");"};
+    const auto* input1 {R"(let makeGreeter = fn(greeting) { fn(name) { greeting + " " + name + "!" } };)"};
+    const auto* input2 {"let hello = makeGreeter(\"hello\");"};
+    const auto* input3 {"hello(\"banana\");"};
     std::deque<std::string> inputs {input1, input2, input3};
     assert_string_object(test_multi_eval(inputs), "hello banana!");
 }
@@ -364,4 +364,5 @@ TEST(eval, testBuiltinFunctions)
                    test.expected);
     }
 }
-// NOLINTEND    using statement::statement;
+
+// NOLINTEND(*-magic-numbers)
