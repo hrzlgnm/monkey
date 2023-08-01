@@ -5,14 +5,6 @@
 #include "object.hpp"
 #include "util.hpp"
 
-auto program::token_literal() const -> std::string_view
-{
-    if (statements.empty()) {
-        return "";
-    }
-    return statements[0]->token_literal();
-}
-
 auto program::string() const -> std::string
 {
     return join(statements);

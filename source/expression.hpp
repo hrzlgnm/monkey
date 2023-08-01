@@ -1,13 +1,24 @@
 #pragma once
 
-#include "node.hpp"
+#include <memory>
+
+#include "environment_fwd.hpp"
 #include "token.hpp"
 
-struct expression : node
+struct object;
+
+struct expression
 {
-    using node::node;
+    expression() = default;
+    expression(const expression&) = default;
+    expression(expression&&) = default;
+    auto operator=(const expression&) -> expression& = default;
+    auto operator=(expression&&) -> expression& = default;
+    virtual ~expression() = default;
     explicit expression(token tokn);
-    auto token_literal() const -> std::string_view override;
+
+    virtual auto string() const -> std::string = 0;
+    virtual auto eval(environment_ptr) const -> object = 0;
     token tkn {};
 };
-using expression_ptr = std::shared_ptr<expression>;
+using expression_ptr = std::unique_ptr<expression>;

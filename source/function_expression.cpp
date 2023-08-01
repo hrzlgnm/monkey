@@ -13,7 +13,7 @@ function_expression::function_expression(std::vector<std::string>&& parameters, 
 }
 auto function_expression::string() const -> std::string
 {
-    return fmt::format("{}({}) {}", token_literal(), fmt::join(parameters, ", "), body->string());
+    return fmt::format("{}({}) {}", tkn.literal, fmt::join(parameters, ", "), body->string());
 }
 
 auto function_expression::call(environment_ptr closure_env,
@@ -21,10 +21,9 @@ auto function_expression::call(environment_ptr closure_env,
                                const std::vector<expression_ptr>& arguments) const -> object
 {
     auto locals = std::make_shared<environment>(closure_env);
-    auto arg_itr = arguments.begin();
-    for (const auto& parameter : parameters) {
+    for (auto arg_itr = arguments.begin(); const auto& parameter : parameters) {
         if (arg_itr != arguments.end()) {
-            const auto arg = *(arg_itr++);
+            const auto& arg = *(arg_itr++);
             locals->set(parameter, arg->eval(caller_env));
         } else {
             locals->set(parameter, {});

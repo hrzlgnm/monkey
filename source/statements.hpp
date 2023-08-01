@@ -3,17 +3,10 @@
 
 #include "expression.hpp"
 #include "identifier.hpp"
-#include "node.hpp"
 #include "token.hpp"
 
-struct statement : node
-{
-    using node::node;
-    explicit statement(token tokn);
-    auto token_literal() const -> std::string_view override;
-    token tkn {};
-};
-using statement_ptr = std::shared_ptr<statement>;
+using statement = expression;
+using statement_ptr = expression_ptr;
 
 struct let_statement : statement
 {
@@ -51,4 +44,4 @@ struct block_statement : statement
     std::vector<statement_ptr> statements {};
 };
 
-using block_statement_ptr = std::shared_ptr<block_statement>;
+using block_statement_ptr = std::unique_ptr<block_statement>;

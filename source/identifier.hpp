@@ -12,4 +12,4 @@ struct identifier : expression
     std::string value;
 };
 
-using identifier_ptr = std::shared_ptr<identifier>;
+using identifier_ptr = std::unique_ptr<identifier>;

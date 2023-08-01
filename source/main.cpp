@@ -51,7 +51,7 @@ auto main() -> int
             continue;
         }
         auto evaluated = prgrm->eval(globals);
-        std::copy(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
+        std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
         if (!evaluated.is_nil()) {
             std::cout << std::to_string(evaluated.value) << "\n";
         }
