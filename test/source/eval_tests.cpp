@@ -13,6 +13,7 @@
 #include "object.hpp"
 #include "parser.hpp"
 #include "testutils.hpp"
+#include "value_type.hpp"
 
 // NOLINTBEGIN(*-magic-numbers)
 auto assert_integer_object(const object& obj, int64_t expected) -> void
@@ -349,19 +350,45 @@ TEST(eval, testBuiltinFunctions)
     struct builtin_test
     {
         std::string_view input;
-        std::variant<std::int64_t, std::string> expected;
+        std::variant<std::int64_t, std::string, error, nullvalue, array> expected;
     };
     std::array tests {
         builtin_test {R"(len(""))", 0},
         builtin_test {R"(len("four"))", 4},
         builtin_test {R"(len("hello world"))", 11},
-        builtin_test {R"(len(1))", "argument of type integer to len() is not supported"},
-        builtin_test {R"(len("one", "two"))", "wrong number of arguments to len(): expected=1, got=2"},
+        builtin_test {R"(len(1))", error {"argument of type integer to len() is not supported"}},
+        builtin_test {R"(len("one", "two"))", error {"wrong number of arguments to len(): expected=1, got=2"}},
+        builtin_test {R"(len([1,2]))", 2},
+        builtin_test {R"(first("abc"))", "a"},
+        builtin_test {R"(first())", error {"wrong number of arguments to first(): expected=1, got=0"}},
+        builtin_test {R"(first(1))", error {"argument of type integer to first() is not supported"}},
+        builtin_test {R"(first([1,2]))", 1},
+        builtin_test {R"(first([]))", nullvalue {}},
+        builtin_test {R"(last("abc"))", "c"},
+        builtin_test {R"(last())", error {"wrong number of arguments to last(): expected=1, got=0"}},
+        builtin_test {R"(last(1))", error {"argument of type integer to last() is not supported"}},
+        builtin_test {R"(last([1,2]))", 2},
+        builtin_test {R"(last([]))", nullvalue {}},
+        builtin_test {R"(rest("abc"))", "bc"},
+        builtin_test {R"(rest())", error {"wrong number of arguments to rest(): expected=1, got=0"}},
+        builtin_test {R"(rest(1))", error {"argument of type integer to rest() is not supported"}},
+        builtin_test {R"(rest([1,2]))", array {{object {2}}}},
+        builtin_test {R"(rest([1]))", nullvalue {}},
+        builtin_test {R"(rest([]))", nullvalue {}},
+        builtin_test {R"(push())", error {"wrong number of arguments to push(): expected=2, got=0"}},
+        builtin_test {R"(push(1))", error {"wrong number of arguments to push(): expected=2, got=1"}},
+        builtin_test {R"(push(1, 2))", error {"argument of type integer and integer to push() are not supported"}},
+        builtin_test {R"(push([1,2], 3))", array {{object {1}}, {object {2}}, object {3}}},
+        builtin_test {R"(push([], "abc"))", array {{object {string_value {"abc"}}}}},
     };
+
     for (auto test : tests) {
         auto evaluated = test_eval(test.input);
         std::visit(overloaded {[&evaluated](const integer_value val) { assert_integer_object(evaluated, val); },
-                               [&evaluated](const std::string& val) { assert_error_object(evaluated, val); },
+                               [&evaluated](const error& val) { assert_error_object(evaluated, val.message); },
+                               [&evaluated](const std::string& val) { assert_string_object(evaluated, val); },
+                               [&evaluated](const array& val) { ASSERT_EQ(val, evaluated.as<array>()); },
+                               [&evaluated](const nullvalue& /*val*/) { assert_nil_object(evaluated); },
                                [](const auto& /*val*/) { FAIL(); }},
                    test.expected);
     }

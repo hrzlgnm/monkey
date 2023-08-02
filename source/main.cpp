@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "builtin_function_expression.hpp"
 #include "environment.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -41,6 +42,9 @@ auto main() -> int
 
     auto input = std::string {};
     auto globals = std::make_shared<environment>();
+    for (const auto& builtin : builtin_function_expression::builtins) {
+        globals->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
+    }
     auto statements = std::vector<statement_ptr>();
     while (getline(std::cin, input)) {
         auto lxr = lexer {input};
