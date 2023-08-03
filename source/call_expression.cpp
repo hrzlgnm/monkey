@@ -2,6 +2,7 @@
 
 #include "call_expression.hpp"
 
+#include "callable_expression.hpp"
 #include "environment.hpp"
 #include "object.hpp"
 #include "util.hpp"

@@ -11,6 +11,7 @@
 
 #include <fmt/core.h>
 
+#include "environment_fwd.hpp"
 
 // helper type for std::visit
 template<typename... T>

@@ -4,6 +4,8 @@
 
 #include "object.hpp"
 
+#include "callable_expression.hpp"
+
 namespace std
 {
 auto to_string(const value_type& value) -> std::string
