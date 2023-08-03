@@ -54,9 +54,13 @@ namespace std
 {
 auto to_string(const value_type&) -> std::string;
 }  // namespace std
+
 struct object
 {
     object() = default;
+    object(object&&) = default;
+    auto operator=(const object&) -> object& = default;
+    auto operator=(object&&) -> object& = default;
     object(const object&) = default;
     template<typename T>
     inline constexpr auto is() const -> bool
@@ -79,10 +83,7 @@ struct object
     value_type value {};
     auto type_name() const -> std::string;
 
-    inline object(value_type val)
-        : value {std::move(val)}
-    {
-    }
+    /* not explicit*/ object(value_type val);
 };
 
 auto unwrap_return_value(const object& obj) -> object;

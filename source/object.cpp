@@ -57,3 +57,7 @@ auto object::type_name() const -> std::string
         },
         value);
 }
+inline object::object(value_type val)
+    : value {std::move(val)}
+{
+}
