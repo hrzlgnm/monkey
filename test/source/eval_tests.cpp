@@ -13,7 +13,6 @@
 #include "object.hpp"
 #include "parser.hpp"
 #include "testutils.hpp"
-#include "value_type.hpp"
 
 // NOLINTBEGIN(*-magic-numbers)
 auto assert_integer_object(const object& obj, int64_t expected) -> void

@@ -4,8 +4,6 @@
 
 #include "object.hpp"
 
-#include "value_type.hpp"
-
 namespace std
 {
 auto to_string(const value_type& value) -> std::string

@@ -3,7 +3,7 @@
 #include <functional>
 
 #include "callable_expression.hpp"
-#include "value_type.hpp"
+#include "object.hpp"
 
 struct builtin_function_expression : callable_expression
 {
@@ -21,4 +21,3 @@ struct builtin_function_expression : callable_expression
 
     std::function<object(const array& arguments)> body;
 };
-

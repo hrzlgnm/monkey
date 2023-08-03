@@ -2,7 +2,6 @@
 
 #include "environment.hpp"
 #include "object.hpp"
-#include "value_type.hpp"
 
 auto index_expression::string() const -> std::string
 {
