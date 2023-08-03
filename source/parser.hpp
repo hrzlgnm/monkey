@@ -47,7 +47,7 @@ class parser final
     auto parse_hash_literal() -> expression_ptr;
 
     auto parse_expression_list(token_type end) -> std::vector<expression_ptr>;
-    auto expect_peek(token_type type) -> bool;
+    auto get(token_type type) -> bool;
     auto cur_token_is(token_type type) const -> bool;
     auto peek_token_is(token_type type) const -> bool;
     auto peek_error(token_type type) -> void;
