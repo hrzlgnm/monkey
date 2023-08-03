@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "lexer.hpp"
+#include "token_type.hpp"
 
 TEST(lexing, testNextToken)
 {
@@ -24,6 +25,7 @@ return false;
 "foo bar"
 ""
 [1,2];
+{"foo": "bar"}
 )r"};
     auto expected_tokens = std::vector<token> {
         token {let, "let"},       token {ident, "five"},     token {assign, "="},       token {integer, "5"},
@@ -46,7 +48,8 @@ return false;
         token {semicolon, ";"},   token {integer, "10"},     token {not_equals, "!="},  token {integer, "9"},
         token {semicolon, ";"},   token {string, "foobar"},  token {string, "foo bar"}, token {string, ""},
         token {lbracket, "["},    token {integer, "1"},      token {comma, ","},        token {integer, "2"},
-        token {rbracket, "]"},    token {semicolon, ";"},    token {eof, ""},
+        token {rbracket, "]"},    token {semicolon, ";"},    token {lsquirly, "{"},     token {string, "foo"},
+        token {colon, ":"},       token {string, "bar"},     token {rsquirly, "}"},     token {eof, ""},
 
     };
     for (const auto& expected_token : expected_tokens) {

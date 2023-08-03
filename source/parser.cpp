@@ -14,6 +14,7 @@
 #include "call_expression.hpp"
 #include "expression.hpp"
 #include "function_expression.hpp"
+#include "hash_literal_expression.hpp"
 #include "identifier.hpp"
 #include "if_expression.hpp"
 #include "index_expression.hpp"
@@ -78,6 +79,7 @@ parser::parser(lexer lxr)
     register_unary(function, [this] { return parse_function_expression(); });
     register_unary(string, [this] { return parse_string_literal(); });
     register_unary(lbracket, [this] { return parse_array_expression(); });
+    register_unary(lsquirly, [this] { return parse_hash_literal(); });
     register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(minus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(slash, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
@@ -389,6 +391,30 @@ auto parser::parse_index_expression(expression_ptr left) -> expression_ptr
     }
 
     return index_expr;
+}
+
+auto parser::parse_hash_literal() -> expression_ptr
+{
+    auto hash = std::make_unique<hash_literal_expression>(m_current_token);
+    using enum token_type;
+    while (!peek_token_is(rsquirly)) {
+        next_token();
+        auto key = parse_expression(lowest);
+        if (!expect_peek(colon)) {
+            return {};
+        }
+        next_token();
+        auto value = parse_expression(lowest);
+        hash->pairs.emplace_back(std::move(key), std::move(value));
+        if (!peek_token_is(comma)) {
+            break;
+        }
+        next_token();
+    }
+    if (!expect_peek(rsquirly)) {
+        return {};
+    }
+    return hash;
 }
 
 auto parser::expect_peek(token_type type) -> bool
