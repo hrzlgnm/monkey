@@ -154,7 +154,7 @@ auto builtin_function_expression::call(environment_ptr /*closure_env*/,
                    std::back_inserter(args),
                    [&caller_env](const expression_ptr& expr)
                    { return std::make_shared<object>(expr->eval(caller_env)); });
-    return body(std::move(args));
+    return body(args);
 };
 
 auto builtin_function_expression::string() const -> std::string
