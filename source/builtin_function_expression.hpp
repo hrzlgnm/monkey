@@ -1,14 +1,15 @@
 #pragma once
+
 #include <functional>
 
 #include "callable_expression.hpp"
-#include "util.hpp"
+#include "value_type.hpp"
 
 struct builtin_function_expression : callable_expression
 {
     builtin_function_expression(std::string&& name,
                                 std::vector<std::string>&& parameters,
-                                std::function<object(const std::vector<object>& arguments)>&& body);
+                                std::function<object(const array& arguments)>&& body);
 
     auto call(environment_ptr closure_env,
               environment_ptr caller_env,
@@ -18,5 +19,6 @@ struct builtin_function_expression : callable_expression
     static const std::vector<builtin_function_expression> builtins;
     std::string name;
 
-    std::function<object(std::vector<object>&& arguments)> body;
+    std::function<object(const array& arguments)> body;
 };
+

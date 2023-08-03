@@ -10,7 +10,7 @@
 const std::vector<builtin_function_expression> builtin_function_expression::builtins {
     {"len",
      {"val"},
-     [](const std::vector<object>& arguments) -> object
+     [](const array& arguments) -> object
      {
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
@@ -22,7 +22,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const auto& other) -> object
                  { return make_error("argument of type {} to len() is not supported", object {other}.type_name()); },
              },
-             arguments[0].value)};
+             arguments[0]->value)};
      }},
     {"first",
      {"arr"},
@@ -43,14 +43,14 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const array& arr) -> object
                  {
                      if (!arr.empty()) {
-                         return arr.front();
+                         return *arr.front();
                      }
                      return {};
                  },
                  [](const auto& other) -> object
                  { return make_error("argument of type {} to first() is not supported", object {other}.type_name()); },
              },
-             arguments[0].value)};
+             arguments[0]->value)};
      }},
     {"last",
      {"arr"},
@@ -71,14 +71,14 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const array& arr) -> object
                  {
                      if (!arr.empty()) {
-                         return arr.back();
+                         return *arr.back();
                      }
                      return {};
                  },
                  [](const auto& other) -> object
                  { return make_error("argument of type {} to last() is not supported", object {other}.type_name()); },
              },
-             arguments[0].value)};
+             arguments[0]->value)};
      }},
     {"rest",
      {"arr"},
@@ -108,7 +108,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const auto& other) -> object
                  { return make_error("argument of type {} to rest() is not supported", object {other}.type_name()); },
              },
-             arguments[0].value)};
+             arguments[0]->value)};
      }},
     {"push",
      {"arr", "val"},
@@ -122,7 +122,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const array& arr, const auto& obj) -> object
                  {
                      auto copy = arr;
-                     copy.push_back({obj});
+                     copy.push_back(std::make_shared<object>(obj));
                      return {copy};
                  },
                  [](const auto& other1, const auto& other2) -> object
@@ -132,30 +132,30 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                                        object {other2}.type_name());
                  },
              },
-             arguments[0].value,
-             arguments[1].value);
+             arguments[0]->value,
+             arguments[1]->value);
      }},
 };
 
-builtin_function_expression::builtin_function_expression(
-    std::string&& name,
-    std::vector<std::string>&& parameters,
-    std::function<object(const std::vector<object>& arguments)>&& body)
+builtin_function_expression::builtin_function_expression(std::string&& name,
+                                                         std::vector<std::string>&& parameters,
+                                                         std::function<object(const array& arguments)>&& body)
     : callable_expression {std::move(parameters)}
     , name {std::move(name)}
-    , body {std::move(body)}
+    , body {body}
 {
 }
 auto builtin_function_expression::call(environment_ptr /*closure_env*/,
                                        environment_ptr caller_env,
                                        const std::vector<expression_ptr>& arguments) const -> object
 {
-    std::vector<object> args;
+    array args;
     std::transform(arguments.cbegin(),
                    arguments.cend(),
                    std::back_inserter(args),
-                   [&caller_env](const expression_ptr& expr) { return expr->eval(caller_env); });
-    return body(std::move(args));
+                   [&caller_env](const expression_ptr& expr)
+                   { return std::make_shared<object>(expr->eval(caller_env)); });
+    return body(args);
 };
 
 auto builtin_function_expression::string() const -> std::string

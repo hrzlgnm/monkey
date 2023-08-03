@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -12,7 +13,6 @@
 #include "environment_fwd.hpp"
 #include "identifier.hpp"
 #include "statements.hpp"
-
 // helper type for std::visit
 template<typename... T>
 struct overloaded : T...
@@ -32,16 +32,21 @@ struct error
 };
 
 struct object;
+using object_ptr = std::shared_ptr<object>;
+struct object_hash
+{
+    auto operator()(const object_ptr& obj) const -> size_t;
+};
 
 using integer_value = std::int64_t;
 using string_value = std::string;
 using return_value = std::any;
-using array = std::vector<object>;
-
+using array = std::vector<object_ptr>;
+using hash = std::unordered_map<object_ptr, object_ptr, object_hash>;
 using bound_function = std::pair<const callable_expression*, environment_ptr>;
 
 using value_type =
-    std::variant<nullvalue, bool, integer_value, string_value, return_value, error, bound_function, array>;
+    std::variant<nullvalue, bool, integer_value, string_value, error, array, hash, bound_function, return_value>;
 
 namespace std
 {

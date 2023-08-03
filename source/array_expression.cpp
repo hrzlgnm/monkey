@@ -16,7 +16,7 @@ auto array_expression::eval(environment_ptr env) const -> object
         if (evaluated.is<error>()) {
             return evaluated;
         }
-        result.push_back(std::move(evaluated));
+        result.push_back(std::make_shared<object>(evaluated));
     }
     return {result};
 }

@@ -372,14 +372,14 @@ TEST(eval, testBuiltinFunctions)
         builtin_test {R"(rest("abc"))", "bc"},
         builtin_test {R"(rest())", error {"wrong number of arguments to rest(): expected=1, got=0"}},
         builtin_test {R"(rest(1))", error {"argument of type integer to rest() is not supported"}},
-        builtin_test {R"(rest([1,2]))", array {{object {2}}}},
+        builtin_test {R"(rest([1,2]))", array {{object {2}.to_ptr()}}},
         builtin_test {R"(rest([1]))", nullvalue {}},
         builtin_test {R"(rest([]))", nullvalue {}},
         builtin_test {R"(push())", error {"wrong number of arguments to push(): expected=2, got=0"}},
         builtin_test {R"(push(1))", error {"wrong number of arguments to push(): expected=2, got=1"}},
         builtin_test {R"(push(1, 2))", error {"argument of type integer and integer to push() are not supported"}},
-        builtin_test {R"(push([1,2], 3))", array {{object {1}}, {object {2}}, object {3}}},
-        builtin_test {R"(push([], "abc"))", array {{object {string_value {"abc"}}}}},
+        builtin_test {R"(push([1,2], 3))", array {{object {1}.to_ptr()}, {object {2}.to_ptr()}, object {3}.to_ptr()}},
+        builtin_test {R"(push([], "abc"))", array {{object {string_value {"abc"}}.to_ptr()}}},
     };
 
     for (auto test : tests) {
@@ -387,7 +387,7 @@ TEST(eval, testBuiltinFunctions)
         std::visit(overloaded {[&evaluated](const integer_value val) { assert_integer_object(evaluated, val); },
                                [&evaluated](const error& val) { assert_error_object(evaluated, val.message); },
                                [&evaluated](const std::string& val) { assert_string_object(evaluated, val); },
-                               [&evaluated](const array& val) { ASSERT_EQ(val, evaluated.as<array>()); },
+                               [&evaluated](const array& val) { ASSERT_EQ(object {val}, evaluated); },
                                [&evaluated](const nullvalue& /*val*/) { assert_nil_object(evaluated); },
                                [](const auto& /*val*/) { FAIL(); }},
                    test.expected);
@@ -398,9 +398,9 @@ TEST(eval, testArrayExpression)
     auto evaluated = test_eval("[1, 2 * 2, 3 + 3]");
     ASSERT_TRUE(evaluated.is<array>()) << "got: " << evaluated.type_name() << " instead";
 
-    assert_integer_object(evaluated.as<array>()[0], 1);
-    assert_integer_object(evaluated.as<array>()[1], 4);
-    assert_integer_object(evaluated.as<array>()[2], 6);
+    assert_integer_object(*evaluated.as<array>()[0], 1);
+    assert_integer_object(*evaluated.as<array>()[1], 4);
+    assert_integer_object(*evaluated.as<array>()[2], 6);
 }
 
 TEST(eval, testIndexOperatorExpressions)
