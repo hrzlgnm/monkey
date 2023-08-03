@@ -56,6 +56,8 @@ auto to_string(const value_type&) -> std::string;
 }  // namespace std
 struct object
 {
+    object() = default;
+    object(const object&) = default;
     template<typename T>
     inline constexpr auto is() const -> bool
     {
@@ -76,6 +78,11 @@ struct object
     inline auto to_ptr() const -> object_ptr { return std::make_shared<object>(this->value); }
     value_type value {};
     auto type_name() const -> std::string;
+
+    inline object(value_type val)
+        : value {std::move(val)}
+    {
+    }
 };
 
 auto unwrap_return_value(const object& obj) -> object;
@@ -83,7 +90,7 @@ auto unwrap_return_value(const object& obj) -> object;
 template<typename... T>
 auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 {
-    return {error {.message = fmt::format(fmt, std::forward<T>(args)...)}};
+    return object(error {.message = fmt::format(fmt, std::forward<T>(args)...)});
 }
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool

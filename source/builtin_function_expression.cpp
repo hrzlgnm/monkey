@@ -16,8 +16,8 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          }
          return object {std::visit(
              overloaded {
-                 [](const string_value& str) -> object { return {static_cast<integer_value>(str.length())}; },
-                 [](const array& arr) -> object { return {static_cast<integer_value>(arr.size())}; },
+                 [](const string_value& str) -> object { return object(static_cast<integer_value>(str.length())); },
+                 [](const array& arr) -> object { return object(static_cast<integer_value>(arr.size())); },
                  [](const auto& other) -> object
                  { return make_error("argument of type {} to len() is not supported", object {other}.type_name()); },
              },
@@ -35,7 +35,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const string_value& str) -> object
                  {
                      if (str.length() > 0) {
-                         return {str.substr(0, 1)};
+                         return object(str.substr(0, 1));
                      }
                      return {};
                  },
@@ -63,7 +63,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const string_value& str) -> object
                  {
                      if (str.length() > 1) {
-                         return {str.substr(str.length() - 1, 1)};
+                         return object {str.substr(str.length() - 1, 1)};
                      }
                      return {};
                  },
