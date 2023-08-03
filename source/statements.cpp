@@ -38,7 +38,7 @@ auto return_statement::eval(environment_ptr env) const -> object
         if (evaluated.is<error>()) {
             return evaluated;
         }
-        return {.value = std::make_any<object>(evaluated)};
+        return object {std::make_any<object>(evaluated)};
     }
     return {};
 }

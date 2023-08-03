@@ -2,7 +2,6 @@
 
 #include "environment.hpp"
 #include "object.hpp"
-#include "value_type.hpp"
 
 auto index_expression::string() const -> std::string
 {
@@ -26,7 +25,7 @@ auto index_expression::eval(environment_ptr env) const -> object
         if (index < 0 || index > max) {
             return {};
         }
-        return arr[index];
+        return *arr[index];
     }
     return make_error("index operator not supported: {}", evaluated_left.type_name());
 }

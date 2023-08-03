@@ -14,6 +14,7 @@
 #include "call_expression.hpp"
 #include "expression.hpp"
 #include "function_expression.hpp"
+#include "hash_literal_expression.hpp"
 #include "identifier.hpp"
 #include "if_expression.hpp"
 #include "index_expression.hpp"
@@ -78,6 +79,7 @@ parser::parser(lexer lxr)
     register_unary(function, [this] { return parse_function_expression(); });
     register_unary(string, [this] { return parse_string_literal(); });
     register_unary(lbracket, [this] { return parse_array_expression(); });
+    register_unary(lsquirly, [this] { return parse_hash_literal(); });
     register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(minus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
     register_binary(slash, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
@@ -131,13 +133,13 @@ auto parser::parse_let_statement() -> statement_ptr
 {
     using enum token_type;
     auto stmt = std::make_unique<let_statement>(m_current_token);
-    if (!expect_peek(ident)) {
+    if (!get(ident)) {
         return {};
     }
     stmt->name = std::make_unique<identifier>(m_current_token);
     stmt->name->value = m_current_token.literal;
 
-    if (!expect_peek(assign)) {
+    if (!get(assign)) {
         return {};
     }
 
@@ -230,7 +232,7 @@ auto parser::parse_grouped_expression() -> expression_ptr
 {
     next_token();
     auto exp = parse_expression(lowest);
-    if (!expect_peek(token_type::rparen)) {
+    if (!get(token_type::rparen)) {
         return {};
     }
     return exp;
@@ -240,17 +242,17 @@ auto parser::parse_if_expression() -> expression_ptr
 {
     using enum token_type;
     auto expr = std::make_unique<if_expression>(m_current_token);
-    if (!expect_peek(lparen)) {
+    if (!get(lparen)) {
         return {};
     }
     next_token();
     expr->condition = parse_expression(lowest);
 
-    if (!expect_peek(rparen)) {
+    if (!get(rparen)) {
         return {};
     }
 
-    if (!expect_peek(lsquirly)) {
+    if (!get(lsquirly)) {
         return {};
     }
 
@@ -258,7 +260,7 @@ auto parser::parse_if_expression() -> expression_ptr
 
     if (peek_token_is(elze)) {
         next_token();
-        if (!expect_peek(lsquirly)) {
+        if (!get(lsquirly)) {
             return {};
         }
         expr->alternative = parse_block_statement();
@@ -270,11 +272,11 @@ auto parser::parse_if_expression() -> expression_ptr
 auto parser::parse_function_expression() -> expression_ptr
 {
     using enum token_type;
-    if (!expect_peek(lparen)) {
+    if (!get(lparen)) {
         return {};
     }
     auto parameters = parse_function_parameters();
-    if (!expect_peek(lsquirly)) {
+    if (!get(lsquirly)) {
         return {};
     }
     auto body = parse_block_statement();
@@ -296,7 +298,7 @@ auto parser::parse_function_parameters() -> std::vector<std::string>
         next_token();
         parameters.push_back(parse_identifier()->value);
     }
-    if (!expect_peek(rparen)) {
+    if (!get(rparen)) {
         return {};
     }
     return parameters;
@@ -363,7 +365,7 @@ auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr
         list.push_back(parse_expression(lowest));
     }
 
-    if (!expect_peek(end)) {
+    if (!get(end)) {
         return {};
     }
 
@@ -384,14 +386,38 @@ auto parser::parse_index_expression(expression_ptr left) -> expression_ptr
     next_token();
     index_expr->index = parse_expression(lowest);
 
-    if (!expect_peek(token_type::rbracket)) {
+    if (!get(token_type::rbracket)) {
         return {};
     }
 
     return index_expr;
 }
 
-auto parser::expect_peek(token_type type) -> bool
+auto parser::parse_hash_literal() -> expression_ptr
+{
+    auto hash = std::make_unique<hash_literal_expression>(m_current_token);
+    using enum token_type;
+    while (!peek_token_is(rsquirly)) {
+        next_token();
+        auto key = parse_expression(lowest);
+        if (!get(colon)) {
+            return {};
+        }
+        next_token();
+        auto value = parse_expression(lowest);
+        hash->pairs.emplace_back(std::move(key), std::move(value));
+        if (!peek_token_is(comma)) {
+            break;
+        }
+        next_token();
+    }
+    if (!get(rsquirly)) {
+        return {};
+    }
+    return hash;
+}
+
+auto parser::get(token_type type) -> bool
 {
     if (m_peek_token.type == type) {
         next_token();

@@ -5,6 +5,7 @@
 #include "boolean.hpp"
 #include "call_expression.hpp"
 #include "function_expression.hpp"
+#include "hash_literal_expression.hpp"
 #include "if_expression.hpp"
 #include "index_expression.hpp"
 #include "integer_literal.hpp"
@@ -42,6 +43,14 @@ auto assert_identifier(const expression_ptr& expr, const std::string& value) -> 
     auto* ident = dynamic_cast<identifier*>(expr.get());
     ASSERT_TRUE(ident) << "expected identifier, got" << expr.get();
     ASSERT_EQ(ident->value, value);
+}
+
+auto assert_string_literal(const expression_ptr& expr, const std::string& value) -> void
+{
+    auto* string_lit = dynamic_cast<string_literal*>(expr.get());
+    ASSERT_TRUE(string_lit) << "expected string_literal, got " << expr.get()->string();
+
+    ASSERT_EQ(string_lit->value, value);
 }
 
 auto assert_integer_literal(const expression_ptr& expr, int64_t value) -> void
@@ -527,4 +536,43 @@ TEST(parsing, testIndexEpxression)
     assert_binary_expression(idx_expr->index, 1, token_type::plus, 1);
 }
 
+TEST(parsing, testHashLiteralStringKeys)
+{
+    auto [prgrm, _] = assert_program(R"({"one": 1, "two": 2, "three": 3})");
+    auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
+    std::array keys {"one", "two", "three"};
+    std::array values {1, 2, 3};
+    for (int idx = 0; const auto& [k, v] : hash_lit->pairs) {
+        assert_string_literal(k, keys.at(idx));
+        assert_integer_literal(v, values.at(idx));
+        idx++;
+    }
+}
+
+TEST(parsing, testHashLiteralWithExpression)
+{
+    auto [prgrm, _] = assert_program(R"({"one": 0 + 1, "two": 10 - 8, "three": 15 / 5})");
+    auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
+    std::array keys {"one", "two", "three"};
+    struct test
+    {
+        int64_t left;
+        token_type oper;
+        int64_t right;
+    };
+    std::array expected {
+        test {0, token_type::plus, 1}, test {10, token_type::minus, 8}, test {15, token_type::slash, 5}};
+    for (int idx = 0; const auto& [k, v] : hash_lit->pairs) {
+        assert_string_literal(k, keys.at(idx));
+        assert_binary_expression(v, expected.at(idx).left, expected.at(idx).oper, expected.at(idx).right);
+        idx++;
+    }
+}
+
+TEST(parsing, testEmptyHashLiteral)
+{
+    auto [prgrm, _] = assert_program(R"({})");
+    auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
+    ASSERT_TRUE(hash_lit->pairs.empty());
+}
 // NOLINTEND(*-magic-numbers)
