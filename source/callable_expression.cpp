@@ -4,8 +4,8 @@
 
 #include "object.hpp"
 
-callable_expression::callable_expression(std::vector<std::string>&& parameters)
-    : parameters {std::move(parameters)}
+callable_expression::callable_expression(std::vector<std::string>&& params)
+    : parameters {std::move(params)}
 {
 }
 

@@ -25,7 +25,17 @@ auto index_expression::eval(environment_ptr env) const -> object
         if (index < 0 || index > max) {
             return {};
         }
-        return *arr[index];
+        return arr[index];
+    }
+    if (evaluated_left.is<hash>()) {
+        auto hsh = evaluated_left.as<hash>();
+        if (!evaluated_index.is_hashable()) {
+            return make_error("unusable as hash key: {}", evaluated_index.type_name());
+        }
+        if (!hsh.contains(evaluated_index.hash_key())) {
+            return {nil};
+        }
+        return unwrap(hsh.at(evaluated_index.hash_key()));
     }
     return make_error("index operator not supported: {}", evaluated_left.type_name());
 }

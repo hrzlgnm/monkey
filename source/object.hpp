@@ -4,6 +4,7 @@
 #include <any>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -22,11 +23,7 @@ struct overloaded : T...
 template<class... T>
 overloaded(T...) -> overloaded<T...>;
 
-struct callable_expression;
-
-struct nullvalue
-{
-};
+using nil_type = std::monostate;
 
 struct error
 {
@@ -42,13 +39,14 @@ struct object_hash
 
 using integer_value = std::int64_t;
 using string_value = std::string;
-using return_value = std::any;
-using array = std::vector<object_ptr>;
-using hash = std::unordered_map<object_ptr, object_ptr, object_hash>;
+using array = std::vector<object>;
+using hash_key_type = std::variant<integer_value, string_value, bool>;
+using hash = std::unordered_map<hash_key_type, std::any>;
+
+struct callable_expression;
 using bound_function = std::pair<const callable_expression*, environment_ptr>;
 
-using value_type =
-    std::variant<nullvalue, bool, integer_value, string_value, error, array, hash, bound_function, return_value>;
+using value_type = std::variant<nil_type, bool, integer_value, string_value, error, array, hash, bound_function>;
 
 namespace std
 {
@@ -57,18 +55,26 @@ auto to_string(const value_type&) -> std::string;
 
 struct object
 {
-    object() = default;
-    object(object&&) = default;
-    auto operator=(const object&) -> object& = default;
-    auto operator=(object&&) -> object& = default;
-    object(const object&) = default;
     template<typename T>
     inline constexpr auto is() const -> bool
     {
         return std::holds_alternative<T>(value);
     }
+    inline constexpr auto is_nil() const -> bool { return is<nil_type>(); }
+    inline constexpr auto is_hashable() const -> bool
+    {
+        return is<integer_value>() || is<string_value>() || is<bool>();
+    }
 
-    inline constexpr auto is_nil() const -> bool { return is<nullvalue>(); }
+    inline auto hash_key() const -> hash_key_type
+    {
+        return std::visit(overloaded {[](const integer_value integer) -> hash_key_type { return {integer}; },
+                                      [](const string_value& str) -> hash_key_type { return {str}; },
+                                      [](const bool val) -> hash_key_type { return {val}; },
+                                      [](const auto& other) -> hash_key_type
+                                      { throw std::invalid_argument(object {other}.type_name() + "is not hashable"); }},
+                          value);
+    }
 
     template<typename T>
     auto as() const -> const T&
@@ -79,38 +85,31 @@ struct object
         }
         return std::get<T>(value);
     }
-    inline auto to_ptr() const -> object_ptr { return std::make_shared<object>(this->value); }
     value_type value {};
+    bool is_return_value {};
     auto type_name() const -> std::string;
-
-    /* not explicit*/ object(value_type val);
 };
 
-auto unwrap_return_value(const object& obj) -> object;
+static const nil_type nil {};
+auto unwrap(const std::any& obj) -> object;
 
 template<typename... T>
 auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 {
-    return object(error {.message = fmt::format(fmt, std::forward<T>(args)...)});
+    return {error {.message = fmt::format(fmt, std::forward<T>(args)...)}};
 }
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
 {
-    return std::visit(overloaded {[](const nullvalue, const nullvalue) { return true; },
-                                  [](const bool val1, const bool val2) { return val1 == val2; },
-                                  [](const integer_value val1, const integer_value val2) { return val1 == val2; },
-                                  [](const string_value& val1, const string_value& val2) { return val1 == val2; },
-                                  [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
-                                  [](const array& arr1, const array& arr2)
-                                  {
-                                      return arr1.size() == arr2.size()
-                                          && std::equal(arr1.cbegin(),
-                                                        arr1.cend(),
-                                                        arr2.begin(),
-                                                        [](const object_ptr& lhs, const object_ptr& rhs)
-                                                        { return *lhs == *rhs; });
-                                  },
-                                  [](const auto&, const auto&) { return false; }},
-                      lhs.value,
-                      rhs.value);
+    return std::visit(
+        overloaded {[](const nil_type, const nil_type) { return true; },
+                    [](const bool val1, const bool val2) { return val1 == val2; },
+                    [](const integer_value val1, const integer_value val2) { return val1 == val2; },
+                    [](const string_value& val1, const string_value& val2) { return val1 == val2; },
+                    [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
+                    [](const array& arr1, const array& arr2)
+                    { return arr1.size() == arr2.size() && std::equal(arr1.cbegin(), arr1.cend(), arr2.begin()); },
+                    [](const auto&, const auto&) { return false; }},
+        lhs.value,
+        rhs.value);
 }

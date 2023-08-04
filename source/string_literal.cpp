@@ -8,8 +8,7 @@ auto string_literal::string() const -> std::string
     return value;
 }
 
-auto string_literal::eval(environment_ptr env) const -> object
+auto string_literal::eval(environment_ptr /*env*/) const -> object
 {
-    unused(env);
     return object {value};
 }

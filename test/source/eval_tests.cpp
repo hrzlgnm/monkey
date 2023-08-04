@@ -257,6 +257,10 @@ return 1;
         error_test {
             R"("Hello" - "World")",
             "unknown operator: string - string",
+        },
+        error_test {
+            R"({"name": "Monkey"}[fn(x) { x }];)",
+            "unusable as hash key: function",
         }};
 
     for (const auto& test : error_tests) {
@@ -349,7 +353,7 @@ TEST(eval, testBuiltinFunctions)
     struct builtin_test
     {
         std::string_view input;
-        std::variant<std::int64_t, std::string, error, nullvalue, array> expected;
+        std::variant<std::int64_t, std::string, error, nil_type, array> expected;
     };
     std::array tests {
         builtin_test {R"(len(""))", 0},
@@ -362,23 +366,23 @@ TEST(eval, testBuiltinFunctions)
         builtin_test {R"(first())", error {"wrong number of arguments to first(): expected=1, got=0"}},
         builtin_test {R"(first(1))", error {"argument of type integer to first() is not supported"}},
         builtin_test {R"(first([1,2]))", 1},
-        builtin_test {R"(first([]))", nullvalue {}},
+        builtin_test {R"(first([]))", nil_type {}},
         builtin_test {R"(last("abc"))", "c"},
         builtin_test {R"(last())", error {"wrong number of arguments to last(): expected=1, got=0"}},
         builtin_test {R"(last(1))", error {"argument of type integer to last() is not supported"}},
         builtin_test {R"(last([1,2]))", 2},
-        builtin_test {R"(last([]))", nullvalue {}},
+        builtin_test {R"(last([]))", nil_type {}},
         builtin_test {R"(rest("abc"))", "bc"},
         builtin_test {R"(rest())", error {"wrong number of arguments to rest(): expected=1, got=0"}},
         builtin_test {R"(rest(1))", error {"argument of type integer to rest() is not supported"}},
-        builtin_test {R"(rest([1,2]))", array {{object {2}.to_ptr()}}},
-        builtin_test {R"(rest([1]))", nullvalue {}},
-        builtin_test {R"(rest([]))", nullvalue {}},
+        builtin_test {R"(rest([1,2]))", array {{2}}},
+        builtin_test {R"(rest([1]))", nil_type {}},
+        builtin_test {R"(rest([]))", nil_type {}},
         builtin_test {R"(push())", error {"wrong number of arguments to push(): expected=2, got=0"}},
         builtin_test {R"(push(1))", error {"wrong number of arguments to push(): expected=2, got=1"}},
         builtin_test {R"(push(1, 2))", error {"argument of type integer and integer to push() are not supported"}},
-        builtin_test {R"(push([1,2], 3))", array {{object {1}.to_ptr()}, {object {2}.to_ptr()}, object {3}.to_ptr()}},
-        builtin_test {R"(push([], "abc"))", array {{object {string_value {"abc"}}.to_ptr()}}},
+        builtin_test {R"(push([1,2], 3))", array {{1}, {2}, {3}}},
+        builtin_test {R"(push([], "abc"))", array {{"abc"}}},
     };
 
     for (auto test : tests) {
@@ -387,7 +391,7 @@ TEST(eval, testBuiltinFunctions)
                                [&evaluated](const error& val) { assert_error_object(evaluated, val.message); },
                                [&evaluated](const std::string& val) { assert_string_object(evaluated, val); },
                                [&evaluated](const array& val) { ASSERT_EQ(object {val}, evaluated); },
-                               [&evaluated](const nullvalue& /*val*/) { assert_nil_object(evaluated); },
+                               [&evaluated](const nil_type& /*val*/) { assert_nil_object(evaluated); },
                                [](const auto& /*val*/) { FAIL(); }},
                    test.expected);
     }
@@ -396,10 +400,10 @@ TEST(eval, testArrayExpression)
 {
     auto evaluated = test_eval("[1, 2 * 2, 3 + 3]");
     ASSERT_TRUE(evaluated.is<array>()) << "got: " << evaluated.type_name() << " instead";
-
-    assert_integer_object(*evaluated.as<array>()[0], 1);
-    assert_integer_object(*evaluated.as<array>()[1], 4);
-    assert_integer_object(*evaluated.as<array>()[2], 6);
+    auto as_arr = evaluated.as<array>();
+    assert_integer_object(as_arr[0], 1);
+    assert_integer_object(as_arr[1], 4);
+    assert_integer_object(as_arr[2], 6);
 }
 
 TEST(eval, testIndexOperatorExpressions)
@@ -444,11 +448,11 @@ TEST(eval, testIndexOperatorExpressions)
         },
         test {
             "[1, 2, 3][3]",
-            nullvalue {},
+            nil_type {},
         },
         test {
             "[1, 2, 3][-1]",
-            nullvalue {},
+            nil_type {},
         },
     };
 
@@ -456,6 +460,76 @@ TEST(eval, testIndexOperatorExpressions)
         auto evaluated = test_eval(input);
         EXPECT_EQ(object {evaluated.value}, object {expected})
             << "expected " << std::to_string(expected) << ", got " << evaluated.type_name();
+    }
+}
+TEST(eval, hashLiterals)
+{
+    auto evaluated = test_eval(R"(let two = "two";
+    {
+        "one": 10 - 9,
+        two: 1 + 1,
+        "thr" + "ee": 6 / 2,
+        4: 4,
+        true: 5,
+        false: 6
+    })");
+
+    ASSERT_TRUE(evaluated.is<hash>()) << "expected hash, got " << evaluated.type_name() << " instead";
+    struct expect
+    {
+        hash_key_type key;
+        int64_t value;
+    };
+    std::array expected {
+        expect {"one", 1}, expect {"two", 2}, expect {"three", 3}, expect {4, 4}, expect {true, 5}, expect {false, 6}};
+    const auto& as_hash = evaluated.as<hash>();
+    for (const auto& [key, value] : expected) {
+        ASSERT_TRUE(as_hash.contains(key));
+        ASSERT_EQ(value, std::any_cast<object>(as_hash.at(key)).as<integer_value>());
+    };
+}
+
+TEST(eval, hashIndexExpression)
+{
+    struct hash_test
+    {
+        std::string_view input;
+        value_type expected;
+    };
+    std::array inputs {
+        hash_test {
+            R"({"foo": 5}["foo"])",
+            5,
+        },
+        hash_test {
+            R"({"foo": 5}["bar"])",
+            nil,
+        },
+        hash_test {
+            R"(let key = "foo"; {"foo": 5}[key])",
+            5,
+        },
+        hash_test {
+            R"({}["foo"])",
+            nil,
+        },
+        hash_test {
+            R"({5: 5}[5])",
+            5,
+        },
+        hash_test {
+            R"({true: 5}[true])",
+            5,
+        },
+        hash_test {
+            R"({false: 5}[false])",
+            5,
+        },
+    };
+    for (const auto& [input, expected] : inputs) {
+        auto evaluated = test_eval(input);
+        EXPECT_FALSE(evaluated.is<error>());
+        EXPECT_EQ(evaluated, object {expected});
     }
 }
 // NOLINTEND(*-magic-numbers)

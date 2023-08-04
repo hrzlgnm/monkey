@@ -10,8 +10,8 @@
 
 #include "environment_fwd.hpp"
 
-template<typename T>
-auto join(const std::vector<std::unique_ptr<T>>& nodes, std::string_view sep = {}) -> std::string
+template<typename Expression>
+auto join(const std::vector<std::unique_ptr<Expression>>& nodes, std::string_view sep = {}) -> std::string
 {
     auto strs = std::vector<std::string>();
     std::transform(
@@ -21,10 +21,5 @@ auto join(const std::vector<std::unique_ptr<T>>& nodes, std::string_view sep = {
 
 auto debug_env(const environment_ptr& env) -> void;
 
-template<typename T>
-void unused(T /*unused*/)
-{
-}
-
-template<typename V>
-using string_map = std::map<std::string, V, std::less<>>;
+template<typename Value>
+using string_map = std::map<std::string, Value, std::less<>>;

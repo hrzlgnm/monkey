@@ -38,7 +38,8 @@ auto return_statement::eval(environment_ptr env) const -> object
         if (evaluated.is<error>()) {
             return evaluated;
         }
-        return object {std::make_any<object>(evaluated)};
+        evaluated.is_return_value = true;
+        return evaluated;
     }
     return {};
 }
@@ -69,7 +70,7 @@ auto block_statement::eval(environment_ptr env) const -> object
     object result;
     for (const auto& stmt : statements) {
         result = stmt->eval(env);
-        if (result.is<return_value>() || result.is<error>()) {
+        if (result.is_return_value || result.is<error>()) {
             return result;
         }
     }

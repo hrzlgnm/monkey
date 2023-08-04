@@ -9,9 +9,8 @@ boolean::boolean(token tokn, bool val)
 {
 }
 
-auto boolean::eval(environment_ptr env) const -> object
+auto boolean::eval(environment_ptr /*env*/) const -> object
 {
-    unused(env);
     return object {value};
 }
 

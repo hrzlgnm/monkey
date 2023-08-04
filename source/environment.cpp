@@ -5,8 +5,6 @@ environment::environment(environment_ptr parent_env)
 {
 }
 
-static const object nil {nullvalue {}};
-
 auto environment::break_cycle() -> void
 {
     store.clear();
@@ -19,7 +17,7 @@ auto environment::get(std::string_view name) const -> object
             return itr->second;
         }
     }
-    return nil;
+    return {nil_type {}};
 }
 
 auto environment::set(std::string_view name, object&& val) -> void
