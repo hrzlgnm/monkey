@@ -96,7 +96,7 @@ auto unwrap(const std::any& obj) -> object;
 template<typename... T>
 auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 {
-    return object(error {.message = fmt::format(fmt, std::forward<T>(args)...)});
+    return {error {.message = fmt::format(fmt, std::forward<T>(args)...)}};
 }
 
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool

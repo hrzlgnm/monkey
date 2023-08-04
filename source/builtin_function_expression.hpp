@@ -7,9 +7,9 @@
 
 struct builtin_function_expression : callable_expression
 {
-    builtin_function_expression(std::string&& name,
-                                std::vector<std::string>&& parameters,
-                                std::function<object(array&& arguments)>&& body);
+    builtin_function_expression(std::string&& nam,
+                                std::vector<std::string>&& params,
+                                std::function<object(array&& arguments)>&& bod);
 
     auto call(environment_ptr closure_env,
               environment_ptr caller_env,

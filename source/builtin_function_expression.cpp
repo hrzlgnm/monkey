@@ -14,10 +14,10 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
          }
-         return object {std::visit(
+         return {std::visit(
              overloaded {
-                 [](const string_value& str) -> object { return object(static_cast<integer_value>(str.length())); },
-                 [](const array& arr) -> object { return object(static_cast<integer_value>(arr.size())); },
+                 [](const string_value& str) -> object { return {static_cast<integer_value>(str.length())}; },
+                 [](const array& arr) -> object { return {static_cast<integer_value>(arr.size())}; },
                  [](const auto& other) -> object
                  { return make_error("argument of type {} to len() is not supported", object {other}.type_name()); },
              },
@@ -30,12 +30,12 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to first(): expected=1, got={}", arguments.size());
          }
-         return object {std::visit(
+         return {std::visit(
              overloaded {
                  [](const string_value& str) -> object
                  {
                      if (str.length() > 0) {
-                         return object(str.substr(0, 1));
+                         return {str.substr(0, 1)};
                      }
                      return {};
                  },
@@ -58,12 +58,12 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to last(): expected=1, got={}", arguments.size());
          }
-         return object {std::visit(
+         return {std::visit(
              overloaded {
                  [](const string_value& str) -> object
                  {
                      if (str.length() > 1) {
-                         return object {str.substr(str.length() - 1, 1)};
+                         return {str.substr(str.length() - 1, 1)};
                      }
                      return {};
                  },
@@ -86,7 +86,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to rest(): expected=1, got={}", arguments.size());
          }
-         return object {std::visit(
+         return {std::visit(
              overloaded {
                  [](const string_value& str) -> object
                  {
@@ -154,12 +154,12 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
      }},
 };
 
-builtin_function_expression::builtin_function_expression(std::string&& name,
-                                                         std::vector<std::string>&& parameters,
-                                                         std::function<object(array&& arguments)>&& body)
-    : callable_expression {std::move(parameters)}
-    , name {std::move(name)}
-    , body {std::move(body)}
+builtin_function_expression::builtin_function_expression(std::string&& nam,
+                                                         std::vector<std::string>&& params,
+                                                         std::function<object(array&& arguments)>&& bod)
+    : callable_expression {std::move(params)}
+    , name {std::move(nam)}
+    , body {std::move(bod)}
 {
 }
 auto builtin_function_expression::call(environment_ptr /*closure_env*/,

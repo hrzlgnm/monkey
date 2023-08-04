@@ -10,7 +10,7 @@ struct callable_expression : expression
     auto operator=(callable_expression&&) -> callable_expression& = default;
     callable_expression(const callable_expression&) = default;
     auto operator=(const callable_expression&) -> callable_expression& = default;
-    explicit callable_expression(std::vector<std::string>&& parameters);
+    explicit callable_expression(std::vector<std::string>&& params);
     ~callable_expression() override = default;
 
     auto eval(environment_ptr env) const -> object override;

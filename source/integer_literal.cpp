@@ -8,8 +8,7 @@ auto integer_literal::string() const -> std::string
     return std::string {tkn.literal};
 }
 
-auto integer_literal::eval(environment_ptr env) const -> object
+auto integer_literal::eval(environment_ptr /*env*/) const -> object
 {
-    unused(env);
     return object {value};
 }
