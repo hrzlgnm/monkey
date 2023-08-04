@@ -154,11 +154,11 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
      }},
 };
 
-builtin_function_expression::builtin_function_expression(std::string&& nam,
+builtin_function_expression::builtin_function_expression(std::string&& name,
                                                          std::vector<std::string>&& params,
                                                          std::function<object(array&& arguments)>&& bod)
     : callable_expression {std::move(params)}
-    , name {std::move(nam)}
+    , name {std::move(name)}
     , body {std::move(bod)}
 {
 }

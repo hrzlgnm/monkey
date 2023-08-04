@@ -7,7 +7,7 @@
 
 struct builtin_function_expression : callable_expression
 {
-    builtin_function_expression(std::string&& nam,
+    builtin_function_expression(std::string&& name,
                                 std::vector<std::string>&& params,
                                 std::function<object(array&& arguments)>&& bod);
 
