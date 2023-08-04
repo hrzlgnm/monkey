@@ -16,7 +16,7 @@ auto array_expression::eval(environment_ptr env) const -> object
         if (evaluated.is<error>()) {
             return evaluated;
         }
-        result.push_back(evaluated.to_ptr());
+        result.push_back(std::move(evaluated));
     }
-    return object(result);
+    return {result};
 }

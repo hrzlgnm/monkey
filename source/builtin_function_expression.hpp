@@ -9,7 +9,7 @@ struct builtin_function_expression : callable_expression
 {
     builtin_function_expression(std::string&& name,
                                 std::vector<std::string>&& parameters,
-                                std::function<object(const array& arguments)>&& body);
+                                std::function<object(array&& arguments)>&& body);
 
     auto call(environment_ptr closure_env,
               environment_ptr caller_env,
@@ -17,7 +17,7 @@ struct builtin_function_expression : callable_expression
     auto string() const -> std::string override;
 
     static const std::vector<builtin_function_expression> builtins;
-    std::string name;
 
-    std::function<object(const array& arguments)> body;
+    std::string name;
+    std::function<object(array&& arguments)> body;
 };

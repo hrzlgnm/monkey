@@ -1,9 +1,12 @@
 #include <algorithm>
+#include <exception>
 #include <iterator>
+#include <variant>
 
 #include "hash_literal_expression.hpp"
 
 #include "environment.hpp"
+#include "object.hpp"
 
 auto hash_literal_expression::string() const -> std::string
 {
@@ -17,5 +20,21 @@ auto hash_literal_expression::string() const -> std::string
 
 auto hash_literal_expression::eval(environment_ptr env) const -> object
 {
-    return {};
+    hash result;
+
+    for (const auto& [key, value] : pairs) {
+        auto eval_key = key->eval(env);
+        if (eval_key.is<error>()) {
+            return eval_key;
+        }
+        if (!eval_key.is_hashable()) {
+            return make_error("unusable as hash key {}", eval_key.type_name());
+        }
+        auto eval_val = value->eval(env);
+        if (eval_val.is<error>()) {
+            return eval_val;
+        }
+        result.insert({eval_key.hash_key(), std::make_any<object>(eval_val)});
+    }
+    return {result};
 }

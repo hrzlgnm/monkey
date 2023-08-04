@@ -15,8 +15,8 @@ auto program::eval(environment_ptr env) const -> object
     object result;
     for (const auto& statement : statements) {
         result = statement->eval(env);
-        if (result.is<return_value>()) {
-            return unwrap_return_value(result);
+        if (result.is_return_value) {
+            return result;
         }
         if (result.is<error>()) {
             return result;
