@@ -48,7 +48,7 @@ class parser final
 
     auto parse_expression_list(token_type end) -> std::vector<expression_ptr>;
     auto get(token_type type) -> bool;
-    auto cur_token_is(token_type type) const -> bool;
+    auto current_token_is(token_type type) const -> bool;
     auto peek_token_is(token_type type) const -> bool;
     auto peek_error(token_type type) -> void;
     auto register_binary(token_type type, binary_parser binary) -> void;

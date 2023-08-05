@@ -5,7 +5,7 @@
 
 auto integer_literal::string() const -> std::string
 {
-    return std::string {tkn.literal};
+    return std::to_string(value);
 }
 
 auto integer_literal::eval(environment_ptr /*env*/) const -> object

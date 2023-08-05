@@ -24,7 +24,6 @@ add_library(lexereagen_lib
         source/callable_expression.cpp
         source/call_expression.cpp
         source/environment.cpp
-        source/expression.cpp
         source/function_expression.cpp
         source/hash_literal_expression.cpp
         source/identifier.cpp

@@ -12,7 +12,6 @@
 #include "binary_expression.hpp"
 #include "boolean.hpp"
 #include "call_expression.hpp"
-#include "expression.hpp"
 #include "function_expression.hpp"
 #include "hash_literal_expression.hpp"
 #include "identifier.hpp"
@@ -132,12 +131,11 @@ auto parser::parse_statement() -> statement_ptr
 auto parser::parse_let_statement() -> statement_ptr
 {
     using enum token_type;
-    auto stmt = std::make_unique<let_statement>(m_current_token);
+    auto stmt = std::make_unique<let_statement>();
     if (!get(ident)) {
         return {};
     }
-    stmt->name = std::make_unique<identifier>(m_current_token);
-    stmt->name->value = m_current_token.literal;
+    stmt->name = parse_identifier();
 
     if (!get(assign)) {
         return {};
@@ -155,7 +153,7 @@ auto parser::parse_let_statement() -> statement_ptr
 auto parser::parse_return_statement() -> statement_ptr
 {
     using enum token_type;
-    auto stmt = std::make_unique<return_statement>(m_current_token);
+    auto stmt = std::make_unique<return_statement>();
 
     next_token();
     stmt->value = parse_expression(lowest);
@@ -168,7 +166,7 @@ auto parser::parse_return_statement() -> statement_ptr
 
 auto parser::parse_expression_statement() -> statement_ptr
 {
-    auto expr_stmt = std::make_unique<expression_statement>(m_current_token);
+    auto expr_stmt = std::make_unique<expression_statement>();
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -198,12 +196,12 @@ auto parser::parse_expression(int precedence) -> expression_ptr
 
 auto parser::parse_identifier() -> identifier_ptr
 {
-    return std::make_unique<identifier>(m_current_token, std::string {m_current_token.literal});
+    return std::make_unique<identifier>(std::string {m_current_token.literal});
 }
 
 auto parser::parse_integer_literal() -> expression_ptr
 {
-    auto lit = std::make_unique<integer_literal>(m_current_token);
+    auto lit = std::make_unique<integer_literal>();
     try {
         lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
@@ -215,7 +213,7 @@ auto parser::parse_integer_literal() -> expression_ptr
 
 auto parser::parse_unary_expression() -> expression_ptr
 {
-    auto pfx_expr = std::make_unique<unary_expression>(m_current_token);
+    auto pfx_expr = std::make_unique<unary_expression>();
     pfx_expr->op = m_current_token.type;
 
     next_token();
@@ -225,7 +223,7 @@ auto parser::parse_unary_expression() -> expression_ptr
 
 auto parser::parse_boolean() -> expression_ptr
 {
-    return std::make_unique<boolean>(m_current_token, cur_token_is(token_type::tru));
+    return std::make_unique<boolean>(current_token_is(token_type::tru));
 }
 
 auto parser::parse_grouped_expression() -> expression_ptr
@@ -241,7 +239,7 @@ auto parser::parse_grouped_expression() -> expression_ptr
 auto parser::parse_if_expression() -> expression_ptr
 {
     using enum token_type;
-    auto expr = std::make_unique<if_expression>(m_current_token);
+    auto expr = std::make_unique<if_expression>();
     if (!get(lparen)) {
         return {};
     }
@@ -307,9 +305,9 @@ auto parser::parse_function_parameters() -> std::vector<std::string>
 auto parser::parse_block_statement() -> block_statement_ptr
 {
     using enum token_type;
-    auto block = std::make_unique<block_statement>(m_current_token);
+    auto block = std::make_unique<block_statement>();
     next_token();
-    while (!cur_token_is(rsquirly) && !cur_token_is(eof)) {
+    while (!current_token_is(rsquirly) && !current_token_is(eof)) {
         auto stmt = parse_statement();
         if (stmt) {
             block->statements.push_back(std::move(stmt));
@@ -322,7 +320,7 @@ auto parser::parse_block_statement() -> block_statement_ptr
 
 auto parser::parse_call_expression(expression_ptr function) -> expression_ptr
 {
-    auto call = std::make_unique<call_expression>(m_current_token);
+    auto call = std::make_unique<call_expression>();
     call->function = std::move(function);
     call->arguments = parse_expression_list(token_type::rparen);
     return call;
@@ -330,7 +328,7 @@ auto parser::parse_call_expression(expression_ptr function) -> expression_ptr
 
 auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
 {
-    auto bin_expr = std::make_unique<binary_expression>(m_current_token);
+    auto bin_expr = std::make_unique<binary_expression>();
     bin_expr->op = m_current_token.type;
     bin_expr->left = std::move(left);
 
@@ -343,7 +341,7 @@ auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
 
 auto parser::parse_string_literal() -> expression_ptr
 {
-    auto lit = std::make_unique<string_literal>(m_current_token);
+    auto lit = std::make_unique<string_literal>();
     lit->value = m_current_token.literal;
     return lit;
 }
@@ -374,14 +372,14 @@ auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr
 
 auto parser::parse_array_expression() -> expression_ptr
 {
-    auto array_expr = std::make_unique<array_expression>(m_current_token);
+    auto array_expr = std::make_unique<array_expression>();
     array_expr->elements = parse_expression_list(token_type::rbracket);
     return array_expr;
 }
 
 auto parser::parse_index_expression(expression_ptr left) -> expression_ptr
 {
-    auto index_expr = std::make_unique<index_expression>(m_current_token);
+    auto index_expr = std::make_unique<index_expression>();
     index_expr->left = std::move(left);
     next_token();
     index_expr->index = parse_expression(lowest);
@@ -395,7 +393,7 @@ auto parser::parse_index_expression(expression_ptr left) -> expression_ptr
 
 auto parser::parse_hash_literal() -> expression_ptr
 {
-    auto hash = std::make_unique<hash_literal_expression>(m_current_token);
+    auto hash = std::make_unique<hash_literal_expression>();
     using enum token_type;
     while (!peek_token_is(rsquirly)) {
         next_token();
@@ -442,7 +440,7 @@ auto parser::register_unary(token_type type, unary_parser unary) -> void
     m_unary_parsers[type] = std::move(unary);
 }
 
-auto parser::cur_token_is(token_type type) const -> bool
+auto parser::current_token_is(token_type type) const -> bool
 {
     return m_current_token.type == type;
 }

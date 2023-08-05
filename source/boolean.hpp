@@ -4,7 +4,7 @@
 
 struct boolean : expression
 {
-    boolean(token tokn, bool val);
+    explicit boolean(bool val);
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 
