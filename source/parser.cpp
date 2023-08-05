@@ -194,7 +194,7 @@ auto parser::parse_expression(int precedence) -> expression_ptr
     return left_expr;
 }
 
-auto parser::parse_identifier() -> identifier_ptr
+auto parser::parse_identifier() const -> identifier_ptr
 {
     return std::make_unique<identifier>(std::string {m_current_token.literal});
 }
@@ -339,11 +339,9 @@ auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
     return bin_expr;
 }
 
-auto parser::parse_string_literal() -> expression_ptr
+auto parser::parse_string_literal() const -> expression_ptr
 {
-    auto lit = std::make_unique<string_literal>();
-    lit->value = m_current_token.literal;
-    return lit;
+    return std::make_unique<string_literal>(std::string {m_current_token.literal});
 }
 
 auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr>

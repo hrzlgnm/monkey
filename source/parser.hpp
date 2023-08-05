@@ -30,7 +30,7 @@ class parser final
     auto parse_expression_statement() -> statement_ptr;
 
     auto parse_expression(int precedence) -> expression_ptr;
-    auto parse_identifier() -> identifier_ptr;
+    auto parse_identifier() const -> identifier_ptr;
     auto parse_integer_literal() -> expression_ptr;
     auto parse_unary_expression() -> expression_ptr;
     auto parse_binary_expression(expression_ptr left) -> expression_ptr;
@@ -41,7 +41,7 @@ class parser final
     auto parse_function_parameters() -> std::vector<std::string>;
     auto parse_block_statement() -> block_statement_ptr;
     auto parse_call_expression(expression_ptr function) -> expression_ptr;
-    auto parse_string_literal() -> expression_ptr;
+    auto parse_string_literal() const -> expression_ptr;
     auto parse_array_expression() -> expression_ptr;
     auto parse_index_expression(expression_ptr left) -> expression_ptr;
     auto parse_hash_literal() -> expression_ptr;
