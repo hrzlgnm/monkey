@@ -12,11 +12,6 @@ add_custom_target(
 )
 add_dependencies(run-exe lexereagen_exe)
 
-option(BUILD_MCSS_DOCS "Build documentation using Doxygen and m.css" OFF)
-if(BUILD_MCSS_DOCS)
-  include(cmake/docs.cmake)
-endif()
-
 option(ENABLE_COVERAGE "Enable coverage support separate from CTest's" OFF)
 if(ENABLE_COVERAGE)
   include(cmake/coverage.cmake)

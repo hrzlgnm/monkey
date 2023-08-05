@@ -17,29 +17,29 @@ include(cmake/variables.cmake)
 # ---- Declare library ----
 add_library(lexereagen_lib
     OBJECT
-        source/array_expression.cpp
-        source/binary_expression.cpp
-        source/boolean.cpp
-        source/builtin_function_expression.cpp
-        source/callable_expression.cpp
-        source/call_expression.cpp
-        source/environment.cpp
-        source/function_expression.cpp
-        source/hash_literal_expression.cpp
-        source/identifier.cpp
-        source/if_expression.cpp
-        source/index_expression.cpp
-        source/integer_literal.cpp
-        source/lexer.cpp
-        source/object.cpp
-        source/parser.cpp
-        source/program.cpp
-        source/statements.cpp
-        source/string_literal.cpp
-        source/token.cpp
-        source/token_type.cpp
-        source/unary_expression.cpp
-        source/util.cpp
+        source/lexer/lexer.cpp
+        source/lexer/token.cpp
+        source/lexer/token_type.cpp
+        source/parser/array_expression.cpp
+        source/parser/binary_expression.cpp
+        source/parser/boolean.cpp
+        source/parser/builtin_function_expression.cpp
+        source/parser/callable_expression.cpp
+        source/parser/call_expression.cpp
+        source/parser/environment.cpp
+        source/parser/function_expression.cpp
+        source/parser/hash_literal_expression.cpp
+        source/parser/identifier.cpp
+        source/parser/if_expression.cpp
+        source/parser/index_expression.cpp
+        source/parser/integer_literal.cpp
+        source/parser/object.cpp
+        source/parser/parser.cpp
+        source/parser/program.cpp
+        source/parser/statements.cpp
+        source/parser/string_literal.cpp
+        source/parser/unary_expression.cpp
+        source/parser/util.cpp
 )
 
 target_precompile_headers(lexereagen_lib
@@ -56,6 +56,8 @@ target_precompile_headers(lexereagen_lib
 target_include_directories(lexereagen_lib ${warning_guard}
     PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>"
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source/parser>"
+        "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source/lexer>"
 )
 target_compile_features(lexereagen_lib PUBLIC cxx_std_20)
 target_link_libraries(lexereagen_lib PUBLIC fmt)
