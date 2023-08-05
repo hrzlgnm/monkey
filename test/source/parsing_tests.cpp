@@ -199,7 +199,6 @@ return 993322;
         auto* stmt = prgrm->statements[i].get();
         auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
         ASSERT_TRUE(ret_stmt);
-        ASSERT_EQ(ret_stmt->tkn.literal, "return");
         assert_literal_expression(ret_stmt->value, expected_return_values.at(i));
     }
 }
@@ -207,24 +206,13 @@ return 993322;
 TEST(parsing, testString)
 {
     using enum token_type;
-    auto name = std::make_unique<identifier>(token {
-        .type = ident,
-        .literal = "myVar",
-    });
-    name->value = "myVar";
+    auto name = std::make_unique<identifier>("myVar");
 
-    auto value = std::make_unique<identifier>(token {
-        .type = ident,
-        .literal = "anotherVar",
-    });
-    value->value = "anotherVar";
+    auto value = std::make_unique<identifier>("anotherVar");
 
     program prgrm;
 
-    auto let_stmt = std::make_unique<let_statement>(token {
-        .type = let,
-        .literal = "let",
-    });
+    auto let_stmt = std::make_unique<let_statement>();
     let_stmt->name = std::move(name);
     let_stmt->value = std::move(value);
     prgrm.statements.push_back(std::move(let_stmt));

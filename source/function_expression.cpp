@@ -13,7 +13,7 @@ function_expression::function_expression(std::vector<std::string>&& parameters, 
 }
 auto function_expression::string() const -> std::string
 {
-    return fmt::format("{}({}) {}", tkn.literal, fmt::join(parameters, ", "), body->string());
+    return fmt::format("fn({}) {{ {}; }}", fmt::join(parameters, ", "), body->string());
 }
 
 auto function_expression::call(environment_ptr closure_env,

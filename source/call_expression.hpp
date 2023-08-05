@@ -6,8 +6,6 @@
 
 struct call_expression : expression
 {
-    using expression::expression;
-
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 

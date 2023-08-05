@@ -13,7 +13,7 @@
 
 auto let_statement::string() const -> std::string
 {
-    return fmt::format("{} {} = {};", tkn.literal, name->string(), value ? value->string() : std::string());
+    return fmt::format("let {} = {};", name->string(), value ? value->string() : std::string());
 }
 
 auto let_statement::eval(environment_ptr env) const -> object
@@ -28,7 +28,7 @@ auto let_statement::eval(environment_ptr env) const -> object
 
 auto return_statement::string() const -> std::string
 {
-    return fmt::format("{} {};", tkn.literal, value ? value->string() : std::string());
+    return fmt::format("return {};", value ? value->string() : std::string());
 }
 
 auto return_statement::eval(environment_ptr env) const -> object

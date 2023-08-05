@@ -1,12 +1,10 @@
 #pragma once
 
-#include "expression.hpp"
+#include "identifier.hpp"
 
-struct string_literal : expression
+struct string_literal : identifier
 {
-    using expression::expression;
+    using identifier::identifier;
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
-
-    std::string value {};
 };

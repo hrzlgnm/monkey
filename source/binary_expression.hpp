@@ -1,14 +1,11 @@
 #pragma once
 
-#include "expression.hpp"
+#include "unary_expression.hpp"
 
-struct binary_expression : expression
+struct binary_expression : unary_expression
 {
-    using expression::expression;
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 
     expression_ptr left {};
-    token_type op {};
-    expression_ptr right {};
 };

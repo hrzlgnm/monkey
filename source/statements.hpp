@@ -10,7 +10,6 @@ using statement_ptr = expression_ptr;
 
 struct let_statement : statement
 {
-    using statement::statement;
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 
@@ -20,7 +19,6 @@ struct let_statement : statement
 
 struct return_statement : statement
 {
-    using statement::statement;
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
     expression_ptr value {};
@@ -28,7 +26,6 @@ struct return_statement : statement
 
 struct expression_statement : statement
 {
-    using statement::statement;
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 
@@ -37,7 +34,6 @@ struct expression_statement : statement
 
 struct block_statement : statement
 {
-    using statement::statement;
     auto string() const -> std::string override;
     auto eval(environment_ptr env) const -> object override;
 

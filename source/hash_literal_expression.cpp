@@ -5,6 +5,8 @@
 
 #include "hash_literal_expression.hpp"
 
+#include <fmt/format.h>
+
 #include "environment.hpp"
 #include "object.hpp"
 
