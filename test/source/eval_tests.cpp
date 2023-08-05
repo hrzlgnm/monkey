@@ -353,7 +353,7 @@ TEST(eval, testBuiltinFunctions)
     struct builtin_test
     {
         std::string_view input;
-        std::variant<std::int64_t, std::string, error, nil_type, array> expected;
+        std::variant<std::int64_t, std::string, error, nil_value, array> expected;
     };
     std::array tests {
         builtin_test {R"(len(""))", 0},
@@ -366,18 +366,18 @@ TEST(eval, testBuiltinFunctions)
         builtin_test {R"(first())", error {"wrong number of arguments to first(): expected=1, got=0"}},
         builtin_test {R"(first(1))", error {"argument of type integer to first() is not supported"}},
         builtin_test {R"(first([1,2]))", 1},
-        builtin_test {R"(first([]))", nil_type {}},
+        builtin_test {R"(first([]))", nil_value {}},
         builtin_test {R"(last("abc"))", "c"},
         builtin_test {R"(last())", error {"wrong number of arguments to last(): expected=1, got=0"}},
         builtin_test {R"(last(1))", error {"argument of type integer to last() is not supported"}},
         builtin_test {R"(last([1,2]))", 2},
-        builtin_test {R"(last([]))", nil_type {}},
+        builtin_test {R"(last([]))", nil_value {}},
         builtin_test {R"(rest("abc"))", "bc"},
         builtin_test {R"(rest())", error {"wrong number of arguments to rest(): expected=1, got=0"}},
         builtin_test {R"(rest(1))", error {"argument of type integer to rest() is not supported"}},
         builtin_test {R"(rest([1,2]))", array {{2}}},
-        builtin_test {R"(rest([1]))", nil_type {}},
-        builtin_test {R"(rest([]))", nil_type {}},
+        builtin_test {R"(rest([1]))", nil_value {}},
+        builtin_test {R"(rest([]))", nil_value {}},
         builtin_test {R"(push())", error {"wrong number of arguments to push(): expected=2, got=0"}},
         builtin_test {R"(push(1))", error {"wrong number of arguments to push(): expected=2, got=1"}},
         builtin_test {R"(push(1, 2))", error {"argument of type integer and integer to push() are not supported"}},
@@ -391,7 +391,7 @@ TEST(eval, testBuiltinFunctions)
                                [&evaluated](const error& val) { assert_error_object(evaluated, val.message); },
                                [&evaluated](const std::string& val) { assert_string_object(evaluated, val); },
                                [&evaluated](const array& val) { ASSERT_EQ(object {val}, evaluated); },
-                               [&evaluated](const nil_type& /*val*/) { assert_nil_object(evaluated); },
+                               [&evaluated](const nil_value& /*val*/) { assert_nil_object(evaluated); },
                                [](const auto& /*val*/) { FAIL(); }},
                    test.expected);
     }
@@ -448,11 +448,11 @@ TEST(eval, testIndexOperatorExpressions)
         },
         test {
             "[1, 2, 3][3]",
-            nil_type {},
+            nil_value {},
         },
         test {
             "[1, 2, 3][-1]",
-            nil_type {},
+            nil_value {},
         },
     };
 

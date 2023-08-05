@@ -21,7 +21,7 @@ namespace std
 auto to_string(const value_type& value) -> std::string
 {
     return std::visit(
-        overloaded {[](const nil_type&) -> std::string { return "nil"; },
+        overloaded {[](const nil_value&) -> std::string { return "nil"; },
                     [](const integer_value val) -> std::string { return to_string(val); },
                     [](const string_value& val) -> std::string { return "\"" + val + "\""; },
                     [](const bool val) -> std::string { return val ? "true" : "false"; },
@@ -61,7 +61,7 @@ auto object::type_name() const -> std::string
     }
     return std::visit(
         overloaded {
-            [](const nil_type&) { return "nil"; },
+            [](const nil_value&) { return "nil"; },
             [](const bool) { return "bool"; },
             [](const integer_value) { return "integer"; },
             [](const string_value&) { return "string"; },
