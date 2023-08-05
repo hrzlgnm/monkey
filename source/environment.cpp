@@ -17,7 +17,7 @@ auto environment::get(std::string_view name) const -> object
             return itr->second;
         }
     }
-    return {nil_type {}};
+    return {nil_value {}};
 }
 
 auto environment::set(std::string_view name, object&& val) -> void

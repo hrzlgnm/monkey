@@ -23,22 +23,16 @@ struct overloaded : T...
 template<class... T>
 overloaded(T...) -> overloaded<T...>;
 
-using nil_type = std::monostate;
+using nil_value = std::monostate;
 
 struct error
 {
     std::string message;
 };
 
-struct object;
-using object_ptr = std::shared_ptr<object>;
-struct object_hash
-{
-    auto operator()(const object_ptr& obj) const -> size_t;
-};
-
 using integer_value = std::int64_t;
 using string_value = std::string;
+struct object;
 using array = std::vector<object>;
 using hash_key_type = std::variant<integer_value, string_value, bool>;
 using hash = std::unordered_map<hash_key_type, std::any>;
@@ -46,7 +40,7 @@ using hash = std::unordered_map<hash_key_type, std::any>;
 struct callable_expression;
 using bound_function = std::pair<const callable_expression*, environment_ptr>;
 
-using value_type = std::variant<nil_type, bool, integer_value, string_value, error, array, hash, bound_function>;
+using value_type = std::variant<nil_value, bool, integer_value, string_value, error, array, hash, bound_function>;
 
 namespace std
 {
@@ -60,7 +54,7 @@ struct object
     {
         return std::holds_alternative<T>(value);
     }
-    inline constexpr auto is_nil() const -> bool { return is<nil_type>(); }
+    inline constexpr auto is_nil() const -> bool { return is<nil_value>(); }
     inline constexpr auto is_hashable() const -> bool
     {
         return is<integer_value>() || is<string_value>() || is<bool>();
@@ -90,7 +84,7 @@ struct object
     auto type_name() const -> std::string;
 };
 
-static const nil_type nil {};
+static const nil_value nil {};
 auto unwrap(const std::any& obj) -> object;
 
 template<typename... T>
@@ -102,7 +96,7 @@ auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
 {
     return std::visit(
-        overloaded {[](const nil_type, const nil_type) { return true; },
+        overloaded {[](const nil_value, const nil_value) { return true; },
                     [](const bool val1, const bool val2) { return val1 == val2; },
                     [](const integer_value val1, const integer_value val2) { return val1 == val2; },
                     [](const string_value& val1, const string_value& val2) { return val1 == val2; },
