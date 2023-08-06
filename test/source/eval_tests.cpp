@@ -5,13 +5,13 @@
 #include <string_view>
 #include <variant>
 
+#include <builtin_function_expression.hpp>
+#include <environment.hpp>
 #include <gtest/gtest.h>
+#include <lexer.hpp>
+#include <object.hpp>
+#include <parser.hpp>
 
-#include "builtin_function_expression.hpp"
-#include "environment.hpp"
-#include "lexer.hpp"
-#include "object.hpp"
-#include "parser.hpp"
 #include "testutils.hpp"
 
 // NOLINTBEGIN(*-magic-numbers)

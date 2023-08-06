@@ -1,6 +1,7 @@
 set(
     FORMAT_PATTERNS
-    source/*.cpp source/*.hpp
+    source/**/*.cpp source/**/*.hpp
+    source/*.cpp source/*h.pp
     include/*.hpp
     test/*.cpp test/*.hpp
     CACHE STRING

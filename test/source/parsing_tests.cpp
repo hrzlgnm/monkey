@@ -195,7 +195,7 @@ return 993322;
 )r");
     ASSERT_EQ(prgrm->statements.size(), 3);
     std::array expected_return_values {5, 10, 993322};
-    for (int i = 0; i < 3; ++i) {
+    for (size_t i = 0; i < 3; ++i) {
         auto* stmt = prgrm->statements[i].get();
         auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
         ASSERT_TRUE(ret_stmt);
@@ -550,7 +550,7 @@ TEST(parsing, testHashLiteralWithExpression)
     };
     std::array expected {
         test {0, token_type::plus, 1}, test {10, token_type::minus, 8}, test {15, token_type::slash, 5}};
-    for (int idx = 0; const auto& [k, v] : hash_lit->pairs) {
+    for (size_t idx = 0; const auto& [k, v] : hash_lit->pairs) {
         assert_string_literal(k, keys.at(idx));
         assert_binary_expression(v, expected.at(idx).left, expected.at(idx).oper, expected.at(idx).right);
         idx++;
