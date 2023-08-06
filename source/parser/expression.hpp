@@ -5,6 +5,7 @@
 #include "environment_fwd.hpp"
 
 struct object;
+struct compiler;
 
 struct expression
 {
@@ -17,5 +18,6 @@ struct expression
 
     virtual auto string() const -> std::string = 0;
     virtual auto eval(environment_ptr) const -> object = 0;
+    virtual auto compile(compiler& comp) const -> void { __builtin_unreachable(); }
 };
 using expression_ptr = std::unique_ptr<expression>;

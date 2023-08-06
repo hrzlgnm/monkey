@@ -3,6 +3,7 @@
 
 #include "builtin_function_expression.hpp"
 
+#include "compiler.hpp"
 #include "environment.hpp"
 #include "object.hpp"
 
@@ -172,9 +173,11 @@ auto builtin_function_expression::call(environment_ptr /*closure_env*/,
                    std::back_inserter(args),
                    [&caller_env](const expression_ptr& expr) { return expr->eval(caller_env); });
     return body(std::move(args));
-};
+}
 
 auto builtin_function_expression::string() const -> std::string
 {
     return fmt::format("{}(){}", name, "{...}");
-};
+}
+
+auto builtin_function_expression::compile(compiler& comp) const -> void {}

@@ -32,3 +32,7 @@ auto unary_expression::eval(environment_ptr env) const -> object
             return make_error("unknown operator: {}{}", op, evaluated_value.type_name());
     }
 }
+auto unary_expression::compile(compiler& comp) const -> void
+{
+    right->compile(comp);
+}

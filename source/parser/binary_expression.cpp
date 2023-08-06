@@ -69,3 +69,9 @@ auto binary_expression::eval(environment_ptr env) const -> object
     }
     return make_error("unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
 }
+
+auto binary_expression::compile(compiler& comp) const -> void
+{
+    left->compile(comp);
+    unary_expression::compile(comp);
+}
