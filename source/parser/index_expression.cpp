@@ -1,3 +1,5 @@
+#include <cstdint>
+
 #include "index_expression.hpp"
 
 #include "environment.hpp"
@@ -21,11 +23,11 @@ auto index_expression::eval(environment_ptr env) const -> object
     if (evaluated_left.is<array>() && evaluated_index.is<integer_value>()) {
         auto arr = evaluated_left.as<array>();
         auto index = evaluated_index.as<integer_value>();
-        auto max = arr.size() - 1;
+        auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
             return {};
         }
-        return arr[index];
+        return arr.at(static_cast<size_t>(index));
     }
     if (evaluated_left.is<hash>()) {
         auto hsh = evaluated_left.as<hash>();
