@@ -75,6 +75,7 @@ jobs:
               if: matrix.os == 'ubuntu-22.04'
               run: >-
                   sudo apt-get update -q
+
                   sudo apt-get install clang-tidy-14 cppcheck ninja-build libgtest-dev libfmt-dev -y -q
 
                   sudo update-alternatives --install
