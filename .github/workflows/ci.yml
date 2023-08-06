@@ -38,16 +38,12 @@ jobs:
         steps:
             - uses: actions/checkout@v3
 
-            - name: Install GTest
+            - name: Install Deps
               run: sudo apt-get update -q
-                  && sudo apt-get install libgtest-dev -q -y
-
-            - name: Install fmt
-              run: sudo apt-get update -q
-                  && sudo apt-get install libfmt-dev -q -y
+                  && sudo apt-get install ninja libgtest-dev libfmt-dev -q -y
 
             - name: Configure
-              run: cmake --preset=ci-sanitize
+              run: cmake --preset=ci-sanitize -GNinja
 
             - name: Build
               run: cmake --build build/sanitize -j 2
@@ -75,10 +71,10 @@ jobs:
         steps:
             - uses: actions/checkout@v3
 
-            - name: Install static analyzers
+            - name: Install static analyzers and dependencies
               if: matrix.os == 'ubuntu-22.04'
               run: >-
-                  sudo apt-get install clang-tidy-14 cppcheck libgtest-dev libfmt-dev -y -q
+                  sudo apt-get install clang-tidy-14 cppcheck ninja libgtest-dev libfmt-dev -y -q
 
                   sudo update-alternatives --install
                   /usr/bin/clang-tidy clang-tidy
@@ -86,11 +82,11 @@ jobs:
 
             - name: Configure
               shell: pwsh
-              run: cmake "--preset=ci-$("${{ matrix.os }}".split("-")[0])"
+              run: cmake "--preset=ci-$("${{ matrix.os }}".split("-")[0])" -GNinja
 
             - name: Build
               run: cmake --build build --config Release -j 2
 
             - name: Test
               working-directory: build/test
-              run: ./monkey_test
+              run: ctest --output-on-failure --no-tests=error -j 2
