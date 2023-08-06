@@ -78,9 +78,7 @@ jobs:
 
                   sudo apt-get install clang-tidy-14 cppcheck ninja-build libgtest-dev libfmt-dev -y -q
 
-                  sudo update-alternatives --install
-                  /usr/bin/clang-tidy clang-tidy
-                  /usr/bin/clang-tidy-14 140
+                  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
 
             - name: Configure
               shell: pwsh

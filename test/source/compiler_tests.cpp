@@ -148,4 +148,4 @@ TEST(compiler, readOperands)
         }
     }
 }
-// NOLINTEND(*-magic-numbers
+// NOLINTEND(*-magic-numbers)
