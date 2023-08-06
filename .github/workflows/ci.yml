@@ -93,3 +93,4 @@ jobs:
 
             - name: Test
               working-directory: build/test
+              run: ./monkey_test
