@@ -6,7 +6,7 @@ project(lexereagenTests LANGUAGES CXX)
 
 # ---- Tests ----
 
-add_executable(lexereagen_test
+add_executable(monkey_test
     source/compiler_tests.cpp
     source/eval_tests.cpp
     source/lexing_tests.cpp
