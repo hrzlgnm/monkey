@@ -40,7 +40,7 @@ jobs:
 
             - name: Install Deps
               run: sudo apt-get update -q
-                  && sudo apt-get install ninja libgtest-dev libfmt-dev -q -y
+                  && sudo apt-get install ninja-build libgtest-dev libfmt-dev -q -y
 
             - name: Configure
               run: cmake --preset=ci-sanitize -GNinja
@@ -75,7 +75,7 @@ jobs:
               if: matrix.os == 'ubuntu-22.04'
               run: >-
                   sudo apt-get update -q
-                  sudo apt-get install clang-tidy-14 cppcheck ninja libgtest-dev libfmt-dev -y -q
+                  sudo apt-get install clang-tidy-14 cppcheck ninja-build libgtest-dev libfmt-dev -y -q
 
                   sudo update-alternatives --install
                   /usr/bin/clang-tidy clang-tidy
