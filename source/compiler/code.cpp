@@ -60,7 +60,7 @@ auto fmt_instruction(const definition& def, const std::vector<int>& operands) ->
         case 1:
             return fmt::format("{} {}", def.name, operands.at(0));
     }
-    return fmt::format("ERROR: unhandled operaand count for {}", def.name);
+    return fmt::format("ERROR: unhandled operand count for {}", def.name);
 }
 
 auto to_string(const instructions& code) -> std::string

@@ -5,10 +5,9 @@
 #include <string_view>
 #include <variant>
 
-#include <gtest/gtest.h>
-
 #include <builtin_function_expression.hpp>
 #include <environment.hpp>
+#include <gtest/gtest.h>
 #include <lexer.hpp>
 #include <object.hpp>
 #include <parser.hpp>
