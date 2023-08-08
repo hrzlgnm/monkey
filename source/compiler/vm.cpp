@@ -1,5 +1,7 @@
 #include "vm.hpp"
 
+#include <stdexcept>
+
 auto vm::stack_top() const -> object
 {
     if (stack_pointer == 0) {

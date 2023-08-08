@@ -1,7 +1,5 @@
 #pragma once
 
-#include <stdexcept>
-
 #include "code.hpp"
 #include "compiler.hpp"
 constexpr auto stack_size = 2048;
