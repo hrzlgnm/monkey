@@ -65,7 +65,7 @@
         },
         {
             "name": "ci-linux",
-            "generator": "Unix Makefiles",
+            "generator": "Ninja",
             "hidden": true,
             "inherits": ["flags-linux", "ci-std"],
             "cacheVariables": {
@@ -87,6 +87,15 @@
             "hidden": true
         },
         {
+            "name": "dev-linux",
+            "binaryDir": "${sourceDir}/build/dev-linux",
+            "inherits": ["ci-linux"],
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
             "name": "ci-ubuntu",
             "inherits": [
                 "ci-build",
@@ -95,6 +104,19 @@
                 "cppcheck",
                 "dev-mode"
             ]
+        },
+        {
+            "name": "dev",
+            "binaryDir": "${sourceDir}/build/dev",
+            "inherits": "dev-linux"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "dev",
+            "configurePreset": "dev",
+            "configuration": "Debug",
+            "jobs": 12
         }
     ]
 }
