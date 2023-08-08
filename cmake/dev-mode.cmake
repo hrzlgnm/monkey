@@ -6,10 +6,10 @@ add_subdirectory(test)
 add_custom_target(
     run-exe
     COMMENT runs executable
-    COMMAND lexereagen_exe
+    COMMAND monkey_exe
     VERBATIM
 )
-add_dependencies(run-exe lexereagen_exe)
+add_dependencies(run-exe monkey_exe)
 
 include(cmake/lint-targets.cmake)
 include(cmake/spell-targets.cmake)
