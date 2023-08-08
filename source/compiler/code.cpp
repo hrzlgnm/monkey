@@ -5,6 +5,8 @@
 
 #include <fmt/core.h>
 
+#include "util.hpp"
+
 auto make(opcodes opcode, const std::vector<int>& operands) -> instructions
 {
     if (!definitions.contains(opcode)) {
@@ -17,8 +19,7 @@ auto make(opcodes opcode, const std::vector<int>& operands) -> instructions
         auto width = definition.operand_widths.at(idx);
         switch (width) {
             case 2:
-                instr.push_back((operand >> 8) & 0xff);
-                instr.push_back(operand & 0xff);
+                write_uint16_big_endian(instr, instr.size(), static_cast<uint16_t>(operand));
                 break;
         }
         idx++;
@@ -34,7 +35,7 @@ auto read_operands(const definition& def, const instructions& instr) -> std::pai
     for (size_t idx = 0; const auto width : def.operand_widths) {
         switch (width) {
             case 2:
-                result.first[idx] = (instr.at(offset) * 256) + instr.at(offset + 1);
+                result.first[idx] = read_uint16_big_endian(instr, offset);
         }
         offset += width;
         idx++;
