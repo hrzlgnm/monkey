@@ -1,6 +1,6 @@
-#include "vm.hpp"
-
 #include <stdexcept>
+
+#include "vm.hpp"
 
 auto vm::stack_top() const -> object
 {
