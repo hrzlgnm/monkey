@@ -16,7 +16,8 @@ Checks: "*,\
     -misc-no-recursion,\
     -cert-err58-cpp,\
     -*c++98-compat-*,\
-    -bugprone-easily-swappable-parameters"
+    -bugprone-easily-swappable-parameters\
+    -readability-identifier-length"
 WarningsAsErrors: ''
 CheckOptions:
     - key: 'bugprone-argument-comment.StrictMode'

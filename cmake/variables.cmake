@@ -1,11 +1,11 @@
 # ---- Developer mode ----
 
 # Developer mode enables targets and code paths in the CMake scripts that are
-# only relevant for the developer(s) of lexereagen
+# only relevant for the developer(s) of monkey
 # Targets necessary to build the project must be provided unconditionally, so
 # consumers can trivially build and package the project
 if(PROJECT_IS_TOP_LEVEL)
-  option(lexereagen_DEVELOPER_MODE "Enable developer mode" OFF)
+  option(monkey_DEVELOPER_MODE "Enable developer mode" OFF)
 endif()
 
 # ---- Warning guard ----
@@ -17,12 +17,12 @@ endif()
 set(warning_guard "")
 if(NOT PROJECT_IS_TOP_LEVEL)
   option(
-      lexereagen_INCLUDES_WITH_SYSTEM
-      "Use SYSTEM modifier for lexereagen's includes, disabling warnings"
+      monkey_INCLUDES_WITH_SYSTEM
+      "Use SYSTEM modifier for monkey's includes, disabling warnings"
       ON
   )
-  mark_as_advanced(lexereagen_INCLUDES_WITH_SYSTEM)
-  if(lexereagen_INCLUDES_WITH_SYSTEM)
+  mark_as_advanced(monkey_INCLUDES_WITH_SYSTEM)
+  if(monkey_INCLUDES_WITH_SYSTEM)
     set(warning_guard SYSTEM)
   endif()
 endif()

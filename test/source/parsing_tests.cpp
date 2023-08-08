@@ -19,17 +19,6 @@ template<class>
 inline constexpr bool always_false_v {false};
 
 using expected_value_type = std::variant<int64_t, std::string, bool>;
-using parsed_program = std::pair<program_ptr, parser>;
-
-auto assert_program(std::string_view input) -> parsed_program
-{
-    auto prsr = parser {lexer {input}};
-    auto prgrm = prsr.parse_program();
-    if (assert_no_parse_errors(prsr)) {
-        std::cerr << "while parsing: `" << input << "`";
-    };
-    return {std::move(prgrm), std::move(prsr)};
-}
 
 auto assert_boolean_literal(const expression_ptr& expr, bool value) -> void
 {

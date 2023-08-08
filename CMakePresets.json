@@ -26,7 +26,7 @@
             "hidden": true,
             "inherits": "cmake-pedantic",
             "cacheVariables": {
-                "lexereagen_DEVELOPER_MODE": "ON"
+                "monkey_DEVELOPER_MODE": "ON"
             }
         },
         {

@@ -40,17 +40,6 @@ struct compiler_test_case
     std::vector<instructions> expected_instructions;
 };
 
-using parsed_program = std::pair<program_ptr, parser>;
-auto parse(std::string_view input) -> parsed_program
-{
-    auto prsr = parser {lexer {input}};
-    auto prgrm = prsr.parse_program();
-    if (assert_no_parse_errors(prsr)) {
-        std::cerr << "while parsing: `" << input << "`";
-    };
-    return {std::move(prgrm), std::move(prsr)};
-}
-
 template<typename T>
 auto flatten(const std::vector<std::vector<T>>& arrs) -> std::vector<T>
 {
@@ -86,7 +75,7 @@ template<size_t N>
 auto run_compiler_tests(std::array<compiler_test_case, N>&& tests)
 {
     for (const auto& [input, constants, instructions] : tests) {
-        auto [prgrm, _] = parse(input);
+        auto [prgrm, _] = assert_program(input);
         compiler piler;
         piler.compile(prgrm);
         const auto bytecod = piler.code();
