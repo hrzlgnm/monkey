@@ -1,6 +1,6 @@
-# lexereagen
+# monkey
 
-This is the lexereagen project.
+This is the monkey project.
 
 # Building and installing
 
