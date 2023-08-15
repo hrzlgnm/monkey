@@ -108,6 +108,21 @@ TEST(compiler, integerArithmetics)
             {{1}, {2}},
             {make(constant, {0}), make(pop), make(constant, {1}), make(pop)},
         },
+        compiler_test_case {
+            "1 - 2",
+            {{1}, {2}},
+            {make(constant, {0}), make(constant, {1}), make(sub), make(pop)},
+        },
+        compiler_test_case {
+            "1 * 2",
+            {{1}, {2}},
+            {make(constant, {0}), make(constant, {1}), make(mul), make(pop)},
+        },
+        compiler_test_case {
+            "1 / 2",
+            {{1}, {2}},
+            {make(constant, {0}), make(constant, {1}), make(div), make(pop)},
+        },
     };
     run_compiler_tests(std::move(tests));
 }

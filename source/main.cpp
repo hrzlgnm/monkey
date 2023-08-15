@@ -79,7 +79,7 @@ auto main() -> int
         auto stack_top = machine.last_popped();
         std::cout << std::to_string(stack_top.value) << "\n";
 
-        // TODO: add switch to compile / evaluated
+        // TODO: add cli switch to compile / evaluate
         /*
                 auto evaluated = prgrm->eval(globals);
                 std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
