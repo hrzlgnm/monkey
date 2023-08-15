@@ -15,21 +15,27 @@ enum class opcodes : uint8_t
 {
     constant,
     add,
+    sub,
+    mul,
+    div,
     pop
 };
 
 struct definition
 {
     std::string name;
-    std::vector<int> operand_widths;
+    std::vector<int> operand_widths {};
 };
 
 using definition_type = std::map<opcodes, definition>;
 
 const definition_type definitions {
     {opcodes::constant, definition {"OpConstant", {2}}},
-    {opcodes::add, definition {"OpAdd", {}}},
-    {opcodes::pop, definition {"OpPop", {}}},
+    {opcodes::add, definition {"OpAdd"}},
+    {opcodes::sub, definition {"OpSub"}},
+    {opcodes::mul, definition {"OpMul"}},
+    {opcodes::div, definition {"OpDiv"}},
+    {opcodes::pop, definition {"OpPop"}},
 };
 
 auto make(opcodes opcode, const std::vector<int>& operands = {}) -> instructions;

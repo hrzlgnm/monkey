@@ -46,8 +46,24 @@ auto run_vm_test(std::array<vm_test<Expecteds...>, N> tests)
     }
 }
 
+// NOLINTBEGIN(*-magic-numbers)
 TEST(vm, integerArithmetics)
 {
-    std::array tests {vm_test<int64_t> {"1", 1}, vm_test<int64_t> {"2", 2}, vm_test<int64_t> {"1 + 2", 3}};
+    std::array tests {
+        vm_test<int64_t> {"1", 1},
+        vm_test<int64_t> {"2", 2},
+        vm_test<int64_t> {"1 + 2", 3},
+        vm_test<int64_t> {"1 - 2", -1},
+        vm_test<int64_t> {"1 * 2", 2},
+
+        vm_test<int64_t> {"4 / 2", 2},
+        vm_test<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
+        vm_test<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
+        vm_test<int64_t> {"2 * 2 * 2 * 2 * 2", 32},
+        vm_test<int64_t> {"5 * 2 + 10", 20},
+        vm_test<int64_t> {"5 + 2 * 10", 25},
+        vm_test<int64_t> {"5 * (2 + 10)", 60},
+    };
     run_vm_test(tests);
 }
+// NOLINTEND(*-magic-numbers)

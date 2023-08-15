@@ -14,6 +14,7 @@ auto vm::stack_top() const -> object
     }
     return stack.at(stack_pointer - 1);
 }
+
 auto vm::run() -> void
 {
     for (auto ip = 0U; ip < code.size(); ip++) {
@@ -24,14 +25,12 @@ auto vm::run() -> void
                 ip += 2;
                 push(consts.at(const_idx));
             } break;
-            case opcodes::add: {
-                auto right = pop();
-                auto left = pop();
-                auto left_value = left.as<integer_value>();
-                auto right_value = right.as<integer_value>();
-                auto result = left_value + right_value;
-                push({result});
-            } break;
+            case opcodes::sub:  // fallthrough
+            case opcodes::mul:  // fallthrough
+            case opcodes::div:  // fallthrough
+            case opcodes::add:
+                exec_binary_op(op_code);
+                break;
             case opcodes::pop:
                 pop();
                 break;
@@ -62,4 +61,32 @@ auto vm::pop() -> object
 auto vm::last_popped() const -> object
 {
     return stack[stack_pointer];
+}
+auto vm::exec_binary_op(opcodes opcode) -> void
+{
+    auto right = pop();
+    auto left = pop();
+    if (left.is<integer_value>() && right.is<integer_value>()) {
+        auto left_value = left.as<integer_value>();
+        auto right_value = right.as<integer_value>();
+        switch (opcode) {
+            case opcodes::sub:
+                push({left_value - right_value});
+                break;
+            case opcodes::mul:
+                push({left_value * right_value});
+                break;
+            case opcodes::div:
+                push({left_value / right_value});
+                break;
+            case opcodes::add:
+                push({left_value + right_value});
+                break;
+            default:
+                throw std::runtime_error(fmt::format("unknown integer operator"));
+        }
+        return;
+    }
+    throw std::runtime_error(
+        fmt::format("unsupported types for binary operation: {} {}", left.type_name(), right.type_name()));
 }

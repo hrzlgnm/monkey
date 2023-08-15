@@ -81,6 +81,15 @@ auto binary_expression::compile(compiler& comp) const -> void
         case token_type::plus:
             comp.emit(opcodes::add);
             break;
+        case token_type::minus:
+            comp.emit(opcodes::sub);
+            break;
+        case token_type::asterisk:
+            comp.emit(opcodes::mul);
+            break;
+        case token_type::slash:
+            comp.emit(opcodes::div);
+            break;
         default:
             throw std::runtime_error(fmt::format("unsupported operator {}", op));
     }
