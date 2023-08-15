@@ -5,10 +5,12 @@
 #include <vector>
 
 #include "builtin_function_expression.hpp"
+#include "compiler.hpp"
 #include "environment.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "util.hpp"
+#include "vm.hpp"
 
 constexpr auto prompt = ">> ";
 
@@ -54,11 +56,25 @@ auto main() -> int
             print_parse_errors(prsr.errors());
             continue;
         }
-        auto evaluated = prgrm->eval(globals);
-        std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
-        if (!evaluated.is_nil()) {
-            std::cout << std::to_string(evaluated.value) << "\n";
-        }
+        compiler piler;
+        piler.compile(prgrm);
+        auto bytecode = piler.code();
+        vm machine {
+            .consts = bytecode.consts,
+            .code = bytecode.code,
+        };
+        machine.run();
+        auto stack_top = machine.stack_top();
+        std::cout << std::to_string(stack_top.value) << "\n";
+
+        // TODO: add switch to compile / evaluated
+        /*
+                auto evaluated = prgrm->eval(globals);
+                std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
+                if (!evaluated.is_nil()) {
+                    std::cout << std::to_string(evaluated.value) << "\n";
+                }
+                */
         std::cout << prompt;
     }
     globals->break_cycle();

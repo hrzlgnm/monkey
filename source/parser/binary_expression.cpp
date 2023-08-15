@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "binary_expression.hpp"
 
 #include <fmt/core.h>
@@ -74,9 +76,12 @@ auto binary_expression::eval(environment_ptr env) const -> object
 auto binary_expression::compile(compiler& comp) const -> void
 {
     left->compile(comp);
-    right->compile(comp);
+    unary_expression::compile(comp);
     switch (op) {
         case token_type::plus:
             comp.emit(opcodes::add);
+            break;
+        default:
+            throw std::runtime_error(fmt::format("unsupported operator {}", op));
     }
 }
