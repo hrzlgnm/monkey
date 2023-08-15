@@ -15,6 +15,7 @@ enum class opcodes : uint8_t
 {
     constant,
     add,
+    pop
 };
 
 struct definition
@@ -28,6 +29,7 @@ using definition_type = std::map<opcodes, definition>;
 const definition_type definitions {
     {opcodes::constant, definition {"OpConstant", {2}}},
     {opcodes::add, definition {"OpAdd", {}}},
+    {opcodes::pop, definition {"OpPop", {}}},
 };
 
 auto make(opcodes opcode, const std::vector<int>& operands = {}) -> instructions;

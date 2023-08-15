@@ -28,18 +28,30 @@ constexpr auto monkey_face = R"r(
             '-----'
 )r";
 
-auto print_parse_errors(const std::vector<std::string>& errors)
+auto monkey_business()
 {
     std::cerr << monkey_face;
     std::cerr << "Woops! We ran into some monkey business here!\n";
+}
+
+auto print_parse_errors(const std::vector<std::string>& errors)
+{
+    monkey_business();
     std::cerr << "  parser errorrs: \n";
     for (const auto& error : errors) {
         std::cerr << "\t" << error << "\n";
     }
 }
-// TODO: handle exceptions
+
 auto main() -> int
 {
+    std::set_terminate(
+        []()
+        {
+            monkey_business();
+            std::cerr << "unhandled exception" << std::flush;
+            std::abort();
+        });
     std::cout << prompt;
 
     auto input = std::string {};
@@ -64,7 +76,7 @@ auto main() -> int
             .code = bytecode.code,
         };
         machine.run();
-        auto stack_top = machine.stack_top();
+        auto stack_top = machine.last_popped();
         std::cout << std::to_string(stack_top.value) << "\n";
 
         // TODO: add switch to compile / evaluated

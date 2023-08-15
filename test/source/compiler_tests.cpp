@@ -18,16 +18,23 @@ TEST(compiler, make)
         std::vector<int> operands;
         instructions expected;
     };
-    std::array tests {test {
-                          opcodes::constant,
-                          {65534},
-                          {static_cast<uint8_t>(opcodes::constant), 255, 254},
-                      },
-                      test {
-                          opcodes::add,
-                          {},
-                          {static_cast<uint8_t>(opcodes::add)},
-                      }};
+    std::array tests {
+        test {
+            opcodes::constant,
+            {65534},
+            {static_cast<uint8_t>(opcodes::constant), 255, 254},
+        },
+        test {
+            opcodes::add,
+            {},
+            {static_cast<uint8_t>(opcodes::add)},
+        },
+        test {
+            opcodes::pop,
+            {},
+            {static_cast<uint8_t>(opcodes::pop)},
+        },
+    };
     for (const auto& [opcode, operands, expected] : tests) {
         auto actual = make(opcode, operands);
         ASSERT_EQ(actual, expected);
@@ -89,11 +96,17 @@ auto run_compiler_tests(std::array<compiler_test_case, N>&& tests)
 
 TEST(compiler, integerArithmetics)
 {
+    using enum opcodes;
     std::array tests {
         compiler_test_case {
             "1 + 2",
             {{1}, {2}},
-            {make(opcodes::constant, {0}), make(opcodes::constant, {1}), make(opcodes::add)},
+            {make(constant, {0}), make(constant, {1}), make(add), make(pop)},
+        },
+        compiler_test_case {
+            "1; 2",
+            {{1}, {2}},
+            {make(constant, {0}), make(pop), make(constant, {1}), make(pop)},
         },
     };
     run_compiler_tests(std::move(tests));
