@@ -9,6 +9,7 @@ struct vm
     auto stack_top() const -> object;
     auto run() -> void;
     auto push(const object& obj) -> void;
+    auto pop() -> object;
 
     constants consts {};
     instructions code {};

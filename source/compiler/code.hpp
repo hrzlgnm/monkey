@@ -14,6 +14,7 @@ using opcode = uint8_t;
 enum class opcodes : uint8_t
 {
     constant,
+    add,
 };
 
 struct definition
@@ -26,9 +27,10 @@ using definition_type = std::map<opcodes, definition>;
 
 const definition_type definitions {
     {opcodes::constant, definition {"OpConstant", {2}}},
+    {opcodes::add, definition {"OpAdd", {}}},
 };
 
-auto make(opcodes opcode, const std::vector<int>& operands) -> instructions;
+auto make(opcodes opcode, const std::vector<int>& operands = {}) -> instructions;
 auto lookup(opcodes opcode) -> std::optional<definition>;
 auto read_operands(const definition& def, const instructions& instr) -> std::pair<std::vector<int>, int>;
 auto to_string(const instructions& code) -> std::string;

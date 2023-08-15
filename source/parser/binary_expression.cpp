@@ -2,6 +2,7 @@
 
 #include <fmt/core.h>
 
+#include "compiler.hpp"
 #include "object.hpp"
 
 auto binary_expression::string() const -> std::string
@@ -73,5 +74,9 @@ auto binary_expression::eval(environment_ptr env) const -> object
 auto binary_expression::compile(compiler& comp) const -> void
 {
     left->compile(comp);
-    unary_expression::compile(comp);
+    right->compile(comp);
+    switch (op) {
+        case token_type::plus:
+            comp.emit(opcodes::add);
+    }
 }
