@@ -1,7 +1,10 @@
+#include <stdexcept>
+
 #include "binary_expression.hpp"
 
 #include <fmt/core.h>
 
+#include "compiler.hpp"
 #include "object.hpp"
 
 auto binary_expression::string() const -> std::string
@@ -74,4 +77,11 @@ auto binary_expression::compile(compiler& comp) const -> void
 {
     left->compile(comp);
     unary_expression::compile(comp);
+    switch (op) {
+        case token_type::plus:
+            comp.emit(opcodes::add);
+            break;
+        default:
+            throw std::runtime_error(fmt::format("unsupported operator {}", op));
+    }
 }

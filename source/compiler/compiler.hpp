@@ -20,5 +20,5 @@ struct compiler
     auto code() const -> bytecode;
     auto add_constant(object&& obj) -> int;
     auto add_instructions(instructions&& ins) -> int;
-    auto emit(opcodes opcode, std::vector<int>&& operands) -> int;
+    auto emit(opcodes opcode, std::vector<int>&& operands = {}) -> int;
 };

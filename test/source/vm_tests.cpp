@@ -48,10 +48,6 @@ auto run_vm_test(std::array<vm_test<Expecteds...>, N> tests)
 
 TEST(vm, integerArithmetics)
 {
-    std::array tests {vm_test<int64_t> {"1", 1},
-                      vm_test<int64_t> {"2", 2},
-                      vm_test<int64_t> {
-                          "1 +2", 2  // FIXME:
-                      }};
+    std::array tests {vm_test<int64_t> {"1", 1}, vm_test<int64_t> {"2", 2}, vm_test<int64_t> {"1 + 2", 3}};
     run_vm_test(tests);
 }

@@ -18,13 +18,16 @@ TEST(compiler, make)
         std::vector<int> operands;
         instructions expected;
     };
-    std::array tests {
-        test {
-            opcodes::constant,
-            {65534},
-            {static_cast<uint8_t>(opcodes::constant), 255, 254},
-        },
-    };
+    std::array tests {test {
+                          opcodes::constant,
+                          {65534},
+                          {static_cast<uint8_t>(opcodes::constant), 255, 254},
+                      },
+                      test {
+                          opcodes::add,
+                          {},
+                          {static_cast<uint8_t>(opcodes::add)},
+                      }};
     for (const auto& [opcode, operands, expected] : tests) {
         auto actual = make(opcode, operands);
         ASSERT_EQ(actual, expected);
@@ -90,7 +93,7 @@ TEST(compiler, integerArithmetics)
         compiler_test_case {
             "1 + 2",
             {{1}, {2}},
-            {make(opcodes::constant, {0}), make(opcodes::constant, {1})},
+            {make(opcodes::constant, {0}), make(opcodes::constant, {1}), make(opcodes::add)},
         },
     };
     run_compiler_tests(std::move(tests));
@@ -98,12 +101,12 @@ TEST(compiler, integerArithmetics)
 
 TEST(compiler, instructionsToString)
 {
-    const auto* const expected = R"(0000 OpConstant 1
-0003 OpConstant 2
-0006 OpConstant 65535
+    const auto* const expected = R"(0000 OpAdd
+0001 OpConstant 2
+0004 OpConstant 65535
 )";
     std::vector<instructions> instrs {
-        make(opcodes::constant, {1}), make(opcodes::constant, {2}), make(opcodes::constant, {65535})};
+        make(opcodes::add, {}), make(opcodes::constant, {2}), make(opcodes::constant, {65535})};
     auto concatenated = flatten(instrs);
     auto actual = to_string(concatenated);
     ASSERT_EQ(expected, actual);
