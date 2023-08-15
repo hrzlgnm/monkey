@@ -37,7 +37,7 @@ auto print_parse_errors(const std::vector<std::string>& errors)
         std::cerr << "\t" << error << "\n";
     }
 }
-
+// TODO: handle exceptions
 auto main() -> int
 {
     std::cout << prompt;
