@@ -7,6 +7,8 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
+#include "code.hpp"
+#include "compiler.hpp"
 #include "environment.hpp"
 #include "object.hpp"
 #include "util.hpp"
@@ -69,6 +71,7 @@ auto expression_statement::eval(environment_ptr env) const -> object
 auto expression_statement::compile(compiler& comp) const -> void
 {
     expr->compile(comp);
+    comp.emit(opcodes::pop);
 }
 
 auto block_statement::string() const -> std::string

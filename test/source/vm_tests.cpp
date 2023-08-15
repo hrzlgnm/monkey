@@ -41,7 +41,7 @@ auto run_vm_test(std::array<vm_test<Expecteds...>, N> tests)
         };
         vm.run();
 
-        auto top = vm.stack_top();
+        auto top = vm.last_popped();
         assert_expected_object(expected, top);
     }
 }

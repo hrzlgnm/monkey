@@ -10,6 +10,7 @@ struct vm
     auto run() -> void;
     auto push(const object& obj) -> void;
     auto pop() -> object;
+    auto last_popped() const -> object;
 
     constants consts {};
     instructions code {};

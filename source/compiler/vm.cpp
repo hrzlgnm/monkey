@@ -16,16 +16,15 @@ auto vm::stack_top() const -> object
 }
 auto vm::run() -> void
 {
-    using enum opcodes;
     for (auto ip = 0U; ip < code.size(); ip++) {
         const auto op_code = static_cast<opcodes>(code.at(ip));
         switch (op_code) {
-            case constant: {
+            case opcodes::constant: {
                 auto const_idx = read_uint16_big_endian(code, ip + 1UL);
                 ip += 2;
                 push(consts.at(const_idx));
             } break;
-            case add: {
+            case opcodes::add: {
                 auto right = pop();
                 auto left = pop();
                 auto left_value = left.as<integer_value>();
@@ -33,6 +32,9 @@ auto vm::run() -> void
                 auto result = left_value + right_value;
                 push({result});
             } break;
+            case opcodes::pop:
+                pop();
+                break;
             default:
                 throw std::runtime_error(fmt::format("Invalid op code {}", static_cast<uint8_t>(op_code)));
         }
@@ -55,4 +57,9 @@ auto vm::pop() -> object
     auto result = stack[stack_pointer - 1];
     stack_pointer--;
     return result;
+}
+
+auto vm::last_popped() const -> object
+{
+    return stack[stack_pointer];
 }
