@@ -78,6 +78,10 @@ TEST(vm, integerArithmetics)
         vm_test<int64_t> {"5 * 2 + 10", 20},
         vm_test<int64_t> {"5 + 2 * 10", 25},
         vm_test<int64_t> {"5 * (2 + 10)", 60},
+        vm_test<int64_t> {"-5", -5},
+        vm_test<int64_t> {"-10", -10},
+        vm_test<int64_t> {"-50 + 100 + -50", 0},
+        vm_test<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
     run_vm_test(tests);
 }
@@ -104,6 +108,12 @@ TEST(vm, booleanExpressions)
         vm_test<bool> {"(1 < 2) == false", false},
         vm_test<bool> {"(1 > 2) == true", false},
         vm_test<bool> {"(1 > 2) == false", true},
+        vm_test<bool> {"!true", false},
+        vm_test<bool> {"!false", true},
+        vm_test<bool> {"!5", false},
+        vm_test<bool> {"!!true", true},
+        vm_test<bool> {"!!false", false},
+        vm_test<bool> {"!!5", true},
     };
     run_vm_test(tests);
 }

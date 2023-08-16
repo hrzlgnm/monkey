@@ -9,10 +9,43 @@
 
 #include "util.hpp"
 
+auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
+{
+    using enum opcodes;
+    switch (opcode) {
+        case constant:
+            return ostream << "constant";
+        case add:
+            return ostream << "add";
+        case sub:
+            return ostream << "sub";
+        case mul:
+            return ostream << "mul";
+        case div:
+            return ostream << "div";
+        case pop:
+            return ostream << "pop";
+        case tru:
+            return ostream << "tru";
+        case fals:
+            return ostream << "fals";
+        case equal:
+            return ostream << "equal";
+        case not_equal:
+            return ostream << "not_equal";
+        case greater_than:
+            return ostream << "greater_than";
+        case minus:
+            return ostream << "minus";
+        case bang:
+            return ostream << "bang";
+    }
+}
+
 auto make(opcodes opcode, const std::vector<int>& operands) -> instructions
 {
     if (!definitions.contains(opcode)) {
-        throw std::invalid_argument("invalid opcode");
+        throw std::invalid_argument(fmt::format("definition given opcode {} is not defined", opcode));
     }
     const auto& definition = definitions.at(opcode);
     instructions instr;

@@ -1,5 +1,4 @@
 #pragma once
-
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -7,6 +6,8 @@
 #include <string>
 #include <variant>
 #include <vector>
+
+#include <fmt/ostream.h>
 
 using instructions = std::vector<uint8_t>;
 using opcode = uint8_t;
@@ -24,7 +25,11 @@ enum class opcodes : uint8_t
     equal,
     not_equal,
     greater_than,
+    minus,
+    bang,
 };
+
+auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
 
 struct definition
 {
@@ -46,6 +51,8 @@ const definition_type definitions {
     {opcodes::equal, definition {"OpEqual"}},
     {opcodes::not_equal, definition {"OpNotEquql"}},
     {opcodes::greater_than, definition {"OpGreaterThan"}},
+    {opcodes::minus, definition {"OpMinus"}},
+    {opcodes::bang, definition {"OpBang"}},
 
 };
 

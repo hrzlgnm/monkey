@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "unary_expression.hpp"
 
 #include <fmt/core.h>
@@ -35,7 +37,18 @@ auto unary_expression::eval(environment_ptr env) const -> object
             return make_error("unknown operator: {}{}", op, evaluated_value.type_name());
     }
 }
+
 auto unary_expression::compile(compiler& comp) const -> void
 {
     right->compile(comp);
+    switch (op) {
+        case token_type::exclamation:
+            comp.emit(opcodes::bang);
+            break;
+        case token_type::minus:
+            comp.emit(opcodes::minus);
+            break;
+        default:
+            throw std::runtime_error(fmt::format("invalid operator {}", op));
+    }
 }

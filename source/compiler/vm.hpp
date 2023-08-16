@@ -13,6 +13,8 @@ struct vm
     auto last_popped() const -> object;
     auto exec_binary_op(opcodes opcode) -> void;
     auto exec_cmp(opcodes opcode) -> void;
+    auto exec_bang() -> void;
+    auto exec_minus() -> void;
     constants consts {};
     instructions code {};
     constants stack {stack_size};

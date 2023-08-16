@@ -49,11 +49,18 @@ auto vm::run() -> void
             case opcodes::fals:
                 push(fals);
                 break;
+            case opcodes::bang:
+                exec_bang();
+                break;
+            case opcodes::minus:
+                exec_minus();
+                break;
             default:
-                throw std::runtime_error(fmt::format("Invalid op code {}", static_cast<uint8_t>(op_code)));
+                throw std::runtime_error(fmt::format("invalid op code {}", op_code));
         }
     }
 }
+
 auto vm::push(const object& obj) -> void
 {
     if (stack_pointer >= stack_size) {
@@ -117,7 +124,7 @@ auto exec_int_cmp(opcodes opcode, integer_value lhs, integer_value rhs) -> bool
         case greater_than:
             return lhs > rhs;
         default:
-            throw std::runtime_error("unknown operator");
+            throw std::runtime_error(fmt::format("unknown operator {}", opcode));
     }
 }
 
@@ -137,7 +144,25 @@ auto vm::exec_cmp(opcodes opcode) -> void
         case not_equal:
             return push({left != right});
         default:
-            throw std::runtime_error(fmt::format(
-                "unknown operator {} ({} {})", static_cast<uint8_t>(opcode), left.type_name(), right.type_name()));
+            throw std::runtime_error(
+                fmt::format("unknown operator {} ({} {})", opcode, left.type_name(), right.type_name()));
     }
+}
+
+auto vm::exec_bang() -> void
+{
+    auto operand = pop();
+    if (operand.is<bool>()) {
+        return push({!operand.as<bool>()});
+    }
+    push(fals);
+}
+
+auto vm::exec_minus() -> void
+{
+    auto operand = pop();
+    if (!operand.is<integer_value>()) {
+        throw std::runtime_error(fmt::format("unsupported type for negation {}", operand.type_name()));
+    }
+    push({-operand.as<integer_value>()});
 }
