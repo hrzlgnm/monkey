@@ -18,7 +18,9 @@ enum class opcodes : uint8_t
     sub,
     mul,
     div,
-    pop
+    pop,
+    tru,
+    fals,
 };
 
 struct definition
@@ -36,6 +38,9 @@ const definition_type definitions {
     {opcodes::mul, definition {"OpMul"}},
     {opcodes::div, definition {"OpDiv"}},
     {opcodes::pop, definition {"OpPop"}},
+    {opcodes::tru, definition {"OpTrue"}},
+    {opcodes::fals, definition {"OpFalse"}},
+
 };
 
 auto make(opcodes opcode, const std::vector<int>& operands = {}) -> instructions;

@@ -7,6 +7,9 @@
 #include "object.hpp"
 #include "util.hpp"
 
+static const object tru {true};
+static const object fals {false};
+
 auto vm::stack_top() const -> object
 {
     if (stack_pointer == 0) {
@@ -33,6 +36,12 @@ auto vm::run() -> void
                 break;
             case opcodes::pop:
                 pop();
+                break;
+            case opcodes::tru:
+                push(tru);
+                break;
+            case opcodes::fals:
+                push(fals);
                 break;
             default:
                 throw std::runtime_error(fmt::format("Invalid op code {}", static_cast<uint8_t>(op_code)));
