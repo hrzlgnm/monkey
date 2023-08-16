@@ -124,6 +124,11 @@ TEST(compiler, integerArithmetics)
             {{1}, {2}},
             {make(constant, {0}), make(constant, {1}), make(div), make(pop)},
         },
+        compiler_test_case {
+            "-1",
+            {{1}},
+            {make(constant, {0}), make(minus), make(pop)},
+        },
     };
     run_compiler_tests(std::move(tests));
 }
@@ -171,6 +176,11 @@ TEST(compiler, booleanExpressions)
             "true != false",
             {},
             {make(tru), make(fals), make(not_equal), make(pop)},
+        },
+        compiler_test_case {
+            "!true",
+            {},
+            {make(tru), make(bang), make(pop)},
         },
     };
     run_compiler_tests(std::move(tests));
