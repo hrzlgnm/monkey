@@ -1,16 +1,18 @@
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 
 #include "code.hpp"
 
 #include <fmt/core.h>
+#include <fmt/format.h>
 
 #include "util.hpp"
 
 auto make(opcodes opcode, const std::vector<int>& operands) -> instructions
 {
     if (!definitions.contains(opcode)) {
-        return {};
+        throw std::invalid_argument("invalid opcode");
     }
     const auto& definition = definitions.at(opcode);
     instructions instr;

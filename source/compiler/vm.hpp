@@ -12,6 +12,7 @@ struct vm
     auto pop() -> object;
     auto last_popped() const -> object;
     auto exec_binary_op(opcodes opcode) -> void;
+    auto exec_cmp(opcodes opcode) -> void;
     constants consts {};
     instructions code {};
     constants stack {stack_size};

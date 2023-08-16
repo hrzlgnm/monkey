@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string_view>
 
 #include <compiler/vm.hpp>
 #include <gtest/gtest.h>
@@ -7,16 +8,18 @@
 #include "object.hpp"
 #include "testutils.hpp"
 
-auto assert_bool_object(bool expected, const object& actual) -> void
+auto assert_bool_object(bool expected, const object& actual, std::string_view input) -> void
 {
-    ASSERT_TRUE(actual.is<bool>()) << "got " << actual.type_name() << " instead";
-    auto actual_int = actual.as<bool>();
-    ASSERT_EQ(actual_int, expected);
+    ASSERT_TRUE(actual.is<bool>()) << input << " got " << actual.type_name() << " with " << std::to_string(actual.value)
+                                   << " instead";
+    auto actual_bool = actual.as<bool>();
+    ASSERT_EQ(actual_bool, expected);
 }
 
-auto assert_integer_object(int64_t expected, const object& actual) -> void
+auto assert_integer_object(int64_t expected, const object& actual, std::string_view input) -> void
 {
-    ASSERT_TRUE(actual.is<integer_value>()) << "got " << actual.type_name() << " instead";
+    ASSERT_TRUE(actual.is<integer_value>())
+        << input << " got " << actual.type_name() << " with " << std::to_string(actual.value) << " instead ";
     auto actual_int = actual.as<integer_value>();
     ASSERT_EQ(actual_int, expected);
 }
@@ -29,12 +32,12 @@ struct vm_test
 };
 
 template<typename... T>
-auto assert_expected_object(const std::variant<T...>& expected, const object& actual) -> void
+auto assert_expected_object(const std::variant<T...>& expected, const object& actual, std::string_view input) -> void
 {
     std::visit(
         overloaded {
-            [&actual](const int64_t expected) { assert_integer_object(expected, actual); },
-            [&actual](bool expected) { assert_bool_object(expected, actual); },
+            [&](const int64_t expected) { assert_integer_object(expected, actual, input); },
+            [&](const bool expected) { assert_bool_object(expected, actual, input); },
         },
         expected);
 }
@@ -54,7 +57,7 @@ auto run_vm_test(std::array<vm_test<Expecteds...>, N> tests)
         vm.run();
 
         auto top = vm.last_popped();
-        assert_expected_object(expected, top);
+        assert_expected_object(expected, top, input);
     }
 }
 
@@ -84,6 +87,23 @@ TEST(vm, booleanExpressions)
     std::array tests {
         vm_test<bool> {"true", true},
         vm_test<bool> {"false", false},
+        vm_test<bool> {"1 < 2", true},
+        vm_test<bool> {"1 > 2", false},
+        vm_test<bool> {"1 < 1", false},
+        vm_test<bool> {"1 > 1", false},
+        vm_test<bool> {"1 == 1", true},
+        vm_test<bool> {"1 != 1", false},
+        vm_test<bool> {"1 == 2", false},
+        vm_test<bool> {"1 != 2", true},
+        vm_test<bool> {"true == true", true},
+        vm_test<bool> {"false == false", true},
+        vm_test<bool> {"true == false", false},
+        vm_test<bool> {"true != false", true},
+        vm_test<bool> {"false != true", true},
+        vm_test<bool> {"(1 < 2) == true", true},
+        vm_test<bool> {"(1 < 2) == false", false},
+        vm_test<bool> {"(1 > 2) == true", false},
+        vm_test<bool> {"(1 > 2) == false", true},
     };
     run_vm_test(tests);
 }
