@@ -19,6 +19,17 @@ auto vm::stack_top() const -> object
     return stack.at(stack_pointer - 1);
 }
 
+auto is_truthy(const object& obj) -> bool
+{
+    return std::visit(
+        overloaded {
+            [](bool val) { return val; },
+            [](const nil_value) { return false; },
+            [](const auto& /*other*/) { return true; },
+        },
+        obj.value);
+}
+
 auto vm::run() -> void
 {
     for (auto ip = 0U; ip < code.size(); ip++) {
@@ -54,6 +65,23 @@ auto vm::run() -> void
                 break;
             case opcodes::minus:
                 exec_minus();
+                break;
+            case opcodes::jump: {
+                auto pos = read_uint16_big_endian(code, ip + 1UL);
+                ip = pos - 1;
+                break;
+            }
+            case opcodes::jump_not_truthy: {
+                auto pos = read_uint16_big_endian(code, ip + 1UL);
+                ip += 2;
+                auto condition = pop();
+                if (!is_truthy(condition)) {
+                    ip = pos - 1;
+                }
+
+            } break;
+            case opcodes::null:
+                push({nil_value {}});
                 break;
             default:
                 throw std::runtime_error(fmt::format("invalid op code {}", op_code));
@@ -154,6 +182,9 @@ auto vm::exec_bang() -> void
     auto operand = pop();
     if (operand.is<bool>()) {
         return push({!operand.as<bool>()});
+    }
+    if (operand.is_nil()) {
+        return push(tru);
     }
     push(fals);
 }
