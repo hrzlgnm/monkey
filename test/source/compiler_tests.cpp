@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <iterator>
 
@@ -126,6 +127,7 @@ TEST(compiler, integerArithmetics)
     };
     run_compiler_tests(std::move(tests));
 }
+
 TEST(compiler, booleanExpressions)
 {
     using enum opcodes;
@@ -139,6 +141,36 @@ TEST(compiler, booleanExpressions)
             "false",
             {},
             {make(fals), make(pop)},
+        },
+        compiler_test_case {
+            "1 > 2",
+            {{1}, {2}},
+            {make(constant, {0}), make(constant, {1}), make(greater_than), make(pop)},
+        },
+        compiler_test_case {
+            "1 < 2",
+            {{2}, {1}},
+            {make(constant, {0}), make(constant, {1}), make(greater_than), make(pop)},
+        },
+        compiler_test_case {
+            "1 == 2",
+            {{1}, {2}},
+            {make(constant, {0}), make(constant, {1}), make(equal), make(pop)},
+        },
+        compiler_test_case {
+            "1 != 2",
+            {{1}, {2}},
+            {make(constant, {0}), make(constant, {1}), make(not_equal), make(pop)},
+        },
+        compiler_test_case {
+            "true == false",
+            {},
+            {make(tru), make(fals), make(equal), make(pop)},
+        },
+        compiler_test_case {
+            "true != false",
+            {},
+            {make(tru), make(fals), make(not_equal), make(pop)},
         },
     };
     run_compiler_tests(std::move(tests));

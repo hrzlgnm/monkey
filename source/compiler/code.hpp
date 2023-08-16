@@ -21,6 +21,9 @@ enum class opcodes : uint8_t
     pop,
     tru,
     fals,
+    equal,
+    not_equal,
+    greater_than,
 };
 
 struct definition
@@ -40,6 +43,9 @@ const definition_type definitions {
     {opcodes::pop, definition {"OpPop"}},
     {opcodes::tru, definition {"OpTrue"}},
     {opcodes::fals, definition {"OpFalse"}},
+    {opcodes::equal, definition {"OpEqual"}},
+    {opcodes::not_equal, definition {"OpNotEquql"}},
+    {opcodes::greater_than, definition {"OpGreaterThan"}},
 
 };
 

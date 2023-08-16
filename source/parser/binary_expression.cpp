@@ -4,8 +4,11 @@
 
 #include <fmt/core.h>
 
+#include "code.hpp"
 #include "compiler.hpp"
 #include "object.hpp"
+#include "token.hpp"
+#include "token_type.hpp"
 
 auto binary_expression::string() const -> std::string
 {
@@ -75,8 +78,14 @@ auto binary_expression::eval(environment_ptr env) const -> object
 
 auto binary_expression::compile(compiler& comp) const -> void
 {
+    if (op == token_type::less_than) {
+        right->compile(comp);
+        left->compile(comp);
+        comp.emit(opcodes::greater_than);
+        return;
+    }
     left->compile(comp);
-    unary_expression::compile(comp);
+    right->compile(comp);
     switch (op) {
         case token_type::plus:
             comp.emit(opcodes::add);
@@ -89,6 +98,15 @@ auto binary_expression::compile(compiler& comp) const -> void
             break;
         case token_type::slash:
             comp.emit(opcodes::div);
+            break;
+        case token_type::greater_than:
+            comp.emit(opcodes::greater_than);
+            break;
+        case token_type::equals:
+            comp.emit(opcodes::equal);
+            break;
+        case token_type::not_equals:
+            comp.emit(opcodes::not_equal);
             break;
         default:
             throw std::runtime_error(fmt::format("unsupported operator {}", op));
