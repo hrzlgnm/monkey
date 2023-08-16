@@ -7,6 +7,13 @@
 #include "object.hpp"
 #include "testutils.hpp"
 
+auto assert_bool_object(bool expected, const object& actual) -> void
+{
+    ASSERT_TRUE(actual.is<bool>()) << "got " << actual.type_name() << " instead";
+    auto actual_int = actual.as<bool>();
+    ASSERT_EQ(actual_int, expected);
+}
+
 auto assert_integer_object(int64_t expected, const object& actual) -> void
 {
     ASSERT_TRUE(actual.is<integer_value>()) << "got " << actual.type_name() << " instead";
@@ -24,7 +31,12 @@ struct vm_test
 template<typename... T>
 auto assert_expected_object(const std::variant<T...>& expected, const object& actual) -> void
 {
-    std::visit(overloaded {[&actual](const int64_t expected) { assert_integer_object(expected, actual); }}, expected);
+    std::visit(
+        overloaded {
+            [&actual](const int64_t expected) { assert_integer_object(expected, actual); },
+            [&actual](bool expected) { assert_bool_object(expected, actual); },
+        },
+        expected);
 }
 
 template<size_t N, typename... Expecteds>
@@ -63,6 +75,15 @@ TEST(vm, integerArithmetics)
         vm_test<int64_t> {"5 * 2 + 10", 20},
         vm_test<int64_t> {"5 + 2 * 10", 25},
         vm_test<int64_t> {"5 * (2 + 10)", 60},
+    };
+    run_vm_test(tests);
+}
+
+TEST(vm, booleanExpressions)
+{
+    std::array tests {
+        vm_test<bool> {"true", true},
+        vm_test<bool> {"false", false},
     };
     run_vm_test(tests);
 }

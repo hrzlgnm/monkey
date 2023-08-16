@@ -126,6 +126,23 @@ TEST(compiler, integerArithmetics)
     };
     run_compiler_tests(std::move(tests));
 }
+TEST(compiler, booleanExpressions)
+{
+    using enum opcodes;
+    std::array tests {
+        compiler_test_case {
+            "true",
+            {},
+            {make(tru), make(pop)},
+        },
+        compiler_test_case {
+            "false",
+            {},
+            {make(fals), make(pop)},
+        },
+    };
+    run_compiler_tests(std::move(tests));
+}
 
 TEST(compiler, instructionsToString)
 {
