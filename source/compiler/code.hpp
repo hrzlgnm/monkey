@@ -10,7 +10,6 @@
 #include <fmt/ostream.h>
 
 using instructions = std::vector<uint8_t>;
-using opcode = uint8_t;
 
 enum class opcodes : uint8_t
 {
