@@ -59,7 +59,7 @@ auto main() -> int
     for (const auto& builtin : builtin_function_expression::builtins) {
         globals->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
     }
-    auto statements = std::vector<statement_ptr>();
+    auto cache = std::vector<statement_ptr>();
     while (getline(std::cin, input)) {
         auto lxr = lexer {input};
         auto prsr = parser {lxr};
@@ -68,6 +68,9 @@ auto main() -> int
             print_parse_errors(prsr.errors());
             continue;
         }
+
+        std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
+
         compiler piler;
         piler.compile(prgrm);
         auto bytecode = piler.code();
@@ -82,7 +85,6 @@ auto main() -> int
         // TODO: add cli switch to compile / evaluate
         /*
                 auto evaluated = prgrm->eval(globals);
-                std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(statements));
                 if (!evaluated.is_nil()) {
                     std::cout << std::to_string(evaluated.value) << "\n";
                 }
