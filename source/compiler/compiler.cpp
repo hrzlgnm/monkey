@@ -10,6 +10,7 @@ compiler::compiler(bytecode&& code, symbol_table_ptr symbols)
     , symbols {std::move(symbols)}
 {
 }
+
 auto compiler::compile(const program_ptr& program) -> void
 {
     program->compile(*this);
