@@ -15,6 +15,7 @@ add_library(
   monkey_lib OBJECT
   source/compiler/code.cpp
   source/compiler/compiler.cpp
+  source/compiler/symbol_table.cpp
   source/compiler/vm.cpp
   source/lexer/lexer.cpp
   source/lexer/token.cpp

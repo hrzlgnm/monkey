@@ -28,7 +28,13 @@ auto let_statement::eval(environment_ptr env) const -> object
     return {};
 }
 
-auto let_statement::compile(compiler& comp) const -> void {}
+auto let_statement::compile(compiler& comp) const -> void
+{
+    value->compile(comp);
+    auto symbol = comp.symbols->define(name->value);
+    comp.emit(opcodes::set_global, {symbol.index});
+}
+
 auto return_statement::string() const -> std::string
 {
     return fmt::format("return {};", value ? value->string() : std::string());
@@ -90,6 +96,7 @@ auto block_statement::eval(environment_ptr env) const -> object
     }
     return result;
 }
+
 auto block_statement::compile(compiler& comp) const -> void
 {
     for (const auto& stmt : statements) {

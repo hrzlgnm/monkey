@@ -44,7 +44,7 @@ TEST(compiler, make)
 
 using expected_value = std::variant<int64_t>;
 
-struct compiler_test_case
+struct ctc
 {
     std::string_view input;
     std::vector<expected_value> expected_constants;
@@ -83,15 +83,14 @@ auto assert_constants(const std::vector<expected_value>& expecteds, const consta
 }
 
 template<size_t N>
-auto run_compiler_tests(std::array<compiler_test_case, N>&& tests)
+auto rct(std::array<ctc, N>&& tests)
 {
     for (const auto& [input, constants, instructions] : tests) {
         auto [prgrm, _] = assert_program(input);
-        compiler piler;
-        piler.compile(prgrm);
-        const auto bytecod = piler.code();
-        assert_instructions(instructions, bytecod.code);
-        assert_constants(constants, bytecod.consts);
+        auto cmplr = make_compiler();
+        cmplr.compile(prgrm);
+        assert_instructions(instructions, cmplr.code.code);
+        assert_constants(constants, *cmplr.code.consts);
     }
 }
 
@@ -101,8 +100,7 @@ TEST(compiler, instructionsToString)
 0001 OpConstant 2
 0004 OpConstant 65535
 )";
-    std::vector<instructions> instrs {
-        make(opcodes::add, {}), make(opcodes::constant, {2}), make(opcodes::constant, {65535})};
+    std::vector<instructions> instrs {make(opcodes::add), make(opcodes::constant, 2), make(opcodes::constant, 65535)};
     auto concatenated = flatten(instrs);
     auto actual = to_string(concatenated);
     ASSERT_EQ(expected, actual);
@@ -141,97 +139,97 @@ TEST(compiler, integerArithmetics)
 {
     using enum opcodes;
     std::array tests {
-        compiler_test_case {
+        ctc {
             "1 + 2",
             {{1}, {2}},
-            {make(constant, {0}), make(constant, {1}), make(add), make(pop)},
+            {make(constant, 0), make(constant, 1), make(add), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1; 2",
             {{1}, {2}},
-            {make(constant, {0}), make(pop), make(constant, {1}), make(pop)},
+            {make(constant, 0), make(pop), make(constant, 1), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1 - 2",
             {{1}, {2}},
-            {make(constant, {0}), make(constant, {1}), make(sub), make(pop)},
+            {make(constant, 0), make(constant, 1), make(sub), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1 * 2",
             {{1}, {2}},
-            {make(constant, {0}), make(constant, {1}), make(mul), make(pop)},
+            {make(constant, 0), make(constant, 1), make(mul), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1 / 2",
             {{1}, {2}},
-            {make(constant, {0}), make(constant, {1}), make(div), make(pop)},
+            {make(constant, 0), make(constant, 1), make(div), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "-1",
             {{1}},
-            {make(constant, {0}), make(minus), make(pop)},
+            {make(constant, 0), make(minus), make(pop)},
         },
     };
-    run_compiler_tests(std::move(tests));
+    rct(std::move(tests));
 }
 
 TEST(compiler, booleanExpressions)
 {
     using enum opcodes;
     std::array tests {
-        compiler_test_case {
+        ctc {
             "true",
             {},
             {make(tru), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "false",
             {},
             {make(fals), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1 > 2",
             {{1}, {2}},
-            {make(constant, {0}), make(constant, {1}), make(greater_than), make(pop)},
+            {make(constant, 0), make(constant, 1), make(greater_than), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1 < 2",
             {{2}, {1}},
-            {make(constant, {0}), make(constant, {1}), make(greater_than), make(pop)},
+            {make(constant, 0), make(constant, 1), make(greater_than), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1 == 2",
             {{1}, {2}},
-            {make(constant, {0}), make(constant, {1}), make(equal), make(pop)},
+            {make(constant, 0), make(constant, 1), make(equal), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "1 != 2",
             {{1}, {2}},
-            {make(constant, {0}), make(constant, {1}), make(not_equal), make(pop)},
+            {make(constant, 0), make(constant, 1), make(not_equal), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "true == false",
             {},
             {make(tru), make(fals), make(equal), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "true != false",
             {},
             {make(tru), make(fals), make(not_equal), make(pop)},
         },
-        compiler_test_case {
+        ctc {
             "!true",
             {},
             {make(tru), make(bang), make(pop)},
         },
     };
-    run_compiler_tests(std::move(tests));
+    rct(std::move(tests));
 }
 TEST(compiler, conditionals)
 {
     using enum opcodes;
     std::array tests {
-        compiler_test_case {
+        ctc {
             R"(if (true) { 10 }; 3333)",
             {{
                 10,
@@ -239,16 +237,16 @@ TEST(compiler, conditionals)
             }},
             {
                 make(tru),
-                make(jump_not_truthy, {10}),
-                make(constant, {0}),
-                make(jump, {11}),
+                make(jump_not_truthy, 10),
+                make(constant, 0),
+                make(jump, 11),
                 make(null),
                 make(pop),
-                make(constant, {1}),
+                make(constant, 1),
                 make(pop),
             },
         },
-        compiler_test_case {
+        ctc {
             R"(if (true) { 10 } else { 20 }; 3333)",
             {{
                 10,
@@ -257,16 +255,63 @@ TEST(compiler, conditionals)
             }},
             {
                 make(tru),
-                make(jump_not_truthy, {10}),
-                make(constant, {0}),
-                make(jump, {13}),
-                make(constant, {1}),
+                make(jump_not_truthy, 10),
+                make(constant, 0),
+                make(jump, 13),
+                make(constant, 1),
                 make(pop),
-                make(constant, {2}),
+                make(constant, 2),
                 make(pop),
             },
         },
     };
-    run_compiler_tests(std::move(tests));
+    rct(std::move(tests));
+}
+
+TEST(compiler, globalLetStatements)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(let one = 1;
+               let two = 2;)",
+            {{1, 2}},
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(constant, 1),
+                make(set_global, 1),
+            },
+        },
+        ctc {
+            R"(let one = 1;
+               one;
+        )",
+            {{1}},
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(let one = 1;
+               let two = one;
+               two;
+        )",
+            {{1}},
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(set_global, 1),
+                make(get_global, 1),
+                make(pop),
+            },
+        },
+    };
+
+    rct(std::move(tests));
 }
 // NOLINTEND(*-magic-numbers)

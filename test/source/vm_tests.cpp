@@ -25,7 +25,7 @@ auto assert_integer_object(int64_t expected, const object& actual, std::string_v
 }
 
 template<typename... T>
-struct vm_test
+struct vt
 {
     std::string_view input;
     std::variant<T...> expected;
@@ -44,17 +44,13 @@ auto assert_expected_object(const std::variant<T...>& expected, const object& ac
 }
 
 template<size_t N, typename... Expecteds>
-auto run_vm_test(std::array<vm_test<Expecteds...>, N> tests)
+auto rvt(std::array<vt<Expecteds...>, N> tests)
 {
     for (const auto& [input, expected] : tests) {
         auto [prgrm, _] = assert_program(input);
-        compiler piler;
-        piler.compile(prgrm);
-        auto bytecode = piler.code();
-        vm vm {
-            .consts = bytecode.consts,
-            .code = bytecode.code,
-        };
+        auto cmplr = make_compiler();
+        cmplr.compile(prgrm);
+        auto vm = make_vm(std::move(cmplr.code));
         vm.run();
 
         auto top = vm.last_popped();
@@ -66,75 +62,85 @@ auto run_vm_test(std::array<vm_test<Expecteds...>, N> tests)
 TEST(vm, integerArithmetics)
 {
     std::array tests {
-        vm_test<int64_t> {"1", 1},
-        vm_test<int64_t> {"2", 2},
-        vm_test<int64_t> {"1 + 2", 3},
-        vm_test<int64_t> {"1 - 2", -1},
-        vm_test<int64_t> {"1 * 2", 2},
+        vt<int64_t> {"1", 1},
+        vt<int64_t> {"2", 2},
+        vt<int64_t> {"1 + 2", 3},
+        vt<int64_t> {"1 - 2", -1},
+        vt<int64_t> {"1 * 2", 2},
 
-        vm_test<int64_t> {"4 / 2", 2},
-        vm_test<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
-        vm_test<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
-        vm_test<int64_t> {"2 * 2 * 2 * 2 * 2", 32},
-        vm_test<int64_t> {"5 * 2 + 10", 20},
-        vm_test<int64_t> {"5 + 2 * 10", 25},
-        vm_test<int64_t> {"5 * (2 + 10)", 60},
-        vm_test<int64_t> {"-5", -5},
-        vm_test<int64_t> {"-10", -10},
-        vm_test<int64_t> {"-50 + 100 + -50", 0},
-        vm_test<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+        vt<int64_t> {"4 / 2", 2},
+        vt<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
+        vt<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
+        vt<int64_t> {"2 * 2 * 2 * 2 * 2", 32},
+        vt<int64_t> {"5 * 2 + 10", 20},
+        vt<int64_t> {"5 + 2 * 10", 25},
+        vt<int64_t> {"5 * (2 + 10)", 60},
+        vt<int64_t> {"-5", -5},
+        vt<int64_t> {"-10", -10},
+        vt<int64_t> {"-50 + 100 + -50", 0},
+        vt<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
-    run_vm_test(tests);
+    rvt(tests);
 }
 
 TEST(vm, booleanExpressions)
 {
     std::array tests {
-        vm_test<bool> {"true", true},
-        vm_test<bool> {"false", false},
-        vm_test<bool> {"1 < 2", true},
-        vm_test<bool> {"1 > 2", false},
-        vm_test<bool> {"1 < 1", false},
-        vm_test<bool> {"1 > 1", false},
-        vm_test<bool> {"1 == 1", true},
-        vm_test<bool> {"1 != 1", false},
-        vm_test<bool> {"1 == 2", false},
-        vm_test<bool> {"1 != 2", true},
-        vm_test<bool> {"true == true", true},
-        vm_test<bool> {"false == false", true},
-        vm_test<bool> {"true == false", false},
-        vm_test<bool> {"true != false", true},
-        vm_test<bool> {"false != true", true},
-        vm_test<bool> {"(1 < 2) == true", true},
-        vm_test<bool> {"(1 < 2) == false", false},
-        vm_test<bool> {"(1 > 2) == true", false},
-        vm_test<bool> {"(1 > 2) == false", true},
-        vm_test<bool> {"!true", false},
-        vm_test<bool> {"!false", true},
-        vm_test<bool> {"!5", false},
-        vm_test<bool> {"!!true", true},
-        vm_test<bool> {"!!false", false},
-        vm_test<bool> {"!!5", true},
-        vm_test<bool> {"!(if (false) { 5; })", true},
+        vt<bool> {"true", true},
+        vt<bool> {"false", false},
+        vt<bool> {"1 < 2", true},
+        vt<bool> {"1 > 2", false},
+        vt<bool> {"1 < 1", false},
+        vt<bool> {"1 > 1", false},
+        vt<bool> {"1 == 1", true},
+        vt<bool> {"1 != 1", false},
+        vt<bool> {"1 == 2", false},
+        vt<bool> {"1 != 2", true},
+        vt<bool> {"true == true", true},
+        vt<bool> {"false == false", true},
+        vt<bool> {"true == false", false},
+        vt<bool> {"true != false", true},
+        vt<bool> {"false != true", true},
+        vt<bool> {"(1 < 2) == true", true},
+        vt<bool> {"(1 < 2) == false", false},
+        vt<bool> {"(1 > 2) == true", false},
+        vt<bool> {"(1 > 2) == false", true},
+        vt<bool> {"!true", false},
+        vt<bool> {"!false", true},
+        vt<bool> {"!5", false},
+        vt<bool> {"!!true", true},
+        vt<bool> {"!!false", false},
+        vt<bool> {"!!5", true},
+        vt<bool> {"!(if (false) { 5; })", true},
     };
-    run_vm_test(tests);
+    rvt(tests);
 }
 
 TEST(vm, conditionals)
 {
     std::array tests {
-        vm_test<int64_t, nil_value> {"if (true) { 10 }", 10},
-        vm_test<int64_t, nil_value> {"if (true) { 10 } else { 20 }", 10},
-        vm_test<int64_t, nil_value> {"if (false) { 10 } else { 20 } ", 20},
-        vm_test<int64_t, nil_value> {"if (1) { 10 }", 10},
-        vm_test<int64_t, nil_value> {"if (1 < 2) { 10 }", 10},
-        vm_test<int64_t, nil_value> {"if (1 < 2) { 10 } else { 20 }", 10},
-        vm_test<int64_t, nil_value> {"if (1 > 2) { 10 } else { 20 }", 20},
-        vm_test<int64_t, nil_value> {"if (1 > 2) { 10 }", nil_value {}},
-        vm_test<int64_t, nil_value> {"if (false) { 10 }", nil_value {}},
-        vm_test<int64_t, nil_value> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
+        vt<int64_t, nil_value> {"if (true) { 10 }", 10},
+        vt<int64_t, nil_value> {"if (true) { 10 } else { 20 }", 10},
+        vt<int64_t, nil_value> {"if (false) { 10 } else { 20 } ", 20},
+        vt<int64_t, nil_value> {"if (1) { 10 }", 10},
+        vt<int64_t, nil_value> {"if (1 < 2) { 10 }", 10},
+        vt<int64_t, nil_value> {"if (1 < 2) { 10 } else { 20 }", 10},
+        vt<int64_t, nil_value> {"if (1 > 2) { 10 } else { 20 }", 20},
+        vt<int64_t, nil_value> {"if (1 > 2) { 10 }", nil_value {}},
+        vt<int64_t, nil_value> {"if (false) { 10 }", nil_value {}},
+        vt<int64_t, nil_value> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
     };
-    run_vm_test(tests);
+    rvt(tests);
+}
+
+TEST(vm, globalLetStatemets)
+{
+    std::array tests {
+        vt<int64_t> {"let one = 1; one", 1},
+        vt<int64_t> {"let one = 1; let two = 2; one + two", 3},
+        vt<int64_t> {"let one = 1; let two = one + one; one + two", 3},
+    };
+    rvt(tests);
 }
 
 // NOLINTEND(*-magic-numbers)
