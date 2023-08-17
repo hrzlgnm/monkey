@@ -11,6 +11,12 @@
 static const object tru {true};
 static const object fals {false};
 
+vm::vm(bytecode&& code, constants_ptr globals)
+    : code {std::move(code)}
+    , globals {std::move(globals)}
+{
+}
+
 auto vm::stack_top() const -> object
 {
     if (stack_pointer == 0) {
@@ -32,11 +38,11 @@ auto is_truthy(const object& obj) -> bool
 
 auto vm::run() -> void
 {
-    for (auto ip = 0U; ip < code.code.size(); ip++) {
-        const auto op_code = static_cast<opcodes>(code.code.at(ip));
+    for (auto ip = 0U; ip < code.instrs.size(); ip++) {
+        const auto op_code = static_cast<opcodes>(code.instrs.at(ip));
         switch (op_code) {
             case opcodes::constant: {
-                auto const_idx = read_uint16_big_endian(code.code, ip + 1UL);
+                auto const_idx = read_uint16_big_endian(code.instrs, ip + 1UL);
                 ip += 2;
                 push(code.consts->at(const_idx));
             } break;
@@ -67,11 +73,11 @@ auto vm::run() -> void
                 exec_minus();
                 break;
             case opcodes::jump: {
-                auto pos = read_uint16_big_endian(code.code, ip + 1UL);
+                auto pos = read_uint16_big_endian(code.instrs, ip + 1UL);
                 ip = pos - 1;
             } break;
             case opcodes::jump_not_truthy: {
-                auto pos = read_uint16_big_endian(code.code, ip + 1UL);
+                auto pos = read_uint16_big_endian(code.instrs, ip + 1UL);
                 ip += 2;
                 auto condition = pop();
                 if (!is_truthy(condition)) {
@@ -83,12 +89,12 @@ auto vm::run() -> void
                 push({nil_value {}});
                 break;
             case opcodes::set_global: {
-                auto global_index = read_uint16_big_endian(code.code, ip + 1UL);
+                auto global_index = read_uint16_big_endian(code.instrs, ip + 1UL);
                 ip += 2;
                 globals->at(global_index) = pop();
             } break;
             case opcodes::get_global: {
-                auto global_index = read_uint16_big_endian(code.code, ip + 1UL);
+                auto global_index = read_uint16_big_endian(code.instrs, ip + 1UL);
                 ip += 2;
                 push(globals->at(global_index));
             } break;

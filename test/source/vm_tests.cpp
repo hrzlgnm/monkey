@@ -48,9 +48,9 @@ auto rvt(std::array<vt<Expecteds...>, N> tests)
 {
     for (const auto& [input, expected] : tests) {
         auto [prgrm, _] = assert_program(input);
-        auto cmplr = make_compiler();
+        auto cmplr = compiler::create();
         cmplr.compile(prgrm);
-        auto vm = make_vm(std::move(cmplr.code));
+        auto vm = vm::create(std::move(cmplr.code));
         vm.run();
 
         auto top = vm.last_popped();

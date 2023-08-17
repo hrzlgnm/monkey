@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "code.hpp"
 #include "compiler.hpp"
 #include "symbol_table.hpp"
@@ -22,20 +24,16 @@ struct vm
     constants stack {stack_size};
     constants_ptr globals;
     size_t stack_pointer {0};
+
+    inline static auto create(bytecode&& code) -> vm
+    {
+        return vm {std::move(code), std::make_shared<constants>(globals_size)};
+    }
+    inline static auto create_with_state(bytecode&& code, constants_ptr globals) -> vm
+    {
+        return vm {std::move(code), std::move(globals)};
+    }
+
+  private:
+    vm(bytecode&& code, constants_ptr globals);
 };
-
-inline auto make_vm(bytecode&& code)
-{
-    return vm {
-        .code = std::move(code),
-        .globals = std::make_shared<constants>(globals_size),
-    };
-}
-
-inline auto make_vm_with_state(bytecode&& code, constants_ptr globals) -> vm
-{
-    return vm {
-        .code = std::move(code),
-        .globals = std::move(globals),
-    };
-}

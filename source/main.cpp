@@ -123,9 +123,9 @@ auto main(int argc, char** argv) -> int
                 continue;
             }
             if (opts.mode == run_mode::compile) {
-                auto cmplr = make_compiler_with_state(consts, symbols);
+                auto cmplr = compiler::create_with_state(consts, symbols);
                 cmplr.compile(prgrm);
-                auto machine = make_vm_with_state(std::move(cmplr.code), globals);
+                auto machine = vm::create_with_state(std::move(cmplr.code), globals);
                 machine.run();
                 auto stack_top = machine.last_popped();
                 std::cout << std::to_string(stack_top.value) << "\n";
