@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -25,9 +26,9 @@ constexpr auto monkey_face = R"r(
    | |  '| /   Y   \ |'  | |
    | \   \ \ 0 | 0 / /  /  |
     \ '-,\.-"""""""-./,-' /
-     ''-' /_  ^ ^ _ \ '-''
+     ''-' /_  ^ ^  _\ '-''
          | \._   _./ |
-         \  \ '~' / /
+         \  \ '~' /  /
           '._'-=-'_.'
             '-----'
 )r";
@@ -60,12 +61,12 @@ struct cmdline_options
     std::string_view file;
 };
 
-auto parse_command_line(std::vector<std::string_view>&& args) -> cmdline_options
+auto parse_command_line(int argc, char** argv) -> cmdline_options
 {
     cmdline_options opts {};
-    for (const auto& arg : args) {
-        if (arg[0] == '-') {
-            switch (arg[1]) {
+    for (std::string_view arg : std::span(argv, static_cast<size_t>(argc))) {
+        if (arg.at(0) == '-') {
+            switch (arg.at(1)) {
                 case 'i':
                     opts.mode = run_mode::interpret;
                     break;
@@ -81,26 +82,25 @@ auto parse_command_line(std::vector<std::string_view>&& args) -> cmdline_options
     }
     return opts;
 }
-auto show_usage(std::string_view program, std::string_view message = {})
+
+auto show_usage(std::string_view program, std::string_view error_msg = {})
 {
-    if (!message.empty()) {
-        fmt::print("Error: {}\n", message);
+    if (!error_msg.empty()) {
+        fmt::print("Error: {}\n", error_msg);
     }
     fmt::print("Usage: {} [-i] [-h] [<file>]\n\n", program);
 }
 
-auto main(int argc, char** argv) -> int
+auto main(int argc, char* argv[]) -> int
 {
-    auto args = std::vector<std::string_view>();
-    std::transform(
-        argv + 1, argv + argc, std::back_inserter(args), [](const char* arg) { return std::string_view(arg); });
-    auto opts = parse_command_line(std::move(args));
+    auto program = std::string_view(*argv);
+    auto opts = parse_command_line(argc - 1, ++argv);
     if (opts.help) {
-        show_usage(*argv);
+        show_usage(program);
         return 0;
     }
     if (!opts.file.empty()) {
-        show_usage(*argv, "file is not supported yet, sorry");
+        show_usage(program, "file is not supported yet, sorry");
         return 1;
     }
     auto input = std::string {};
