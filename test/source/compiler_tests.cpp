@@ -87,9 +87,9 @@ auto rct(std::array<ctc, N>&& tests)
 {
     for (const auto& [input, constants, instructions] : tests) {
         auto [prgrm, _] = assert_program(input);
-        auto cmplr = make_compiler();
+        auto cmplr = compiler::create();
         cmplr.compile(prgrm);
-        assert_instructions(instructions, cmplr.code.code);
+        assert_instructions(instructions, cmplr.code.instrs);
         assert_constants(constants, *cmplr.code.consts);
     }
 }

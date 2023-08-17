@@ -5,6 +5,11 @@
 
 #include "compiler/code.hpp"
 
+compiler::compiler(bytecode&& code, symbol_table_ptr symbols)
+    : code {std::move(code)}
+    , symbols {std::move(symbols)}
+{
+}
 auto compiler::compile(const program_ptr& program) -> void
 {
     program->compile(*this);
@@ -18,8 +23,8 @@ auto compiler::add_constant(object&& obj) -> size_t
 
 auto compiler::add_instructions(instructions&& ins) -> size_t
 {
-    auto pos = code.code.size();
-    std::copy(ins.begin(), ins.end(), std::back_inserter(code.code));
+    auto pos = code.instrs.size();
+    std::copy(ins.begin(), ins.end(), std::back_inserter(code.instrs));
     return pos;
 }
 
@@ -41,21 +46,21 @@ auto compiler::last_is_pop() const -> bool
 
 auto compiler::remove_last_pop() -> void
 {
-    code.code.resize(last_instr.position);
+    code.instrs.resize(last_instr.position);
     last_instr = previous_instr;
 }
 
 auto compiler::replace_instruction(size_t pos, const instructions& instr) -> void
 {
     for (auto idx = 0UL; const auto& inst : instr) {
-        code.code[pos + idx] = inst;
+        code.instrs[pos + idx] = inst;
         idx++;
     }
 }
 
 auto compiler::change_operand(size_t pos, int operand) -> void
 {
-    auto opcode = static_cast<opcodes>(code.code.at(pos));
+    auto opcode = static_cast<opcodes>(code.instrs.at(pos));
     auto instr = make(opcode, operand);
     replace_instruction(pos, instr);
 }

@@ -10,7 +10,7 @@ using constants_ptr = std::shared_ptr<constants>;
 
 struct bytecode
 {
-    instructions code {};
+    instructions instrs {};
     constants_ptr consts;
 };
 
@@ -35,14 +35,17 @@ struct compiler
     emitted_instruction last_instr {};
     emitted_instruction previous_instr {};
     symbol_table_ptr symbols;
+
+    static inline auto create() -> compiler
+    {
+        return compiler {{.consts = std::make_shared<constants>()}, std::make_shared<symbol_table>()};
+    }
+
+    static inline auto create_with_state(constants_ptr constants, symbol_table_ptr symbols) -> compiler
+    {
+        return compiler {{.consts = std::move(constants)}, std::move(symbols)};
+    }
+
+  private:
+    compiler(bytecode&& code, symbol_table_ptr symbols);
 };
-
-inline auto make_compiler() -> compiler
-{
-    return compiler {.code = {.consts = std::make_shared<constants>()}, .symbols = std::make_shared<symbol_table>()};
-}
-
-inline auto make_compiler_with_state(constants_ptr constants, symbol_table_ptr symbols)
-{
-    return compiler {.code = {.consts = std::move(constants)}, .symbols = std::move(symbols)};
-}
