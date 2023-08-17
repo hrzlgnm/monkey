@@ -22,7 +22,7 @@ struct expression
     virtual auto string() const -> std::string = 0;
     virtual auto eval(environment_ptr) const -> object = 0;
     /// TODO: make this pure virtual again
-    virtual inline auto compile(compiler& comp) const -> void
+    virtual inline auto compile(compiler& /*comp*/) const -> void
     {
         throw std::runtime_error(fmt::format("compile for {} is not implemented yet", typeid(*this).name() + 1));
     }

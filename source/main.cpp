@@ -1,10 +1,13 @@
+#include <exception>
 #include <future>
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "builtin_function_expression.hpp"
+#include "code.hpp"
 #include "compiler.hpp"
 #include "environment.hpp"
 #include "lexer.hpp"
@@ -43,56 +46,102 @@ auto print_parse_errors(const std::vector<std::string>& errors)
     }
 }
 
-auto main() -> int
+enum class run_mode
 {
-    std::set_terminate(
-        []()
-        {
-            monkey_business();
-            std::cerr << "unhandled exception" << std::flush;
-            std::abort();
-        });
-    std::cout << prompt;
+    compile,
+    interpret,
+};
 
+struct cmdline_options
+{
+    bool help {};
+    run_mode mode {};
+    std::string_view file;
+};
+
+auto parse_command_line(std::vector<std::string_view>&& args) -> cmdline_options
+{
+    cmdline_options opts {};
+    for (const auto& arg : args) {
+        if (arg[0] == '-') {
+            switch (arg[1]) {
+                case 'i':
+                    opts.mode = run_mode::interpret;
+                    break;
+                case 'h':
+                    opts.help = true;
+                    break;
+            }
+        } else {
+            if (opts.file.empty()) {
+                opts.file = arg;
+            }
+        }
+    }
+    return opts;
+}
+auto show_usage(std::string_view program, std::string_view message = {})
+{
+    if (!message.empty()) {
+        fmt::print("Error: {}\n", message);
+    }
+    fmt::print("Usage: {} [-i] [-h] [<file>]\n\n", program);
+}
+
+auto main(int argc, char** argv) -> int
+{
+    auto args = std::vector<std::string_view>();
+    std::transform(
+        argv + 1, argv + argc, std::back_inserter(args), [](const char* arg) { return std::string_view(arg); });
+    auto opts = parse_command_line(std::move(args));
+    if (opts.help) {
+        show_usage(*argv);
+        return 0;
+    }
+    if (!opts.file.empty()) {
+        show_usage(*argv, "file is not supported yet, sorry");
+        return 1;
+    }
     auto input = std::string {};
+    std::cout << prompt;
     auto globals = std::make_shared<environment>();
     for (const auto& builtin : builtin_function_expression::builtins) {
         globals->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
     }
-    auto cache = std::vector<statement_ptr>();
-    while (getline(std::cin, input)) {
-        auto lxr = lexer {input};
-        auto prsr = parser {lxr};
-        auto prgrm = prsr.parse_program();
-        if (!prsr.errors().empty()) {
-            print_parse_errors(prsr.errors());
-            continue;
-        }
-
-        compiler piler;
-        piler.compile(prgrm);
-
-        // rescue statements for interpreter after compiling
-        std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
-
-        auto bytecode = piler.code();
-        vm machine {
-            .consts = bytecode.consts,
-            .code = bytecode.code,
-        };
-        machine.run();
-        auto stack_top = machine.last_popped();
-        std::cout << std::to_string(stack_top.value) << "\n";
-
-        // TODO: add cli switch to compile / evaluate
-        /*
+    try {
+        auto cache = std::vector<statement_ptr>();
+        while (getline(std::cin, input)) {
+            auto lxr = lexer {input};
+            auto prsr = parser {lxr};
+            auto prgrm = prsr.parse_program();
+            if (!prsr.errors().empty()) {
+                print_parse_errors(prsr.errors());
+                continue;
+            }
+            if (opts.mode == run_mode::compile) {
+                compiler piler;
+                piler.compile(prgrm);
+                auto bytecode = piler.code();
+                vm machine {
+                    .consts = bytecode.consts,
+                    .code = bytecode.code,
+                };
+                machine.run();
+                auto stack_top = machine.last_popped();
+                std::cout << std::to_string(stack_top.value) << "\n";
+            } else {
                 auto evaluated = prgrm->eval(globals);
                 if (!evaluated.is_nil()) {
                     std::cout << std::to_string(evaluated.value) << "\n";
                 }
-                */
-        std::cout << prompt;
+            }
+            std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
+            std::cout << prompt;
+        }
+        globals->break_cycle();
+    } catch (const std::exception& e) {
+        monkey_business();
+        std::cerr << "Caught an exception: " << e.what() << "\n";
     }
-    globals->break_cycle();
     return 0;
 }
