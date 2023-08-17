@@ -95,6 +95,48 @@ auto run_compiler_tests(std::array<compiler_test_case, N>&& tests)
     }
 }
 
+TEST(compiler, instructionsToString)
+{
+    const auto* const expected = R"(0000 OpAdd
+0001 OpConstant 2
+0004 OpConstant 65535
+)";
+    std::vector<instructions> instrs {
+        make(opcodes::add, {}), make(opcodes::constant, {2}), make(opcodes::constant, {65535})};
+    auto concatenated = flatten(instrs);
+    auto actual = to_string(concatenated);
+    ASSERT_EQ(expected, actual);
+}
+
+TEST(compiler, readOperands)
+{
+    struct test
+    {
+        opcodes opcode;
+        std::vector<int> operands;
+        int bytes_read;
+    };
+    std::array tests {
+        test {
+            opcodes::constant,
+            {65534},
+            2,
+        },
+    };
+    for (const auto& [opcode, operands, bytes] : tests) {
+        const auto instr = make(opcode, operands);
+        const auto def = lookup(opcode);
+
+        ASSERT_TRUE(def.has_value());
+
+        const auto actual = read_operands(def.value(), {instr.begin() + 1, instr.end()});
+        EXPECT_EQ(actual.second, bytes);
+        for (size_t iidx = 0; iidx < operands.size(); ++iidx) {
+            EXPECT_EQ(operands[iidx], actual.first[iidx]) << "at " << iidx;
+        }
+    }
+}
+
 TEST(compiler, integerArithmetics)
 {
     using enum opcodes;
@@ -185,46 +227,46 @@ TEST(compiler, booleanExpressions)
     };
     run_compiler_tests(std::move(tests));
 }
-
-TEST(compiler, instructionsToString)
+TEST(compiler, conditionals)
 {
-    const auto* const expected = R"(0000 OpAdd
-0001 OpConstant 2
-0004 OpConstant 65535
-)";
-    std::vector<instructions> instrs {
-        make(opcodes::add, {}), make(opcodes::constant, {2}), make(opcodes::constant, {65535})};
-    auto concatenated = flatten(instrs);
-    auto actual = to_string(concatenated);
-    ASSERT_EQ(expected, actual);
-}
-
-TEST(compiler, readOperands)
-{
-    struct test
-    {
-        opcodes opcode;
-        std::vector<int> operands;
-        int bytes_read;
-    };
+    using enum opcodes;
     std::array tests {
-        test {
-            opcodes::constant,
-            {65534},
-            2,
+        compiler_test_case {
+            R"(if (true) { 10 }; 3333)",
+            {{
+                10,
+                3333,
+            }},
+            {
+                make(tru),
+                make(jump_not_truthy, {10}),
+                make(constant, {0}),
+                make(jump, {11}),
+                make(null),
+                make(pop),
+                make(constant, {1}),
+                make(pop),
+            },
+        },
+        compiler_test_case {
+            R"(if (true) { 10 } else { 20 }; 3333)",
+            {{
+                10,
+                20,
+                3333,
+            }},
+            {
+                make(tru),
+                make(jump_not_truthy, {10}),
+                make(constant, {0}),
+                make(jump, {13}),
+                make(constant, {1}),
+                make(pop),
+                make(constant, {2}),
+                make(pop),
+            },
         },
     };
-    for (const auto& [opcode, operands, bytes] : tests) {
-        const auto instr = make(opcode, operands);
-        const auto def = lookup(opcode);
-
-        ASSERT_TRUE(def.has_value());
-
-        const auto actual = read_operands(def.value(), {instr.begin() + 1, instr.end()});
-        EXPECT_EQ(actual.second, bytes);
-        for (size_t iidx = 0; iidx < operands.size(); ++iidx) {
-            EXPECT_EQ(operands[iidx], actual.first[iidx]) << "at " << iidx;
-        }
-    }
+    run_compiler_tests(std::move(tests));
 }
 // NOLINTEND(*-magic-numbers)

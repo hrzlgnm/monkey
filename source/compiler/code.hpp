@@ -26,6 +26,9 @@ enum class opcodes : uint8_t
     greater_than,
     minus,
     bang,
+    jump_not_truthy,
+    jump,
+    null,
 };
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
@@ -52,7 +55,9 @@ const definition_type definitions {
     {opcodes::greater_than, definition {"OpGreaterThan"}},
     {opcodes::minus, definition {"OpMinus"}},
     {opcodes::bang, definition {"OpBang"}},
-
+    {opcodes::jump_not_truthy, definition {"OpJumpNotTruthy", {2}}},
+    {opcodes::jump, definition {"OpJump", {2}}},
+    {opcodes::null, definition {"OpNull"}},
 };
 
 auto make(opcodes opcode, const std::vector<int>& operands = {}) -> instructions;

@@ -69,10 +69,12 @@ auto main() -> int
             continue;
         }
 
-        std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
-
         compiler piler;
         piler.compile(prgrm);
+
+        // rescue statements for interpreter after compiling
+        std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
+
         auto bytecode = piler.code();
         vm machine {
             .consts = bytecode.consts,

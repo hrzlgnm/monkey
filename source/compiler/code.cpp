@@ -39,6 +39,12 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "minus";
         case bang:
             return ostream << "bang";
+        case jump_not_truthy:
+            return ostream << "jump_not_truthy";
+        case jump:
+            return ostream << "jump";
+        case null:
+            return ostream << "null";
     }
 }
 

@@ -38,6 +38,7 @@ auto assert_expected_object(const std::variant<T...>& expected, const object& ac
         overloaded {
             [&](const int64_t expected) { assert_integer_object(expected, actual, input); },
             [&](const bool expected) { assert_bool_object(expected, actual, input); },
+            [&](const nil_value) { ASSERT_TRUE(actual.is_nil()); },
         },
         expected);
 }
@@ -114,7 +115,26 @@ TEST(vm, booleanExpressions)
         vm_test<bool> {"!!true", true},
         vm_test<bool> {"!!false", false},
         vm_test<bool> {"!!5", true},
+        vm_test<bool> {"!(if (false) { 5; })", true},
     };
     run_vm_test(tests);
 }
+
+TEST(vm, conditionals)
+{
+    std::array tests {
+        vm_test<int64_t, nil_value> {"if (true) { 10 }", 10},
+        vm_test<int64_t, nil_value> {"if (true) { 10 } else { 20 }", 10},
+        vm_test<int64_t, nil_value> {"if (false) { 10 } else { 20 } ", 20},
+        vm_test<int64_t, nil_value> {"if (1) { 10 }", 10},
+        vm_test<int64_t, nil_value> {"if (1 < 2) { 10 }", 10},
+        vm_test<int64_t, nil_value> {"if (1 < 2) { 10 } else { 20 }", 10},
+        vm_test<int64_t, nil_value> {"if (1 > 2) { 10 } else { 20 }", 20},
+        vm_test<int64_t, nil_value> {"if (1 > 2) { 10 }", nil_value {}},
+        vm_test<int64_t, nil_value> {"if (false) { 10 }", nil_value {}},
+        vm_test<int64_t, nil_value> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
+    };
+    run_vm_test(tests);
+}
+
 // NOLINTEND(*-magic-numbers)
