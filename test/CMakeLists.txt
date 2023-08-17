@@ -7,8 +7,13 @@ project(Tests LANGUAGES CXX)
 
 add_executable(
   monkey_test
-  source/compiler_tests.cpp source/eval_tests.cpp source/lexing_tests.cpp
-  source/parsing_tests.cpp source/testutils.cpp source/vm_tests.cpp)
+  source/compiler_tests.cpp
+  source/eval_tests.cpp
+  source/lexing_tests.cpp
+  source/parsing_tests.cpp
+  source/testutils.cpp
+  source/vm_tests.cpp
+  source/symbol_table_tests.cpp)
 
 target_precompile_headers(monkey_test REUSE_FROM monkey_lib)
 target_link_libraries(monkey_test PRIVATE monkey_lib gtest gtest_main)

@@ -2,7 +2,10 @@
 
 #include "code.hpp"
 #include "compiler.hpp"
-constexpr auto stack_size = 2048;
+#include "symbol_table.hpp"
+
+constexpr auto stack_size = 2048UL;
+constexpr auto globals_size = 65536UL;
 
 struct vm
 {
@@ -15,8 +18,24 @@ struct vm
     auto exec_cmp(opcodes opcode) -> void;
     auto exec_bang() -> void;
     auto exec_minus() -> void;
-    constants consts {};
-    instructions code {};
+    bytecode code;
     constants stack {stack_size};
+    constants_ptr globals;
     size_t stack_pointer {0};
 };
+
+inline auto make_vm(bytecode&& code)
+{
+    return vm {
+        .code = std::move(code),
+        .globals = std::make_shared<constants>(globals_size),
+    };
+}
+
+inline auto make_vm_with_state(bytecode&& code, constants_ptr globals) -> vm
+{
+    return vm {
+        .code = std::move(code),
+        .globals = std::move(globals),
+    };
+}

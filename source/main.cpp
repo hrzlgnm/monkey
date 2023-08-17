@@ -2,6 +2,7 @@
 #include <future>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -104,10 +105,13 @@ auto main(int argc, char** argv) -> int
     }
     auto input = std::string {};
     std::cout << prompt;
-    auto globals = std::make_shared<environment>();
+    auto global_env = std::make_shared<environment>();
     for (const auto& builtin : builtin_function_expression::builtins) {
-        globals->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
+        global_env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
     }
+    auto consts = std::make_shared<constants>();
+    auto globals = std::make_shared<constants>(globals_size);
+    auto symbols = std::make_shared<symbol_table>();
     try {
         auto cache = std::vector<statement_ptr>();
         while (getline(std::cin, input)) {
@@ -119,18 +123,14 @@ auto main(int argc, char** argv) -> int
                 continue;
             }
             if (opts.mode == run_mode::compile) {
-                compiler piler;
-                piler.compile(prgrm);
-                auto bytecode = piler.code();
-                vm machine {
-                    .consts = bytecode.consts,
-                    .code = bytecode.code,
-                };
+                auto cmplr = make_compiler_with_state(consts, symbols);
+                cmplr.compile(prgrm);
+                auto machine = make_vm_with_state(std::move(cmplr.code), globals);
                 machine.run();
                 auto stack_top = machine.last_popped();
                 std::cout << std::to_string(stack_top.value) << "\n";
             } else {
-                auto evaluated = prgrm->eval(globals);
+                auto evaluated = prgrm->eval(global_env);
                 if (!evaluated.is_nil()) {
                     std::cout << std::to_string(evaluated.value) << "\n";
                 }
@@ -138,7 +138,7 @@ auto main(int argc, char** argv) -> int
             std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
             std::cout << prompt;
         }
-        globals->break_cycle();
+        global_env->break_cycle();
     } catch (const std::exception& e) {
         monkey_business();
         std::cerr << "Caught an exception: " << e.what() << "\n";

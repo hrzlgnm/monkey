@@ -32,13 +32,13 @@ auto is_truthy(const object& obj) -> bool
 
 auto vm::run() -> void
 {
-    for (auto ip = 0U; ip < code.size(); ip++) {
-        const auto op_code = static_cast<opcodes>(code.at(ip));
+    for (auto ip = 0U; ip < code.code.size(); ip++) {
+        const auto op_code = static_cast<opcodes>(code.code.at(ip));
         switch (op_code) {
             case opcodes::constant: {
-                auto const_idx = read_uint16_big_endian(code, ip + 1UL);
+                auto const_idx = read_uint16_big_endian(code.code, ip + 1UL);
                 ip += 2;
-                push(consts.at(const_idx));
+                push(code.consts->at(const_idx));
             } break;
             case opcodes::sub:  // fallthrough
             case opcodes::mul:  // fallthrough
@@ -67,12 +67,11 @@ auto vm::run() -> void
                 exec_minus();
                 break;
             case opcodes::jump: {
-                auto pos = read_uint16_big_endian(code, ip + 1UL);
+                auto pos = read_uint16_big_endian(code.code, ip + 1UL);
                 ip = pos - 1;
-                break;
-            }
+            } break;
             case opcodes::jump_not_truthy: {
-                auto pos = read_uint16_big_endian(code, ip + 1UL);
+                auto pos = read_uint16_big_endian(code.code, ip + 1UL);
                 ip += 2;
                 auto condition = pop();
                 if (!is_truthy(condition)) {
@@ -83,8 +82,18 @@ auto vm::run() -> void
             case opcodes::null:
                 push({nil_value {}});
                 break;
+            case opcodes::set_global: {
+                auto global_index = read_uint16_big_endian(code.code, ip + 1UL);
+                ip += 2;
+                globals->at(global_index) = pop();
+            } break;
+            case opcodes::get_global: {
+                auto global_index = read_uint16_big_endian(code.code, ip + 1UL);
+                ip += 2;
+                push(globals->at(global_index));
+            } break;
             default:
-                throw std::runtime_error(fmt::format("invalid op code {}", op_code));
+                throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
         }
     }
 }

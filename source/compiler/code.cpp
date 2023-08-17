@@ -45,6 +45,10 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "jump";
         case null:
             return ostream << "null";
+        case get_global:
+            return ostream << "get_global";
+        case set_global:
+            return ostream << "set_global";
     }
 }
 
@@ -70,7 +74,9 @@ auto make(opcodes opcode, const std::vector<int>& operands) -> instructions
 
 auto read_operands(const definition& def, const instructions& instr) -> std::pair<std::vector<int>, int>
 {
-    // TODO: handle the hassle with unsigned size and subscript in std::containers
+    // TODO: handle the hassle with unsigned size and subscript in std::containers,
+    // approach: have a the lowest count of
+    // static casts int <-> size_t possible
     std::pair<std::vector<int>, int> result;
     result.first.resize(def.operand_widths.size());
     auto offset = 0U;
@@ -86,6 +92,7 @@ auto read_operands(const definition& def, const instructions& instr) -> std::pai
     result.second = static_cast<int>(offset);
     return result;
 }
+
 auto lookup(opcodes opcode) -> std::optional<definition>
 {
     if (!definitions.contains(opcode)) {

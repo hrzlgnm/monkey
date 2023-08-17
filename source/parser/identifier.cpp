@@ -1,5 +1,8 @@
+#include <stdexcept>
+
 #include "identifier.hpp"
 
+#include "compiler.hpp"
 #include "environment.hpp"
 
 identifier::identifier(std::string val)
@@ -18,4 +21,13 @@ auto identifier::eval(environment_ptr env) const -> object
 auto identifier::string() const -> std::string
 {
     return value;
+}
+
+auto identifier::compile(compiler& comp) const -> void
+{
+    auto symbol = comp.symbols->resolve(value);
+    if (!symbol.has_value()) {
+        throw std::runtime_error(fmt::format("undefined variable {}", value));
+    }
+    comp.emit(opcodes::get_global, {symbol.value().index});
 }

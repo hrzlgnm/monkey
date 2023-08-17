@@ -29,6 +29,8 @@ enum class opcodes : uint8_t
     jump_not_truthy,
     jump,
     null,
+    get_global,
+    set_global,
 };
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
@@ -58,9 +60,15 @@ const definition_type definitions {
     {opcodes::jump_not_truthy, definition {"OpJumpNotTruthy", {2}}},
     {opcodes::jump, definition {"OpJump", {2}}},
     {opcodes::null, definition {"OpNull"}},
+    {opcodes::get_global, definition {"OpGetGlobal", {2}}},
+    {opcodes::set_global, definition {"OpSetGlobal", {2}}},
 };
 
 auto make(opcodes opcode, const std::vector<int>& operands = {}) -> instructions;
+inline auto make(opcodes opcode, int operand) -> instructions
+{
+    return make(opcode, std::vector<int> {operand});
+}
 auto lookup(opcodes opcode) -> std::optional<definition>;
 auto read_operands(const definition& def, const instructions& instr) -> std::pair<std::vector<int>, int>;
 auto to_string(const instructions& code) -> std::string;
