@@ -87,19 +87,16 @@ auto make(opcodes opcode, size_t operand) -> instructions
 
 auto read_operands(const definition& def, const instructions& instr) -> std::pair<operands, operands::size_type>
 {
-    // TODO: handle the hassle with unsigned size and subscript in std::containers,
-    // approach: have a the lowest count of
-    // static casts int <-> size_t possible
     std::pair<operands, operands::size_type> result;
     result.first.resize(def.operand_widths.size());
-    auto offset = 0U;
+    auto offset = 0UL;
     for (size_t idx = 0; const auto width : def.operand_widths) {
         switch (width) {
             case 2:
                 result.first[idx] = read_uint16_big_endian(instr, offset);
                 break;
         }
-        offset += static_cast<unsigned>(width);
+        offset += width;
         idx++;
     }
     result.second = offset;
