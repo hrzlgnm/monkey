@@ -43,10 +43,3 @@ auto index_expression::eval(environment_ptr env) const -> object
     }
     return make_error("index operator not supported: {}", evaluated_left.type_name());
 }
-
-auto index_expression::compile(compiler& comp) const -> void
-{
-    left->compile(comp);
-    index->compile(comp);
-    comp.emit(opcodes::index);
-}

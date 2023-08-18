@@ -18,8 +18,3 @@ auto boolean::string() const -> std::string
 {
     return std::string {value ? "true" : "false"};
 }
-
-auto boolean::compile(compiler& comp) const -> void
-{
-    comp.emit(value ? opcodes::tru : opcodes::fals);
-}

@@ -27,13 +27,6 @@ auto let_statement::eval(environment_ptr env) const -> object
     return {};
 }
 
-auto let_statement::compile(compiler& comp) const -> void
-{
-    value->compile(comp);
-    auto symbol = comp.symbols->define(name->value);
-    comp.emit(opcodes::set_global, symbol.index);
-}
-
 auto return_statement::string() const -> std::string
 {
     return fmt::format("return {};", value ? value->string() : std::string());
@@ -52,11 +45,6 @@ auto return_statement::eval(environment_ptr env) const -> object
     return {};
 }
 
-auto return_statement::compile(compiler& comp) const -> void
-{
-    value->compile(comp);
-}
-
 auto expression_statement::string() const -> std::string
 {
     if (expr) {
@@ -71,12 +59,6 @@ auto expression_statement::eval(environment_ptr env) const -> object
         return expr->eval(env);
     }
     return {};
-}
-
-auto expression_statement::compile(compiler& comp) const -> void
-{
-    expr->compile(comp);
-    comp.emit(opcodes::pop);
 }
 
 auto block_statement::string() const -> std::string
@@ -94,11 +76,4 @@ auto block_statement::eval(environment_ptr env) const -> object
         }
     }
     return result;
-}
-
-auto block_statement::compile(compiler& comp) const -> void
-{
-    for (const auto& stmt : statements) {
-        stmt->compile(comp);
-    }
 }

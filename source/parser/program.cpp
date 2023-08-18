@@ -24,10 +24,3 @@ auto program::eval(environment_ptr env) const -> object
     }
     return result;
 }
-
-auto program::compile(compiler& comp) const -> void
-{
-    for (const auto& stmt : statements) {
-        stmt->compile(comp);
-    }
-}

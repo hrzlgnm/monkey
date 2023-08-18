@@ -32,27 +32,3 @@ auto if_expression::eval(environment_ptr env) const -> object
     }
     return {};
 }
-
-auto if_expression::compile(compiler& comp) const -> void
-{
-    condition->compile(comp);
-    auto jump_not_truthy_pos = comp.emit(opcodes::jump_not_truthy, {0});
-    consequence->compile(comp);
-    if (comp.last_is_pop()) {
-        comp.remove_last_pop();
-    }
-    auto jump_pos = comp.emit(opcodes::jump, {0});
-    auto after_consequence = comp.code.instrs.size();
-    comp.change_operand(jump_not_truthy_pos, static_cast<int>(after_consequence));
-
-    if (!alternative) {
-        comp.emit(opcodes::null);
-    } else {
-        alternative->compile(comp);
-        if (comp.last_is_pop()) {
-            comp.remove_last_pop();
-        }
-    }
-    auto after_alternative = comp.code.instrs.size();
-    comp.change_operand(jump_pos, static_cast<int>(after_alternative));
-}

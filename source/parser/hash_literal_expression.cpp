@@ -42,12 +42,3 @@ auto hash_literal_expression::eval(environment_ptr env) const -> object
     }
     return {result};
 }
-
-auto hash_literal_expression::compile(compiler& comp) const -> void
-{
-    for (const auto& [key, value] : pairs) {
-        key->compile(comp);
-        value->compile(comp);
-    }
-    comp.emit(opcodes::hash, pairs.size() * 2);
-}
