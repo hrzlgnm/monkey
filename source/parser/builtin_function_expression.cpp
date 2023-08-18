@@ -179,5 +179,3 @@ auto builtin_function_expression::string() const -> std::string
 {
     return fmt::format("{}(){}", name, "{...}");
 }
-
-auto builtin_function_expression::compile(compiler& comp) const -> void {}

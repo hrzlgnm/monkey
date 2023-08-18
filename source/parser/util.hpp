@@ -23,6 +23,3 @@ auto debug_env(const environment_ptr& env) -> void;
 
 template<typename Value>
 using string_map = std::map<std::string, Value, std::less<>>;
-
-[[nodiscard]] auto read_uint16_big_endian(const std::vector<uint8_t>& bytes, size_t offset) -> uint16_t;
-void write_uint16_big_endian(std::vector<uint8_t>& bytes, size_t offset, uint16_t value);

@@ -65,7 +65,11 @@ auto parse_command_line(int argc, char** argv) -> cmdline_options
 {
     cmdline_options opts {};
     for (std::string_view arg : std::span(argv, static_cast<size_t>(argc))) {
-        if (arg.at(0) == '-') {
+        if (arg.at(0) == '-' && arg.size() == 1) {
+            fmt::print("WARNING: skipping unknown command line arg {}\n", arg);
+            continue;
+        }
+        if (arg.at(0) == '-' && arg.size() > 1) {
             switch (arg.at(1)) {
                 case 'i':
                     opts.mode = run_mode::interpret;

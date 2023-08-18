@@ -519,7 +519,7 @@ TEST(parsing, testHashLiteralStringKeys)
     auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
     std::array keys {"one", "two", "three"};
     std::array values {1, 2, 3};
-    for (int idx = 0; const auto& [k, v] : hash_lit->pairs) {
+    for (auto idx = 0UL; const auto& [k, v] : hash_lit->pairs) {
         assert_string_literal(k, keys.at(idx));
         assert_integer_literal(v, values.at(idx));
         idx++;
