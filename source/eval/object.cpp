@@ -6,10 +6,12 @@
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
 
+const object nil {nilv};
+
 auto to_string(const hash_key_type& hash_key)
 {
-    return std::visit(overloaded {[](const integer_value val) -> std::string { return std::to_string(val); },
-                                  [](const string_value& val) -> std::string { return "\"" + val + "\""; },
+    return std::visit(overloaded {[](const integer_type val) -> std::string { return std::to_string(val); },
+                                  [](const string_type& val) -> std::string { return "\"" + val + "\""; },
                                   [](const bool val) -> std::string { return val ? "true" : "false"; },
                                   [](const auto&) -> std::string { return "unknown"; }},
                       hash_key);
@@ -20,9 +22,9 @@ namespace std
 auto to_string(const value_type& value) -> std::string
 {
     return std::visit(
-        overloaded {[](const nil_value&) -> std::string { return "nil"; },
-                    [](const integer_value val) -> std::string { return to_string(val); },
-                    [](const string_value& val) -> std::string { return "\"" + val + "\""; },
+        overloaded {[](const nil_type&) -> std::string { return "nil"; },
+                    [](const integer_type val) -> std::string { return to_string(val); },
+                    [](const string_type& val) -> std::string { return "\"" + val + "\""; },
                     [](const bool val) -> std::string { return val ? "true" : "false"; },
                     [](const error& val) -> std::string { return "ERROR: " + val.message; },
                     [](const bound_function& func) -> std::string { return func.first->string(); },
@@ -60,10 +62,10 @@ auto object::type_name() const -> std::string
     }
     return std::visit(
         overloaded {
-            [](const nil_value&) { return "nil"; },
+            [](const nil_type&) { return "nil"; },
             [](const bool) { return "bool"; },
-            [](const integer_value) { return "integer"; },
-            [](const string_value&) { return "string"; },
+            [](const integer_type) { return "integer"; },
+            [](const string_type&) { return "string"; },
             [](const error&) { return "error"; },
             [](const bound_function&) { return "function"; },
             [](const array&) { return "array"; },

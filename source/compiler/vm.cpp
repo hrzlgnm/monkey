@@ -24,17 +24,6 @@ auto vm::stack_top() const -> object
     return stack.at(stack_pointer - 1);
 }
 
-auto is_truthy(const object& obj) -> bool
-{
-    return std::visit(
-        overloaded {
-            [](bool val) { return val; },
-            [](const nil_value) { return false; },
-            [](const auto& /*other*/) { return true; },
-        },
-        obj.value);
-}
-
 auto vm::run() -> void
 {
     for (auto ip = 0U; ip < code.instrs.size(); ip++) {
@@ -79,13 +68,13 @@ auto vm::run() -> void
                 auto pos = read_uint16_big_endian(code.instrs, ip + 1UL);
                 ip += 2;
                 auto condition = pop();
-                if (!is_truthy(condition)) {
+                if (!condition.is_truthy()) {
                     ip = pos - 1;
                 }
 
             } break;
             case opcodes::null:
-                push({nil_value {}});
+                push(nil);
                 break;
             case opcodes::set_global: {
                 auto global_index = read_uint16_big_endian(code.instrs, ip + 1UL);
@@ -150,9 +139,9 @@ auto vm::exec_binary_op(opcodes opcode) -> void
 {
     auto right = pop();
     auto left = pop();
-    if (left.is<integer_value>() && right.is<integer_value>()) {
-        auto left_value = left.as<integer_value>();
-        auto right_value = right.as<integer_value>();
+    if (left.is<integer_type>() && right.is<integer_type>()) {
+        auto left_value = left.as<integer_type>();
+        auto right_value = right.as<integer_type>();
         switch (opcode) {
             case opcodes::sub:
                 push({left_value - right_value});
@@ -171,9 +160,9 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         }
         return;
     }
-    if (left.is<string_value>() && right.is<string_value>()) {
-        const auto& left_value = left.as<string_value>();
-        const auto& right_value = right.as<string_value>();
+    if (left.is<string_type>() && right.is<string_type>()) {
+        const auto& left_value = left.as<string_type>();
+        const auto& right_value = right.as<string_type>();
         switch (opcode) {
             case opcodes::add:
                 push({left_value + right_value});
@@ -187,7 +176,7 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         fmt::format("unsupported types for binary operation: {} {}", left.type_name(), right.type_name()));
 }
 
-auto exec_int_cmp(opcodes opcode, integer_value lhs, integer_value rhs) -> bool
+auto exec_int_cmp(opcodes opcode, integer_type lhs, integer_type rhs) -> bool
 {
     using enum opcodes;
     switch (opcode) {
@@ -206,8 +195,8 @@ auto vm::exec_cmp(opcodes opcode) -> void
 {
     auto right = pop();
     auto left = pop();
-    if (left.is<integer_value>() && right.is<integer_value>()) {
-        push({exec_int_cmp(opcode, left.as<integer_value>(), right.as<integer_value>())});
+    if (left.is<integer_type>() && right.is<integer_type>()) {
+        push({exec_int_cmp(opcode, left.as<integer_type>(), right.as<integer_type>())});
         return;
     }
 
@@ -238,10 +227,10 @@ auto vm::exec_bang() -> void
 auto vm::exec_minus() -> void
 {
     auto operand = pop();
-    if (!operand.is<integer_value>()) {
+    if (!operand.is<integer_type>()) {
         throw std::runtime_error(fmt::format("unsupported type for negation {}", operand.type_name()));
     }
-    push({-operand.as<integer_value>()});
+    push({-operand.as<integer_type>()});
 }
 
 auto vm::build_array(size_t start, size_t end) const -> object
@@ -267,7 +256,7 @@ auto vm::build_hash(size_t start, size_t end) const -> object
 auto exec_hash(const hash& hsh, const hash_key_type& key) -> object
 {
     if (!hsh.contains(key)) {
-        return {nil};
+        return nil;
     }
     return unwrap(hsh.at(key));
 }
@@ -279,7 +268,7 @@ auto vm::exec_index(object&& left, object&& index) -> void
                     {
                         auto max = static_cast<int64_t>(arr.size() - 1);
                         if (index < 0 || index > max) {
-                            return push({nil});
+                            return push(nil);
                         }
                         return push(arr.at(static_cast<size_t>(index)));
                     },

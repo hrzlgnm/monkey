@@ -74,8 +74,8 @@ auto assert_constants(const std::vector<expected_value>& expecteds, const consta
         const auto& actual = consts.at(idx);
         std::visit(
             overloaded {
-                [&](const int64_t val) { ASSERT_EQ(val, actual.as<integer_value>()); },
-                [&](const std::string& val) { ASSERT_EQ(val, actual.as<string_value>()); },
+                [&](const int64_t val) { ASSERT_EQ(val, actual.as<integer_type>()); },
+                [&](const std::string& val) { ASSERT_EQ(val, actual.as<string_type>()); },
             },
             expected);
         idx++;
