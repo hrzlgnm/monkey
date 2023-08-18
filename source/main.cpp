@@ -8,14 +8,13 @@
 #include <string_view>
 #include <vector>
 
-#include "builtin_function_expression.hpp"
-#include "code.hpp"
-#include "compiler.hpp"
-#include "environment.hpp"
-#include "lexer.hpp"
-#include "parser.hpp"
-#include "util.hpp"
-#include "vm.hpp"
+#include <compiler/compiler.hpp>
+#include <compiler/vm.hpp>
+#include <lexer/lexer.hpp>
+#include <parser/builtin_function_expression.hpp>
+#include <parser/environment.hpp>
+#include <parser/parser.hpp>
+#include <parser/util.hpp>
 
 constexpr auto prompt = ">> ";
 
@@ -57,6 +56,7 @@ enum class run_mode
 struct cmdline_options
 {
     bool help {};
+    bool debug_env {};
     run_mode mode {};
     std::string_view file;
 };
@@ -76,6 +76,9 @@ auto parse_command_line(int argc, char** argv) -> cmdline_options
                     break;
                 case 'h':
                     opts.help = true;
+                    break;
+                case 'd':
+                    opts.debug_env = true;
                     break;
             }
         } else {
@@ -140,6 +143,9 @@ auto main(int argc, char* argv[]) -> int
                 }
             }
             std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
+            if (opts.debug_env) {
+                debug_env(global_env);
+            }
             std::cout << prompt;
         }
         global_env->break_cycle();

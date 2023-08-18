@@ -1,7 +1,8 @@
 #pragma once
 
+#include <lexer/token_type.hpp>
+
 #include "expression.hpp"
-#include "token_type.hpp"
 
 struct unary_expression : expression
 {

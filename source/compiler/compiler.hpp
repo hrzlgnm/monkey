@@ -1,8 +1,9 @@
 #pragma once
 
+#include <parser/object.hpp>
+#include <parser/program.hpp>
+
 #include "code.hpp"
-#include "object.hpp"
-#include "program.hpp"
 #include "symbol_table.hpp"
 
 using constants = std::vector<object>;

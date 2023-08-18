@@ -5,12 +5,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include <lexer/lexer.hpp>
+#include <lexer/token.hpp>
+
 #include "expression.hpp"
 #include "identifier.hpp"
-#include "lexer.hpp"
 #include "program.hpp"
-#include "token.hpp"
-#include "token_type.hpp"
 
 class parser final
 {

@@ -2,7 +2,8 @@
 
 #include "identifier.hpp"
 
-#include "compiler.hpp"
+#include <compiler/compiler.hpp>
+
 #include "environment.hpp"
 
 identifier::identifier(std::string val)

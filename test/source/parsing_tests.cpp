@@ -1,19 +1,19 @@
 #include <gtest/gtest.h>
+#include <parser/array_expression.hpp>
+#include <parser/binary_expression.hpp>
+#include <parser/boolean.hpp>
+#include <parser/call_expression.hpp>
+#include <parser/function_expression.hpp>
+#include <parser/hash_literal_expression.hpp>
+#include <parser/if_expression.hpp>
+#include <parser/index_expression.hpp>
+#include <parser/integer_literal.hpp>
+#include <parser/parser.hpp>
+#include <parser/program.hpp>
+#include <parser/string_literal.hpp>
+#include <parser/unary_expression.hpp>
 
-#include "array_expression.hpp"
-#include "binary_expression.hpp"
-#include "boolean.hpp"
-#include "call_expression.hpp"
-#include "function_expression.hpp"
-#include "hash_literal_expression.hpp"
-#include "if_expression.hpp"
-#include "index_expression.hpp"
-#include "integer_literal.hpp"
-#include "parser.hpp"
-#include "program.hpp"
-#include "string_literal.hpp"
 #include "testutils.hpp"
-#include "unary_expression.hpp"
 
 template<class>
 inline constexpr bool always_false_v {false};

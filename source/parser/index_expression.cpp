@@ -2,8 +2,8 @@
 
 #include "index_expression.hpp"
 
-#include "code.hpp"
-#include "compiler.hpp"
+#include <compiler/compiler.hpp>
+
 #include "environment.hpp"
 #include "object.hpp"
 

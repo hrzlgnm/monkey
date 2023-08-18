@@ -4,11 +4,10 @@
 
 #include "statements.hpp"
 
+#include <compiler/compiler.hpp>
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include "code.hpp"
-#include "compiler.hpp"
 #include "environment.hpp"
 #include "object.hpp"
 #include "util.hpp"
@@ -32,7 +31,7 @@ auto let_statement::compile(compiler& comp) const -> void
 {
     value->compile(comp);
     auto symbol = comp.symbols->define(name->value);
-    comp.emit(opcodes::set_global, {symbol.index});
+    comp.emit(opcodes::set_global, symbol.index);
 }
 
 auto return_statement::string() const -> std::string

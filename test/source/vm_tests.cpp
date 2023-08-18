@@ -2,11 +2,11 @@
 #include <string>
 #include <string_view>
 
+#include <compiler/compiler.hpp>
 #include <compiler/vm.hpp>
 #include <gtest/gtest.h>
+#include <parser/object.hpp>
 
-#include "compiler.hpp"
-#include "object.hpp"
 #include "testutils.hpp"
 
 auto assert_bool_object(bool expected, const object& actual, std::string_view input) -> void

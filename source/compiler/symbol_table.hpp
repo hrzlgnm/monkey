@@ -3,7 +3,7 @@
 #include <optional>
 #include <string>
 
-#include "util.hpp"
+#include <parser/util.hpp>
 
 enum class symbol_scope
 {

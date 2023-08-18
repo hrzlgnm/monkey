@@ -1,7 +1,7 @@
 #include "string_literal.hpp"
 
-#include "code.hpp"
-#include "compiler.hpp"
+#include <compiler/compiler.hpp>
+
 #include "object.hpp"
 #include "util.hpp"
 

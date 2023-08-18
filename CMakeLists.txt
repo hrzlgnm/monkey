@@ -53,11 +53,7 @@ target_precompile_headers(
   <string_view>)
 
 target_include_directories(
-  monkey_lib
-  PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>"
-         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source/parser>"
-         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source/compiler>"
-         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source/lexer>")
+  monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
 target_compile_features(monkey_lib PUBLIC cxx_std_20)
 target_link_libraries(monkey_lib PUBLIC fmt)
 

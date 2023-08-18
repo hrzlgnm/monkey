@@ -4,10 +4,10 @@
 
 #include "compiler/compiler.hpp"
 
+#include <compiler/code.hpp>
 #include <gtest/gtest.h>
+#include <parser/parser.hpp>
 
-#include "compiler/code.hpp"
-#include "parser.hpp"
 #include "testutils.hpp"
 
 // NOLINTBEGIN(*-magic-numbers)
