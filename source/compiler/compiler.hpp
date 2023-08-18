@@ -26,6 +26,8 @@ struct compiler
     auto add_constant(object&& obj) -> size_t;
     auto add_instructions(instructions&& ins) -> size_t;
     auto emit(opcodes opcode, std::vector<int>&& operands = {}) -> size_t;
+    inline auto emit(opcodes opcode, int operand) -> size_t { return emit(opcode, std::vector<int> {operand}); }
+    inline auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, static_cast<int>(operand)); }
     auto last_is_pop() const -> bool;
     auto remove_last_pop() -> void;
     auto replace_instruction(size_t pos, const instructions& instr) -> void;

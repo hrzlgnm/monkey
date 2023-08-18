@@ -101,6 +101,7 @@ inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
                     [](const integer_value val1, const integer_value val2) { return val1 == val2; },
                     [](const string_value& val1, const string_value& val2) { return val1 == val2; },
                     [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
+                    [](const error& err1, const error& err2) { return err1.message == err2.message; },
                     [](const array& arr1, const array& arr2)
                     { return arr1.size() == arr2.size() && std::equal(arr1.cbegin(), arr1.cend(), arr2.begin()); },
                     [](const auto&, const auto&) { return false; }},
