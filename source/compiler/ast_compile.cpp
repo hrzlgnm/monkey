@@ -1,16 +1,15 @@
-#include <parser/array_expression.hpp>
-#include <parser/binary_expression.hpp>
-#include <parser/boolean.hpp>
-#include <parser/call_expression.hpp>
-#include <parser/function_expression.hpp>
-#include <parser/hash_literal_expression.hpp>
-#include <parser/if_expression.hpp>
-#include <parser/index_expression.hpp>
-#include <parser/integer_literal.hpp>
-#include <parser/parser.hpp>
-#include <parser/program.hpp>
-#include <parser/string_literal.hpp>
-#include <parser/unary_expression.hpp>
+#include <ast/array_expression.hpp>
+#include <ast/binary_expression.hpp>
+#include <ast/boolean.hpp>
+#include <ast/call_expression.hpp>
+#include <ast/function_expression.hpp>
+#include <ast/hash_literal_expression.hpp>
+#include <ast/if_expression.hpp>
+#include <ast/index_expression.hpp>
+#include <ast/integer_literal.hpp>
+#include <ast/program.hpp>
+#include <ast/string_literal.hpp>
+#include <ast/unary_expression.hpp>
 
 #include "compiler.hpp"
 
@@ -92,7 +91,7 @@ auto if_expression::compile(compiler& comp) const -> void
     }
     auto jump_pos = comp.emit(opcodes::jump, 0);
     auto after_consequence = comp.code.instrs.size();
-    comp.change_operand(jump_not_truthy_pos, static_cast<int>(after_consequence));
+    comp.change_operand(jump_not_truthy_pos, after_consequence);
 
     if (!alternative) {
         comp.emit(opcodes::null);
@@ -103,7 +102,7 @@ auto if_expression::compile(compiler& comp) const -> void
         }
     }
     auto after_alternative = comp.code.instrs.size();
-    comp.change_operand(jump_pos, static_cast<int>(after_alternative));
+    comp.change_operand(jump_pos, after_alternative);
 }
 
 auto index_expression::compile(compiler& comp) const -> void

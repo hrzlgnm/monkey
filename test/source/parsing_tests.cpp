@@ -1,17 +1,17 @@
+#include <ast/array_expression.hpp>
+#include <ast/binary_expression.hpp>
+#include <ast/boolean.hpp>
+#include <ast/call_expression.hpp>
+#include <ast/function_expression.hpp>
+#include <ast/hash_literal_expression.hpp>
+#include <ast/if_expression.hpp>
+#include <ast/index_expression.hpp>
+#include <ast/integer_literal.hpp>
+#include <ast/program.hpp>
+#include <ast/string_literal.hpp>
+#include <ast/unary_expression.hpp>
 #include <gtest/gtest.h>
-#include <parser/array_expression.hpp>
-#include <parser/binary_expression.hpp>
-#include <parser/boolean.hpp>
-#include <parser/call_expression.hpp>
-#include <parser/function_expression.hpp>
-#include <parser/hash_literal_expression.hpp>
-#include <parser/if_expression.hpp>
-#include <parser/index_expression.hpp>
-#include <parser/integer_literal.hpp>
 #include <parser/parser.hpp>
-#include <parser/program.hpp>
-#include <parser/string_literal.hpp>
-#include <parser/unary_expression.hpp>
 
 #include "testutils.hpp"
 

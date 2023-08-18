@@ -1,5 +1,4 @@
 #include <exception>
-#include <future>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -8,13 +7,12 @@
 #include <string_view>
 #include <vector>
 
+#include <ast/builtin_function_expression.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/vm.hpp>
+#include <eval/environment.hpp>
 #include <lexer/lexer.hpp>
-#include <parser/builtin_function_expression.hpp>
-#include <parser/environment.hpp>
 #include <parser/parser.hpp>
-#include <parser/util.hpp>
 
 constexpr auto prompt = ">> ";
 
@@ -95,7 +93,7 @@ auto show_usage(std::string_view program, std::string_view error_msg = {})
     if (!error_msg.empty()) {
         fmt::print("Error: {}\n", error_msg);
     }
-    fmt::print("Usage: {} [-i] [-h] [<file>]\n\n", program);
+    fmt::print("Usage: {} [-d] [-i] [-h] [<file>]\n\n", program);
 }
 
 auto main(int argc, char* argv[]) -> int

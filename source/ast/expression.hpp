@@ -3,9 +3,8 @@
 #include <memory>
 #include <stdexcept>
 
+#include <eval/environment_fwd.hpp>
 #include <fmt/core.h>
-
-#include "environment_fwd.hpp"
 
 struct object;
 struct compiler;
@@ -24,7 +23,7 @@ struct expression
     /// TODO: make this pure virtual again
     virtual inline auto compile(compiler& /*comp*/) const -> void
     {
-        throw std::runtime_error(fmt::format("compile for {} is not implemented yet", typeid(*this).name() + 1));
+        throw std::runtime_error(fmt::format("compile for {} is not implemented yet", typeid(*this).name()));
     }
 };
 using expression_ptr = std::unique_ptr<expression>;

@@ -3,8 +3,7 @@
 
 #include "vm.hpp"
 
-#include <lexer/token_type.hpp>
-#include <parser/object.hpp>
+#include <eval/object.hpp>
 
 #include "code.hpp"
 

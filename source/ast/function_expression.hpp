@@ -3,8 +3,6 @@
 #include <vector>
 
 #include "callable_expression.hpp"
-#include "environment_fwd.hpp"
-#include "expression.hpp"
 #include "statements.hpp"
 
 struct function_expression : callable_expression

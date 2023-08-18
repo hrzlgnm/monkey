@@ -2,9 +2,8 @@
 #include <cstdint>
 #include <iterator>
 
-#include "compiler/compiler.hpp"
-
 #include <compiler/code.hpp>
+#include <compiler/compiler.hpp>
 #include <gtest/gtest.h>
 #include <parser/parser.hpp>
 
@@ -16,7 +15,7 @@ TEST(compiler, make)
     struct test
     {
         opcodes opcode;
-        std::vector<int> operands;
+        operands opers;
         instructions expected;
     };
     std::array tests {
@@ -36,8 +35,8 @@ TEST(compiler, make)
             {static_cast<uint8_t>(opcodes::pop)},
         },
     };
-    for (const auto& [opcode, operands, expected] : tests) {
-        auto actual = make(opcode, operands);
+    for (auto&& [opcode, operands, expected] : tests) {
+        auto actual = make(opcode, std::move(operands));
         ASSERT_EQ(actual, expected);
     };
 }
@@ -112,7 +111,7 @@ TEST(compiler, readOperands)
     struct test
     {
         opcodes opcode;
-        std::vector<int> operands;
+        operands opers;
         int bytes_read;
     };
     std::array tests {
@@ -122,8 +121,8 @@ TEST(compiler, readOperands)
             2,
         },
     };
-    for (const auto& [opcode, operands, bytes] : tests) {
-        const auto instr = make(opcode, operands);
+    for (auto&& [opcode, operands, bytes] : tests) {
+        const auto instr = make(opcode, std::move(operands));
         const auto def = lookup(opcode);
 
         ASSERT_TRUE(def.has_value());

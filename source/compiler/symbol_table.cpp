@@ -7,8 +7,11 @@ auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 
 auto symbol_table::define(const std::string& name) -> symbol
 {
-    auto index = static_cast<int>(store.size());
-    return store[name] = symbol {.name = name, .scope = symbol_scope::global, .index = index};
+    return store[name] = symbol {
+               .name = name,
+               .scope = symbol_scope::global,
+               .index = store.size(),
+           };
 }
 
 auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>

@@ -1,9 +1,12 @@
 #pragma once
 
+#include <map>
+#include <memory>
 #include <optional>
 #include <string>
 
-#include <parser/util.hpp>
+template<typename Value>
+using string_map = std::map<std::string, Value, std::less<>>;
 
 enum class symbol_scope
 {
@@ -14,7 +17,7 @@ struct symbol
 {
     std::string name;
     symbol_scope scope;
-    int index;
+    size_t index;
 };
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool;
 
