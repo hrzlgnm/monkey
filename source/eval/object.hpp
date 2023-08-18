@@ -23,24 +23,24 @@ struct overloaded : T...
 template<class... T>
 overloaded(T...) -> overloaded<T...>;
 
-using nil_value = std::monostate;
+using nil_type = std::monostate;
 
 struct error
 {
     std::string message;
 };
 
-using integer_value = std::int64_t;
-using string_value = std::string;
+using integer_type = std::int64_t;
+using string_type = std::string;
 struct object;
 using array = std::vector<object>;
-using hash_key_type = std::variant<integer_value, string_value, bool>;
+using hash_key_type = std::variant<integer_type, string_type, bool>;
 using hash = std::unordered_map<hash_key_type, std::any>;
 
 struct callable_expression;
 using bound_function = std::pair<const callable_expression*, environment_ptr>;
 
-using value_type = std::variant<nil_value, bool, integer_value, string_value, error, array, hash, bound_function>;
+using value_type = std::variant<nil_type, bool, integer_type, string_type, error, array, hash, bound_function>;
 
 namespace std
 {
@@ -54,21 +54,6 @@ struct object
     {
         return std::holds_alternative<T>(value);
     }
-    inline constexpr auto is_nil() const -> bool { return is<nil_value>(); }
-    inline constexpr auto is_hashable() const -> bool
-    {
-        return is<integer_value>() || is<string_value>() || is<bool>();
-    }
-
-    inline auto hash_key() const -> hash_key_type
-    {
-        return std::visit(overloaded {[](const integer_value integer) -> hash_key_type { return {integer}; },
-                                      [](const string_value& str) -> hash_key_type { return {str}; },
-                                      [](const bool val) -> hash_key_type { return {val}; },
-                                      [](const auto& other) -> hash_key_type
-                                      { throw std::invalid_argument(object {other}.type_name() + "is not hashable"); }},
-                          value);
-    }
 
     template<typename T>
     auto as() const -> const T&
@@ -79,12 +64,30 @@ struct object
         }
         return std::get<T>(value);
     }
+
+    inline constexpr auto is_nil() const -> bool { return is<nil_type>(); }
+
+    inline constexpr auto is_hashable() const -> bool { return is<integer_type>() || is<string_type>() || is<bool>(); }
+
+    inline auto is_truthy() const -> bool { return !is_nil() && (!is<bool>() || as<bool>()); }
+
+    inline auto hash_key() const -> hash_key_type
+    {
+        return std::visit(overloaded {[](const integer_type integer) -> hash_key_type { return {integer}; },
+                                      [](const string_type& str) -> hash_key_type { return {str}; },
+                                      [](const bool val) -> hash_key_type { return {val}; },
+                                      [](const auto& other) -> hash_key_type
+                                      { throw std::invalid_argument(object {other}.type_name() + "is not hashable"); }},
+                          value);
+    }
+
     value_type value {};
     bool is_return_value {};
     auto type_name() const -> std::string;
 };
 
-static const nil_value nil {};
+static const nil_type nilv {};
+extern const object nil;
 auto unwrap(const std::any& obj) -> object;
 
 template<typename... T>
@@ -96,10 +99,10 @@ auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
 {
     return std::visit(
-        overloaded {[](const nil_value, const nil_value) { return true; },
+        overloaded {[](const nil_type, const nil_type) { return true; },
                     [](const bool val1, const bool val2) { return val1 == val2; },
-                    [](const integer_value val1, const integer_value val2) { return val1 == val2; },
-                    [](const string_value& val1, const string_value& val2) { return val1 == val2; },
+                    [](const integer_type val1, const integer_type val2) { return val1 == val2; },
+                    [](const string_type& val1, const string_type& val2) { return val1 == val2; },
                     [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
                     [](const error& err1, const error& err2) { return err1.message == err2.message; },
                     [](const array& arr1, const array& arr2)

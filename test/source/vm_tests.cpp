@@ -19,17 +19,17 @@ auto assert_bool_object(bool expected, const object& actual, std::string_view in
 
 auto assert_integer_object(int64_t expected, const object& actual, std::string_view input) -> void
 {
-    ASSERT_TRUE(actual.is<integer_value>())
+    ASSERT_TRUE(actual.is<integer_type>())
         << input << " got " << actual.type_name() << " with " << std::to_string(actual.value) << " instead ";
-    auto actual_int = actual.as<integer_value>();
+    auto actual_int = actual.as<integer_type>();
     ASSERT_EQ(actual_int, expected);
 }
 
 auto assert_string_object(const std::string& expected, const object& actual, std::string_view input) -> void
 {
-    ASSERT_TRUE(actual.is<string_value>())
+    ASSERT_TRUE(actual.is<string_type>())
         << input << " got " << actual.type_name() << " with " << std::to_string(actual.value) << " instead ";
-    auto actual_str = actual.as<string_value>();
+    auto actual_str = actual.as<string_type>();
     ASSERT_EQ(actual_str, expected);
 }
 
@@ -40,7 +40,7 @@ auto assert_array_object(const std::vector<int>& expected, const object& actual,
     auto actual_arr = actual.as<array>();
     ASSERT_EQ(actual_arr.size(), expected.size());
     for (auto idx = 0UL; const auto& elem : expected) {
-        ASSERT_EQ(elem, actual_arr.at(idx).as<integer_value>());
+        ASSERT_EQ(elem, actual_arr.at(idx).as<integer_type>());
         ++idx;
     }
 }
@@ -67,7 +67,7 @@ auto assert_expected_object(const std::variant<T...>& expected, const object& ac
         overloaded {
             [&](const int64_t exp) { assert_integer_object(exp, actual, input); },
             [&](const bool exp) { assert_bool_object(exp, actual, input); },
-            [&](const nil_value) { ASSERT_TRUE(actual.is_nil()); },
+            [&](const nil_type) { ASSERT_TRUE(actual.is_nil()); },
             [&](const std::string& exp) { assert_string_object(exp, actual, input); },
             [&](const std::vector<int>& exp) { assert_array_object(exp, actual, input); },
             [&](const hash& exp) { assert_hash_object(exp, actual, input); },
@@ -151,16 +151,16 @@ TEST(vm, booleanExpressions)
 TEST(vm, conditionals)
 {
     std::array tests {
-        vt<int64_t, nil_value> {"if (true) { 10 }", 10},
-        vt<int64_t, nil_value> {"if (true) { 10 } else { 20 }", 10},
-        vt<int64_t, nil_value> {"if (false) { 10 } else { 20 } ", 20},
-        vt<int64_t, nil_value> {"if (1) { 10 }", 10},
-        vt<int64_t, nil_value> {"if (1 < 2) { 10 }", 10},
-        vt<int64_t, nil_value> {"if (1 < 2) { 10 } else { 20 }", 10},
-        vt<int64_t, nil_value> {"if (1 > 2) { 10 } else { 20 }", 20},
-        vt<int64_t, nil_value> {"if (1 > 2) { 10 }", nil_value {}},
-        vt<int64_t, nil_value> {"if (false) { 10 }", nil_value {}},
-        vt<int64_t, nil_value> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
+        vt<int64_t, nil_type> {"if (true) { 10 }", 10},
+        vt<int64_t, nil_type> {"if (true) { 10 } else { 20 }", 10},
+        vt<int64_t, nil_type> {"if (false) { 10 } else { 20 } ", 20},
+        vt<int64_t, nil_type> {"if (1) { 10 }", 10},
+        vt<int64_t, nil_type> {"if (1 < 2) { 10 }", 10},
+        vt<int64_t, nil_type> {"if (1 < 2) { 10 } else { 20 }", 10},
+        vt<int64_t, nil_type> {"if (1 > 2) { 10 } else { 20 }", 20},
+        vt<int64_t, nil_type> {"if (1 > 2) { 10 }", nil_type {}},
+        vt<int64_t, nil_type> {"if (false) { 10 }", nil_type {}},
+        vt<int64_t, nil_type> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
     };
     rvt(tests);
 }
@@ -228,16 +228,16 @@ TEST(vm, hashLiterals)
 TEST(vm, indexExpressions)
 {
     std::array tests {
-        vt<int64_t, nil_value> {"[1, 2, 3][1]", 2},
-        vt<int64_t, nil_value> {"[1, 2, 3][0 + 2]", 3},
-        vt<int64_t, nil_value> {"[[1, 1, 1]][0][0]", 1},
-        vt<int64_t, nil_value> {"[][0]", nil_value {}},
-        vt<int64_t, nil_value> {"[1, 2, 3][99]", nil_value {}},
-        vt<int64_t, nil_value> {"[1][-1]", nil_value {}},
-        vt<int64_t, nil_value> {"{1: 1, 2: 2}[1]", 1},
-        vt<int64_t, nil_value> {"{1: 1, 2: 2}[2]", 2},
-        vt<int64_t, nil_value> {"{1: 1}[0]", nil_value {}},
-        vt<int64_t, nil_value> {"{}[0]", nil_value {}},
+        vt<int64_t, nil_type> {"[1, 2, 3][1]", 2},
+        vt<int64_t, nil_type> {"[1, 2, 3][0 + 2]", 3},
+        vt<int64_t, nil_type> {"[[1, 1, 1]][0][0]", 1},
+        vt<int64_t, nil_type> {"[][0]", nil_type {}},
+        vt<int64_t, nil_type> {"[1, 2, 3][99]", nil_type {}},
+        vt<int64_t, nil_type> {"[1][-1]", nil_type {}},
+        vt<int64_t, nil_type> {"{1: 1, 2: 2}[1]", 1},
+        vt<int64_t, nil_type> {"{1: 1, 2: 2}[2]", 2},
+        vt<int64_t, nil_type> {"{1: 1}[0]", nil_type {}},
+        vt<int64_t, nil_type> {"{}[0]", nil_type {}},
     };
     rvt(tests);
 }

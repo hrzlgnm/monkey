@@ -30,8 +30,8 @@ auto array_expression::eval(environment_ptr env) const -> object
 auto eval_integer_binary_expression(token_type oper, const object& left, const object& right) -> object
 {
     using enum token_type;
-    auto left_int = left.as<integer_value>();
-    auto right_int = right.as<integer_value>();
+    auto left_int = left.as<integer_type>();
+    auto right_int = right.as<integer_type>();
     switch (oper) {
         case plus:
             return {left_int + right_int};
@@ -60,8 +60,8 @@ auto eval_string_binary_expression(token_type oper, const object& left, const ob
     if (oper != plus) {
         return make_error("unknown operator: {} {} {}", left.type_name(), oper, right.type_name());
     }
-    const auto& left_str = left.as<string_value>();
-    const auto& right_str = right.as<string_value>();
+    const auto& left_str = left.as<string_type>();
+    const auto& right_str = right.as<string_type>();
     return {left_str + right_str};
 }
 
@@ -79,10 +79,10 @@ auto binary_expression::eval(environment_ptr env) const -> object
     if (evaluated_left.type_name() != evaluated_right.type_name()) {
         return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
     }
-    if (evaluated_left.is<integer_value>() && evaluated_right.is<integer_value>()) {
+    if (evaluated_left.is<integer_type>() && evaluated_right.is<integer_type>()) {
         return eval_integer_binary_expression(op, evaluated_left, evaluated_right);
     }
-    if (evaluated_left.is<string_value>() && evaluated_right.is<string_value>()) {
+    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
         return eval_string_binary_expression(op, evaluated_left, evaluated_right);
     }
     return make_error("unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
@@ -149,18 +149,13 @@ auto identifier::eval(environment_ptr env) const -> object
     return val;
 }
 
-inline auto is_truthy(const object& obj) -> bool
-{
-    return !obj.is_nil() && (!obj.is<bool>() || obj.as<bool>());
-}
-
 auto if_expression::eval(environment_ptr env) const -> object
 {
     auto evaluated_condition = condition->eval(env);
     if (evaluated_condition.is<error>()) {
         return evaluated_condition;
     }
-    if (is_truthy(evaluated_condition)) {
+    if (evaluated_condition.is_truthy()) {
         return consequence->eval(env);
     }
     if (alternative) {
@@ -179,9 +174,9 @@ auto index_expression::eval(environment_ptr env) const -> object
     if (evaluated_index.is<error>()) {
         return evaluated_index;
     }
-    if (evaluated_left.is<array>() && evaluated_index.is<integer_value>()) {
+    if (evaluated_left.is<array>() && evaluated_index.is<integer_type>()) {
         auto arr = evaluated_left.as<array>();
-        auto index = evaluated_index.as<integer_value>();
+        auto index = evaluated_index.as<integer_type>();
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
             return {};
@@ -228,7 +223,7 @@ auto let_statement::eval(environment_ptr env) const -> object
         return val;
     }
     env->set(name->value, std::move(val));
-    return {};
+    return nil;
 }
 
 auto return_statement::eval(environment_ptr env) const -> object
@@ -241,7 +236,7 @@ auto return_statement::eval(environment_ptr env) const -> object
         evaluated.is_return_value = true;
         return evaluated;
     }
-    return {};
+    return nil;
 }
 
 auto expression_statement::eval(environment_ptr env) const -> object
@@ -249,7 +244,7 @@ auto expression_statement::eval(environment_ptr env) const -> object
     if (expr) {
         return expr->eval(env);
     }
-    return {};
+    return nil;
 }
 
 auto block_statement::eval(environment_ptr env) const -> object
@@ -278,10 +273,10 @@ auto unary_expression::eval(environment_ptr env) const -> object
     }
     switch (op) {
         case minus:
-            if (!evaluated_value.is<integer_value>()) {
+            if (!evaluated_value.is<integer_type>()) {
                 return make_error("unknown operator: -{}", evaluated_value.type_name());
             }
-            return {-evaluated_value.as<integer_value>()};
+            return {-evaluated_value.as<integer_type>()};
         case exclamation:
             if (!evaluated_value.is<bool>()) {
                 return {false};
@@ -314,8 +309,8 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          }
          return {std::visit(
              overloaded {
-                 [](const string_value& str) -> object { return {static_cast<integer_value>(str.length())}; },
-                 [](const array& arr) -> object { return {static_cast<integer_value>(arr.size())}; },
+                 [](const string_type& str) -> object { return {static_cast<integer_type>(str.length())}; },
+                 [](const array& arr) -> object { return {static_cast<integer_type>(arr.size())}; },
                  [](const auto& other) -> object
                  { return make_error("argument of type {} to len() is not supported", object {other}.type_name()); },
              },
@@ -330,7 +325,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          }
          return {std::visit(
              overloaded {
-                 [](const string_value& str) -> object
+                 [](const string_type& str) -> object
                  {
                      if (str.length() > 0) {
                          return {str.substr(0, 1)};
@@ -358,7 +353,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          }
          return {std::visit(
              overloaded {
-                 [](const string_value& str) -> object
+                 [](const string_type& str) -> object
                  {
                      if (str.length() > 1) {
                          return {str.substr(str.length() - 1, 1)};
@@ -386,7 +381,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          }
          return {std::visit(
              overloaded {
-                 [](const string_value& str) -> object
+                 [](const string_type& str) -> object
                  {
                      if (str.size() > 1) {
                          return {str.substr(1)};
@@ -440,8 +435,8 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
              if (!first) {
                  fmt::print(" ");
              }
-             if (arg.is<string_value>()) {
-                 fmt::print("{}", arg.as<string_value>());
+             if (arg.is<string_type>()) {
+                 fmt::print("{}", arg.as<string_type>());
              } else {
                  fmt::print("{}", std::to_string(arg.value));
              }
