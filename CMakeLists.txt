@@ -13,6 +13,7 @@ find_package(fmt REQUIRED)
 # ---- Declare library ----
 add_library(
   monkey_lib OBJECT
+  source/compiler/ast_compile.cpp
   source/compiler/code.cpp
   source/compiler/compiler.cpp
   source/compiler/symbol_table.cpp

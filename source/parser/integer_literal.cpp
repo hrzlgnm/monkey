@@ -14,8 +14,3 @@ auto integer_literal::eval(environment_ptr /*env*/) const -> object
 {
     return {value};
 }
-
-auto integer_literal::compile(compiler& comp) const -> void
-{
-    comp.emit(opcodes::constant, {static_cast<int>(comp.add_constant({value}))});
-}

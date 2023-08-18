@@ -22,11 +22,3 @@ auto array_expression::eval(environment_ptr env) const -> object
     }
     return {result};
 }
-
-auto array_expression::compile(compiler& comp) const -> void
-{
-    for (const auto& element : elements) {
-        element->compile(comp);
-    }
-    comp.emit(opcodes::array, elements.size());
-}
