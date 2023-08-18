@@ -59,8 +59,8 @@ struct object
     auto as() const -> const T&
     {
         if (!is<T>()) {
-            throw std::runtime_error("Error trying to convert " + std::to_string(value) + " to "
-                                     + object {T {}}.type_name());
+            throw std::runtime_error(
+                fmt::format("cannot convert {} to {}", std::to_string(value), object {T {}}.type_name()));
         }
         return std::get<T>(value);
     }
@@ -76,8 +76,9 @@ struct object
         return std::visit(overloaded {[](const integer_type integer) -> hash_key_type { return {integer}; },
                                       [](const string_type& str) -> hash_key_type { return {str}; },
                                       [](const bool val) -> hash_key_type { return {val}; },
-                                      [](const auto& other) -> hash_key_type
-                                      { throw std::invalid_argument(object {other}.type_name() + "is not hashable"); }},
+                                      [](const auto& other) -> hash_key_type {
+                                          throw std::invalid_argument(object {other}.type_name() + " is not hashable");
+                                      }},
                           value);
     }
 
