@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 #include <compiler/vm.hpp>
@@ -24,6 +25,34 @@ auto assert_integer_object(int64_t expected, const object& actual, std::string_v
     ASSERT_EQ(actual_int, expected);
 }
 
+auto assert_string_object(const std::string& expected, const object& actual, std::string_view input) -> void
+{
+    ASSERT_TRUE(actual.is<string_value>())
+        << input << " got " << actual.type_name() << " with " << std::to_string(actual.value) << " instead ";
+    auto actual_str = actual.as<string_value>();
+    ASSERT_EQ(actual_str, expected);
+}
+
+auto assert_array_object(const std::vector<int>& expected, const object& actual, std::string_view input) -> void
+{
+    ASSERT_TRUE(actual.is<array>()) << input << " got " << actual.type_name() << " with "
+                                    << std::to_string(actual.value) << " instead ";
+    auto actual_arr = actual.as<array>();
+    ASSERT_EQ(actual_arr.size(), expected.size());
+    for (auto idx = 0UL; const auto& elem : expected) {
+        ASSERT_EQ(elem, actual_arr.at(idx).as<integer_value>());
+        ++idx;
+    }
+}
+
+auto assert_hash_object(const hash& expected, const object& actual, std::string_view input) -> void
+{
+    ASSERT_TRUE(actual.is<hash>()) << input << " got " << actual.type_name() << " with " << std::to_string(actual.value)
+                                   << " instead ";
+    auto actual_hash = actual.as<hash>();
+    ASSERT_EQ(actual_hash.size(), expected.size());
+}
+
 template<typename... T>
 struct vt
 {
@@ -39,6 +68,9 @@ auto assert_expected_object(const std::variant<T...>& expected, const object& ac
             [&](const int64_t exp) { assert_integer_object(exp, actual, input); },
             [&](const bool exp) { assert_bool_object(exp, actual, input); },
             [&](const nil_value) { ASSERT_TRUE(actual.is_nil()); },
+            [&](const std::string& exp) { assert_string_object(exp, actual, input); },
+            [&](const std::vector<int>& exp) { assert_array_object(exp, actual, input); },
+            [&](const hash& exp) { assert_hash_object(exp, actual, input); },
         },
         expected);
 }
@@ -143,4 +175,70 @@ TEST(vm, globalLetStatemets)
     rvt(tests);
 }
 
+TEST(vm, stringExpression)
+{
+    std::array tests {
+        vt<std::string> {R"("monkey")", "monkey"},
+        vt<std::string> {R"("mon" + "key")", "monkey"},
+        vt<std::string> {R"("mon" + "key" + "banana")", "monkeybanana"},
+
+    };
+    rvt(tests);
+}
+
+TEST(vm, arrayLiterals)
+{
+    std::array tests {
+        vt<std::vector<int>> {
+            "[]",
+            {},
+        },
+        vt<std::vector<int>> {
+            "[1, 2, 3]",
+            {std::vector<int> {1, 2, 3}},
+        },
+        vt<std::vector<int>> {
+            "[1+ 2, 3 * 4, 5 + 6]",
+            {std::vector<int> {3, 12, 11}},
+        },
+    };
+    rvt(tests);
+}
+
+TEST(vm, hashLiterals)
+{
+    std::array tests {
+        vt<hash> {
+            "{}",
+            {},
+        },
+        vt<hash> {
+            "{1: 2, 3: 4}",
+            {hash {{1, 2}, {3, 4}}},
+        },
+        vt<hash> {
+            "{1 + 1: 2 * 2, 3 + 3: 4 * 4}",
+            {hash {{2, 4}, {6, 16}}},
+
+        },
+    };
+    rvt(tests);
+}
+
+TEST(vm, indexExpressions)
+{
+    std::array tests {
+        vt<int64_t, nil_value> {"[1, 2, 3][1]", 2},
+        vt<int64_t, nil_value> {"[1, 2, 3][0 + 2]", 3},
+        vt<int64_t, nil_value> {"[[1, 1, 1]][0][0]", 1},
+        vt<int64_t, nil_value> {"[][0]", nil_value {}},
+        vt<int64_t, nil_value> {"[1, 2, 3][99]", nil_value {}},
+        vt<int64_t, nil_value> {"[1][-1]", nil_value {}},
+        vt<int64_t, nil_value> {"{1: 1, 2: 2}[1]", 1},
+        vt<int64_t, nil_value> {"{1: 1, 2: 2}[2]", 2},
+        vt<int64_t, nil_value> {"{1: 1}[0]", nil_value {}},
+        vt<int64_t, nil_value> {"{}[0]", nil_value {}},
+    };
+    rvt(tests);
+}
 // NOLINTEND(*-magic-numbers)

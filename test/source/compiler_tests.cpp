@@ -42,7 +42,7 @@ TEST(compiler, make)
     };
 }
 
-using expected_value = std::variant<int64_t>;
+using expected_value = std::variant<int64_t, std::string>;
 
 struct ctc
 {
@@ -75,7 +75,8 @@ auto assert_constants(const std::vector<expected_value>& expecteds, const consta
         const auto& actual = consts.at(idx);
         std::visit(
             overloaded {
-                [&actual](const int64_t val) { ASSERT_EQ(val, actual.as<integer_value>()); },
+                [&](const int64_t val) { ASSERT_EQ(val, actual.as<integer_value>()); },
+                [&](const std::string& val) { ASSERT_EQ(val, actual.as<string_value>()); },
             },
             expected);
         idx++;
@@ -312,6 +313,158 @@ TEST(compiler, globalLetStatements)
         },
     };
 
+    rct(std::move(tests));
+}
+
+TEST(compiler, stringExpression)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"("monkey")",
+            {{"monkey"}},
+            {
+                make(constant, 0),
+                make(pop),
+            },
+        },
+        ctc {
+            R"("mon" + "key")",
+            {{"mon", "key"}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(add),
+                make(pop),
+            },
+        },
+    };
+}
+
+TEST(compiler, arrayLiterals)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"([])",
+            {},
+            {
+                make(array, 0),
+                make(pop),
+            },
+        },
+        ctc {
+            R"([1, 2, 3])",
+            {{1, 2, 3}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(array, 3),
+                make(pop),
+            },
+        },
+        ctc {
+            R"([1 + 2, 3 - 4, 5 * 6])",
+            {{1, 2, 3, 4, 5, 6}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(add),
+                make(constant, 2),
+                make(constant, 3),
+                make(sub),
+                make(constant, 4),
+                make(constant, 5),
+                make(mul),
+                make(array, 3),
+                make(pop),
+            },
+        },
+    };
+    rct(std::move(tests));
+}
+
+TEST(compiler, hashLiterals)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"({})",
+            {},
+            {
+                make(hash, 0),
+                make(pop),
+            },
+        },
+        ctc {
+            R"({1: 2, 3: 4, 5: 6 })",
+            {{1, 2, 3, 4, 5, 6}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(constant, 3),
+                make(constant, 4),
+                make(constant, 5),
+                make(hash, 6),
+                make(pop),
+            },
+        },
+        ctc {
+            R"({1: 2 + 3, 4: 5 * 6})",
+            {{1, 2, 3, 4, 5, 6}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(add),
+                make(constant, 3),
+                make(constant, 4),
+                make(constant, 5),
+                make(mul),
+                make(hash, 4),
+                make(pop),
+            },
+        },
+    };
+    rct(std::move(tests));
+}
+
+TEST(compiler, indexExpression)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"([1, 2, 3][1 + 1])",
+            {1, 2, 3, 1, 1},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(array, 3),
+                make(constant, 3),
+                make(constant, 4),
+                make(add),
+                make(index),
+                make(pop),
+            },
+        },
+        ctc {
+            R"({1: 2}[2 - 1])",
+            {1, 2, 2, 1},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(hash, 2),
+                make(constant, 2),
+                make(constant, 3),
+                make(sub),
+                make(index),
+                make(pop),
+            },
+        },
+    };
     rct(std::move(tests));
 }
 // NOLINTEND(*-magic-numbers)

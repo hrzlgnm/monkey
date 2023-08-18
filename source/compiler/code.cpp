@@ -49,8 +49,15 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "get_global";
         case set_global:
             return ostream << "set_global";
+        case array:
+            return ostream << "array";
+        case hash:
+            return ostream << "hash";
+        case index:
+            return ostream << "index";
     }
-    __builtin_unreachable();
+    throw std::runtime_error(
+        fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));
 }
 
 auto make(opcodes opcode, const std::vector<int>& operands) -> instructions

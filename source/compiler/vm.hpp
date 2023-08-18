@@ -20,6 +20,9 @@ struct vm
     auto exec_cmp(opcodes opcode) -> void;
     auto exec_bang() -> void;
     auto exec_minus() -> void;
+    auto exec_index(object&& left, object&& index) -> void;
+    auto build_array(size_t start, size_t end) const -> object;
+    auto build_hash(size_t start, size_t end) const -> object;
     bytecode code;
     constants stack {stack_size};
     constants_ptr globals;

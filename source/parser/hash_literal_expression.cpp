@@ -7,7 +7,10 @@
 
 #include <fmt/format.h>
 
+#include "code.hpp"
+#include "compiler.hpp"
 #include "environment.hpp"
+#include "expression.hpp"
 #include "object.hpp"
 
 auto hash_literal_expression::string() const -> std::string
@@ -39,4 +42,13 @@ auto hash_literal_expression::eval(environment_ptr env) const -> object
         result.insert({eval_key.hash_key(), std::make_any<object>(eval_val)});
     }
     return {result};
+}
+
+auto hash_literal_expression::compile(compiler& comp) const -> void
+{
+    for (const auto& [key, value] : pairs) {
+        key->compile(comp);
+        value->compile(comp);
+    }
+    comp.emit(opcodes::hash, pairs.size() * 2);
 }

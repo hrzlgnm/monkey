@@ -31,6 +31,9 @@ enum class opcodes : uint8_t
     null,
     get_global,
     set_global,
+    array,
+    hash,
+    index,
 };
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
@@ -62,6 +65,9 @@ const definition_type definitions {
     {opcodes::null, definition {"OpNull"}},
     {opcodes::get_global, definition {"OpGetGlobal", {2}}},
     {opcodes::set_global, definition {"OpSetGlobal", {2}}},
+    {opcodes::array, definition {"OpArray", {2}}},
+    {opcodes::hash, definition {"OpHash", {2}}},
+    {opcodes::index, definition {"OpHash"}},
 };
 
 auto make(opcodes opcode, const std::vector<int>& operands = {}) -> instructions;

@@ -1,5 +1,7 @@
 #include "array_expression.hpp"
 
+#include "code.hpp"
+#include "compiler.hpp"
 #include "object.hpp"
 #include "util.hpp"
 
@@ -19,4 +21,12 @@ auto array_expression::eval(environment_ptr env) const -> object
         result.push_back(std::move(evaluated));
     }
     return {result};
+}
+
+auto array_expression::compile(compiler& comp) const -> void
+{
+    for (const auto& element : elements) {
+        element->compile(comp);
+    }
+    comp.emit(opcodes::array, elements.size());
 }

@@ -98,6 +98,26 @@ auto vm::run() -> void
                 ip += 2;
                 push(globals->at(global_index));
             } break;
+            case opcodes::array: {
+                auto num_elements = read_uint16_big_endian(code.instrs, ip + 1UL);
+                ip += 2;
+                auto arr = build_array(stack_pointer - num_elements, stack_pointer);
+                stack_pointer -= num_elements;
+                push(arr);
+            } break;
+            case opcodes::hash: {
+                auto num_elements = read_uint16_big_endian(code.instrs, ip + 1UL);
+                ip += 2;
+
+                auto hsh = build_hash(stack_pointer - num_elements, stack_pointer);
+                stack_pointer -= num_elements;
+                push(hsh);
+            } break;
+            case opcodes::index: {
+                auto index = pop();
+                auto left = pop();
+                exec_index(std::move(left), std::move(index));
+            } break;
             default:
                 throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
         }
@@ -149,6 +169,18 @@ auto vm::exec_binary_op(opcodes opcode) -> void
                 break;
             default:
                 throw std::runtime_error(fmt::format("unknown integer operator"));
+        }
+        return;
+    }
+    if (left.is<string_value>() && right.is<string_value>()) {
+        const auto& left_value = left.as<string_value>();
+        const auto& right_value = right.as<string_value>();
+        switch (opcode) {
+            case opcodes::add:
+                push({left_value + right_value});
+                break;
+            default:
+                throw std::runtime_error(fmt::format("unknown string operator"));
         }
         return;
     }
@@ -211,4 +243,55 @@ auto vm::exec_minus() -> void
         throw std::runtime_error(fmt::format("unsupported type for negation {}", operand.type_name()));
     }
     push({-operand.as<integer_value>()});
+}
+
+auto vm::build_array(size_t start, size_t end) const -> object
+{
+    array arr;
+    for (auto idx = start; idx < end; idx++) {
+        arr.push_back(stack.at(idx));
+    }
+    return {arr};
+}
+
+auto vm::build_hash(size_t start, size_t end) const -> object
+{
+    hash hsh;
+    for (auto idx = start; idx < end; idx += 2) {
+        auto key = stack[idx];
+        auto val = stack[idx + 1];
+        hsh[key.hash_key()] = val;
+    }
+    return {hsh};
+}
+
+auto exec_hash(const hash& hsh, const hash_key_type& key) -> object
+{
+    if (!hsh.contains(key)) {
+        return {nil};
+    }
+    return unwrap(hsh.at(key));
+}
+
+auto vm::exec_index(object&& left, object&& index) -> void
+{
+    std::visit(
+        overloaded {[&](const array& arr, int64_t index)
+                    {
+                        auto max = static_cast<int64_t>(arr.size() - 1);
+                        if (index < 0 || index > max) {
+                            return push({nil});
+                        }
+                        return push(arr.at(static_cast<size_t>(index)));
+                    },
+                    [&](const hash& hsh, bool index) { push(exec_hash(hsh, {index})); },
+                    [&](const hash& hsh, int64_t index) { push(exec_hash(hsh, {index})); },
+                    [&](const hash& hsh, const std::string& index) { push(exec_hash(hsh, {index})); },
+                    [&](const auto& lft, const auto& idx)
+                    {
+                        throw std::runtime_error(fmt::format(
+                            "invalid index operation: {}:[{}]", object {lft}.type_name(), object {idx}.type_name()));
+                    }},
+        left.value,
+        index.value);
 }
