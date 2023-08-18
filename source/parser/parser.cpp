@@ -7,6 +7,7 @@
 #include "parser.hpp"
 
 #include <fmt/core.h>
+#include <lexer/token.hpp>
 
 #include "array_expression.hpp"
 #include "binary_expression.hpp"
@@ -21,8 +22,6 @@
 #include "program.hpp"
 #include "statements.hpp"
 #include "string_literal.hpp"
-#include "token.hpp"
-#include "token_type.hpp"
 #include "unary_expression.hpp"
 
 enum precedence

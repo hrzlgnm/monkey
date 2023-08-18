@@ -3,7 +3,8 @@
 
 #include "builtin_function_expression.hpp"
 
-#include "compiler.hpp"
+#include <compiler/compiler.hpp>
+
 #include "environment.hpp"
 #include "object.hpp"
 

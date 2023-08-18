@@ -1,7 +1,5 @@
 #include "symbol_table.hpp"
 
-#include "util.hpp"
-
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {
     return lhs.name == rhs.name && lhs.scope == rhs.scope && lhs.index == rhs.index;

@@ -1,7 +1,7 @@
 #include "boolean.hpp"
 
-#include "code.hpp"
-#include "compiler.hpp"
+#include <compiler/compiler.hpp>
+
 #include "object.hpp"
 
 boolean::boolean(bool val)

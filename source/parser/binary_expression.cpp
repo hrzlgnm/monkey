@@ -2,13 +2,10 @@
 
 #include "binary_expression.hpp"
 
+#include <compiler/compiler.hpp>
 #include <fmt/core.h>
-
-#include "code.hpp"
-#include "compiler.hpp"
-#include "object.hpp"
-#include "token.hpp"
-#include "token_type.hpp"
+#include <lexer/token_type.hpp>
+#include <parser/object.hpp>
 
 auto binary_expression::string() const -> std::string
 {

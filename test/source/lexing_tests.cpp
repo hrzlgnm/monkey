@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
-
-#include "lexer.hpp"
-#include "token_type.hpp"
+#include <lexer/lexer.hpp>
+#include <lexer/token_type.hpp>
 
 TEST(lexing, testNextToken)
 {

@@ -7,8 +7,6 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-#include "util.hpp"
-
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
 {
     using enum opcodes;

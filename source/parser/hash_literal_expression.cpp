@@ -5,10 +5,9 @@
 
 #include "hash_literal_expression.hpp"
 
+#include <compiler/compiler.hpp>
 #include <fmt/format.h>
 
-#include "code.hpp"
-#include "compiler.hpp"
 #include "environment.hpp"
 #include "expression.hpp"
 #include "object.hpp"

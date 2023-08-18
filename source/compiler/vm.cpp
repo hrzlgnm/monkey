@@ -3,10 +3,10 @@
 
 #include "vm.hpp"
 
+#include <lexer/token_type.hpp>
+#include <parser/object.hpp>
+
 #include "code.hpp"
-#include "object.hpp"
-#include "token_type.hpp"
-#include "util.hpp"
 
 static const object tru {true};
 static const object fals {false};

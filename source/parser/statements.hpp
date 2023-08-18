@@ -3,7 +3,6 @@
 
 #include "expression.hpp"
 #include "identifier.hpp"
-#include "token.hpp"
 
 using statement = expression;
 using statement_ptr = expression_ptr;
