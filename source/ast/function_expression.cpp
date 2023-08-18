@@ -1,5 +1,3 @@
-#include <memory>
-
 #include "function_expression.hpp"
 
 #include <fmt/format.h>
