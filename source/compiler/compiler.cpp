@@ -29,11 +29,11 @@ auto compiler::add_instructions(instructions&& ins) -> size_t
     return pos;
 }
 
-auto compiler::emit(opcodes opcode, std::vector<int>&& operands) -> size_t
+auto compiler::emit(opcodes opcode, operands&& operands) -> size_t
 {
     previous_instr = last_instr;
 
-    auto instr = make(opcode, operands);
+    auto instr = make(opcode, std::move(operands));
     auto pos = add_instructions(std::move(instr));
     last_instr.opcode = opcode;
     last_instr.position = pos;
@@ -59,7 +59,7 @@ auto compiler::replace_instruction(size_t pos, const instructions& instr) -> voi
     }
 }
 
-auto compiler::change_operand(size_t pos, int operand) -> void
+auto compiler::change_operand(size_t pos, size_t operand) -> void
 {
     auto opcode = static_cast<opcodes>(code.instrs.at(pos));
     auto instr = make(opcode, operand);

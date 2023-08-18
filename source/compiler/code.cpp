@@ -58,7 +58,7 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));
 }
 
-auto make(opcodes opcode, const std::vector<int>& operands) -> instructions
+auto make(opcodes opcode, operands&& operands) -> instructions
 {
     if (!definitions.contains(opcode)) {
         throw std::invalid_argument(fmt::format("definition given opcode {} is not defined", opcode));
@@ -78,12 +78,19 @@ auto make(opcodes opcode, const std::vector<int>& operands) -> instructions
     return instr;
 }
 
-auto read_operands(const definition& def, const instructions& instr) -> std::pair<std::vector<int>, int>
+auto make(opcodes opcode, size_t operand) -> instructions
+{
+    operands rands;
+    rands.push_back(operand);
+    return make(opcode, std::move(rands));
+}
+
+auto read_operands(const definition& def, const instructions& instr) -> std::pair<operands, operands::size_type>
 {
     // TODO: handle the hassle with unsigned size and subscript in std::containers,
     // approach: have a the lowest count of
     // static casts int <-> size_t possible
-    std::pair<std::vector<int>, int> result;
+    std::pair<operands, operands::size_type> result;
     result.first.resize(def.operand_widths.size());
     auto offset = 0U;
     for (size_t idx = 0; const auto width : def.operand_widths) {
@@ -95,7 +102,7 @@ auto read_operands(const definition& def, const instructions& instr) -> std::pai
         offset += static_cast<unsigned>(width);
         idx++;
     }
-    result.second = static_cast<int>(offset);
+    result.second = offset;
     return result;
 }
 
@@ -107,7 +114,7 @@ auto lookup(opcodes opcode) -> std::optional<definition>
     return definitions.at(opcode);
 }
 
-auto fmt_instruction(const definition& def, const std::vector<int>& operands) -> std::string
+auto fmt_instruction(const definition& def, const operands& operands) -> std::string
 {
     auto count = def.operand_widths.size();
     if (count != operands.size()) {

@@ -26,13 +26,12 @@ struct compiler
     auto compile(const program_ptr& program) -> void;
     auto add_constant(object&& obj) -> size_t;
     auto add_instructions(instructions&& ins) -> size_t;
-    auto emit(opcodes opcode, std::vector<int>&& operands = {}) -> size_t;
-    inline auto emit(opcodes opcode, int operand) -> size_t { return emit(opcode, std::vector<int> {operand}); }
-    inline auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, static_cast<int>(operand)); }
+    auto emit(opcodes opcode, operands&& operands = {}) -> size_t;
+    inline auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, std::vector {operand}); }
     auto last_is_pop() const -> bool;
     auto remove_last_pop() -> void;
     auto replace_instruction(size_t pos, const instructions& instr) -> void;
-    auto change_operand(size_t pos, int operand) -> void;
+    auto change_operand(size_t pos, size_t operand) -> void;
 
     bytecode code;
     emitted_instruction last_instr {};

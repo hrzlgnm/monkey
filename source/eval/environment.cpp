@@ -1,3 +1,5 @@
+#include <string>
+
 #include "environment.hpp"
 
 #include "object.hpp"
@@ -38,6 +40,6 @@ auto environment::set(std::string_view name, const object& val) -> void
 auto debug_env(const environment_ptr& env) -> void
 {
     for (const auto& [k, v] : env->store) {
-        std::cout << "[" << k << "] = " << std::to_string(v.value) << "\n";
+        fmt::print("[{}] = {}\n", k, std::to_string(v.value));
     }
 }

@@ -91,7 +91,7 @@ auto if_expression::compile(compiler& comp) const -> void
     }
     auto jump_pos = comp.emit(opcodes::jump, 0);
     auto after_consequence = comp.code.instrs.size();
-    comp.change_operand(jump_not_truthy_pos, static_cast<int>(after_consequence));
+    comp.change_operand(jump_not_truthy_pos, after_consequence);
 
     if (!alternative) {
         comp.emit(opcodes::null);
@@ -102,7 +102,7 @@ auto if_expression::compile(compiler& comp) const -> void
         }
     }
     auto after_alternative = comp.code.instrs.size();
-    comp.change_operand(jump_pos, static_cast<int>(after_alternative));
+    comp.change_operand(jump_pos, after_alternative);
 }
 
 auto index_expression::compile(compiler& comp) const -> void
