@@ -72,3 +72,5 @@ inline auto make(opcodes opcode, int operand) -> instructions
 auto lookup(opcodes opcode) -> std::optional<definition>;
 auto read_operands(const definition& def, const instructions& instr) -> std::pair<std::vector<int>, int>;
 auto to_string(const instructions& code) -> std::string;
+[[nodiscard]] auto read_uint16_big_endian(const std::vector<uint8_t>& bytes, size_t offset) -> uint16_t;
+void write_uint16_big_endian(std::vector<uint8_t>& bytes, size_t offset, uint16_t value);

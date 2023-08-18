@@ -36,8 +36,8 @@ auto assert_expected_object(const std::variant<T...>& expected, const object& ac
 {
     std::visit(
         overloaded {
-            [&](const int64_t expected) { assert_integer_object(expected, actual, input); },
-            [&](const bool expected) { assert_bool_object(expected, actual, input); },
+            [&](const int64_t exp) { assert_integer_object(exp, actual, input); },
+            [&](const bool exp) { assert_bool_object(exp, actual, input); },
             [&](const nil_value) { ASSERT_TRUE(actual.is_nil()); },
         },
         expected);
