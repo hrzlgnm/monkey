@@ -74,7 +74,7 @@ auto vm::run() -> void
 
             } break;
             case opcodes::null:
-                push({nil_type {}});
+                push(nil);
                 break;
             case opcodes::set_global: {
                 auto global_index = read_uint16_big_endian(code.instrs, ip + 1UL);
@@ -256,7 +256,7 @@ auto vm::build_hash(size_t start, size_t end) const -> object
 auto exec_hash(const hash& hsh, const hash_key_type& key) -> object
 {
     if (!hsh.contains(key)) {
-        return {nilv};
+        return nil;
     }
     return unwrap(hsh.at(key));
 }
@@ -268,7 +268,7 @@ auto vm::exec_index(object&& left, object&& index) -> void
                     {
                         auto max = static_cast<int64_t>(arr.size() - 1);
                         if (index < 0 || index > max) {
-                            return push({nilv});
+                            return push(nil);
                         }
                         return push(arr.at(static_cast<size_t>(index)));
                     },
