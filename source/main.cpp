@@ -93,7 +93,7 @@ auto show_usage(std::string_view program, std::string_view error_msg = {})
     if (!error_msg.empty()) {
         fmt::print("Error: {}\n", error_msg);
     }
-    fmt::print("Usage: {} [-i] [-h] [<file>]\n\n", program);
+    fmt::print("Usage: {} [-d] [-i] [-h] [<file>]\n\n", program);
 }
 
 auto main(int argc, char* argv[]) -> int
