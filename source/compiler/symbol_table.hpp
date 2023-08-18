@@ -1,9 +1,11 @@
 #pragma once
 
+#include <map>
 #include <optional>
 #include <string>
 
-#include <parser/util.hpp>
+template<typename Value>
+using string_map = std::map<std::string, Value, std::less<>>;
 
 enum class symbol_scope
 {

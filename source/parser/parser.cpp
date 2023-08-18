@@ -6,23 +6,22 @@
 
 #include "parser.hpp"
 
+#include <ast/array_expression.hpp>
+#include <ast/binary_expression.hpp>
+#include <ast/boolean.hpp>
+#include <ast/call_expression.hpp>
+#include <ast/function_expression.hpp>
+#include <ast/hash_literal_expression.hpp>
+#include <ast/identifier.hpp>
+#include <ast/if_expression.hpp>
+#include <ast/index_expression.hpp>
+#include <ast/integer_literal.hpp>
+#include <ast/program.hpp>
+#include <ast/statements.hpp>
+#include <ast/string_literal.hpp>
+#include <ast/unary_expression.hpp>
 #include <fmt/core.h>
 #include <lexer/token.hpp>
-
-#include "array_expression.hpp"
-#include "binary_expression.hpp"
-#include "boolean.hpp"
-#include "call_expression.hpp"
-#include "function_expression.hpp"
-#include "hash_literal_expression.hpp"
-#include "identifier.hpp"
-#include "if_expression.hpp"
-#include "index_expression.hpp"
-#include "integer_literal.hpp"
-#include "program.hpp"
-#include "statements.hpp"
-#include "string_literal.hpp"
-#include "unary_expression.hpp"
 
 enum precedence
 {

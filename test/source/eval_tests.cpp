@@ -5,11 +5,11 @@
 #include <string_view>
 #include <variant>
 
+#include <ast/builtin_function_expression.hpp>
+#include <eval/environment.hpp>
+#include <eval/object.hpp>
 #include <gtest/gtest.h>
 #include <lexer/lexer.hpp>
-#include <parser/builtin_function_expression.hpp>
-#include <parser/environment.hpp>
-#include <parser/object.hpp>
 #include <parser/parser.hpp>
 
 #include "testutils.hpp"

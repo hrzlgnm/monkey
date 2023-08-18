@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 
-#include "environment_fwd.hpp"
 #include "expression.hpp"
 
 struct callable_expression : expression

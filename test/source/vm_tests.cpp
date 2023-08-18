@@ -4,8 +4,8 @@
 
 #include <compiler/compiler.hpp>
 #include <compiler/vm.hpp>
+#include <eval/object.hpp>
 #include <gtest/gtest.h>
-#include <parser/object.hpp>
 
 #include "testutils.hpp"
 

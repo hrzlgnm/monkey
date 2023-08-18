@@ -2,9 +2,8 @@
 #include <cstdint>
 #include <iterator>
 
-#include "compiler/compiler.hpp"
-
 #include <compiler/code.hpp>
+#include <compiler/compiler.hpp>
 #include <gtest/gtest.h>
 #include <parser/parser.hpp>
 

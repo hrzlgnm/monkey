@@ -1,7 +1,7 @@
 #pragma once
 
-#include <parser/object.hpp>
-#include <parser/program.hpp>
+#include <ast/program.hpp>
+#include <eval/object.hpp>
 
 #include "code.hpp"
 #include "symbol_table.hpp"

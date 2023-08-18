@@ -13,34 +13,34 @@ find_package(fmt REQUIRED)
 # ---- Declare library ----
 add_library(
   monkey_lib OBJECT
+  source/ast/array_expression.cpp
+  source/ast/binary_expression.cpp
+  source/ast/boolean.cpp
+  source/ast/builtin_function_expression.cpp
+  source/ast/callable_expression.cpp
+  source/ast/call_expression.cpp
+  source/ast/function_expression.cpp
+  source/ast/hash_literal_expression.cpp
+  source/ast/identifier.cpp
+  source/ast/if_expression.cpp
+  source/ast/index_expression.cpp
+  source/ast/integer_literal.cpp
+  source/ast/program.cpp
+  source/ast/statements.cpp
+  source/ast/string_literal.cpp
+  source/ast/unary_expression.cpp
   source/compiler/ast_compile.cpp
   source/compiler/code.cpp
   source/compiler/compiler.cpp
   source/compiler/symbol_table.cpp
   source/compiler/vm.cpp
+  source/eval/ast_eval.cpp
+  source/eval/environment.cpp
+  source/eval/object.cpp
   source/lexer/lexer.cpp
   source/lexer/token.cpp
   source/lexer/token_type.cpp
-  source/parser/array_expression.cpp
-  source/parser/binary_expression.cpp
-  source/parser/boolean.cpp
-  source/parser/builtin_function_expression.cpp
-  source/parser/callable_expression.cpp
-  source/parser/call_expression.cpp
-  source/parser/environment.cpp
-  source/parser/function_expression.cpp
-  source/parser/hash_literal_expression.cpp
-  source/parser/identifier.cpp
-  source/parser/if_expression.cpp
-  source/parser/index_expression.cpp
-  source/parser/integer_literal.cpp
-  source/parser/object.cpp
-  source/parser/parser.cpp
-  source/parser/program.cpp
-  source/parser/statements.cpp
-  source/parser/string_literal.cpp
-  source/parser/unary_expression.cpp
-  source/parser/util.cpp)
+  source/parser/parser.cpp)
 
 target_precompile_headers(
   monkey_lib

@@ -1,5 +1,7 @@
 #include "environment.hpp"
 
+#include "object.hpp"
+
 environment::environment(environment_ptr parent_env)
     : parent(std::move(parent_env))
 {
@@ -31,4 +33,11 @@ auto environment::set(std::string_view name, object&& val) -> void
 auto environment::set(std::string_view name, const object& val) -> void
 {
     store[std::string {name}] = val;
+}
+
+auto debug_env(const environment_ptr& env) -> void
+{
+    for (const auto& [k, v] : env->store) {
+        std::cout << "[" << k << "] = " << std::to_string(v.value) << "\n";
+    }
 }
