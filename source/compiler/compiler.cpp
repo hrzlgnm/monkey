@@ -3,8 +3,19 @@
 
 #include "compiler.hpp"
 
-#include "compiler/code.hpp"
+#include <ast/builtin_function_expression.hpp>
+
+#include "code.hpp"
 #include "symbol_table.hpp"
+
+auto compiler::create() -> compiler
+{
+    auto symbols = symbol_table::create();
+    for (size_t idx = 0; const auto& builtin : builtin_function_expression::builtins) {
+        symbols->define_builtin(idx++, builtin.name);
+    }
+    return compiler {std::make_shared<constants>(), std::move(symbols)};
+}
 
 compiler::compiler(constants_ptr&& consts, symbol_table_ptr symbols)
     : consts {std::move(consts)}
@@ -108,4 +119,21 @@ auto compiler::leave_scope() -> instructions
     scope_index--;
     symbols = symbols->parent();
     return instrs;
+}
+
+auto compiler::load_symbol(const symbol& sym) -> void
+{
+    using enum symbol_scope;
+    using enum opcodes;
+    switch (sym.scope) {
+        case global:
+            emit(get_global, sym.index);
+            break;
+        case local:
+            emit(get_local, sym.index);
+            break;
+        case builtin:
+            emit(get_builtin, sym.index);
+            break;
+    }
 }

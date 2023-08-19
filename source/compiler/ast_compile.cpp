@@ -81,11 +81,7 @@ auto identifier::compile(compiler& comp) const -> void
         throw std::runtime_error(fmt::format("undefined variable {}", value));
     }
     auto symbol = maybe_symbol.value();
-    if (symbol.is_local()) {
-        comp.emit(opcodes::get_local, symbol.index);
-    } else {
-        comp.emit(opcodes::get_global, symbol.index);
-    }
+    comp.load_symbol(symbol);
 }
 
 auto if_expression::compile(compiler& comp) const -> void
@@ -198,7 +194,7 @@ auto function_expression::compile(compiler& comp) const -> void
     if (!comp.last_instruction_is(return_value)) {
         comp.emit(ret);
     }
-    auto num_locals = comp.symbols->size();
+    auto num_locals = comp.symbols->num_definitions();
     auto instrs = comp.leave_scope();
     comp.emit(constant, comp.add_constant({compiled_function {instrs, num_locals, parameters.size()}}));
 }

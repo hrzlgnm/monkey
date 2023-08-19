@@ -16,7 +16,6 @@ struct builtin_function_expression : callable_expression
               environment_ptr caller_env,
               const std::vector<expression_ptr>& arguments) const -> object override;
     auto string() const -> std::string override;
-    // auto compile(compiler& comp) const -> void override;
 
     static const std::vector<builtin_function_expression> builtins;
 

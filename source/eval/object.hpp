@@ -40,14 +40,24 @@ using hash = std::unordered_map<hash_key_type, std::any>;
 
 struct callable_expression;
 using bound_function = std::pair<const callable_expression*, environment_ptr>;
+struct builtin_function_expression;
+
 struct compiled_function
 {
     instructions instrs;
     size_t num_locals {};
     size_t num_arguments {};
 };
-using value_type =
-    std::variant<nil_type, bool, integer_type, string_type, error, array, hash, bound_function, compiled_function>;
+using value_type = std::variant<nil_type,
+                                bool,
+                                integer_type,
+                                string_type,
+                                error,
+                                array,
+                                hash,
+                                bound_function,
+                                compiled_function,
+                                const builtin_function_expression*>;
 
 namespace std
 {

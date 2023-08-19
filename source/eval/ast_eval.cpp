@@ -316,6 +316,24 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
              },
              arguments[0].value)};
      }},
+    {"puts",
+     {"str"},
+     [](const array& arguments) -> object
+     {
+         for (bool first = true; const auto& arg : arguments) {
+             if (!first) {
+                 fmt::print(" ");
+             }
+             if (arg.is<string_type>()) {
+                 fmt::print("{}", arg.as<string_type>());
+             } else {
+                 fmt::print("{}", std::to_string(arg.value));
+             }
+             first = false;
+         }
+         fmt::print("\n");
+         return {nil};
+     }},
     {"first",
      {"arr"},
      [](const array& arguments) -> object
@@ -426,24 +444,6 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
              },
              arguments[0].value,
              arguments[1].value);
-     }},
-    {"puts",
-     {"str"},
-     [](const array& arguments) -> object
-     {
-         for (bool first = true; const auto& arg : arguments) {
-             if (!first) {
-                 fmt::print(" ");
-             }
-             if (arg.is<string_type>()) {
-                 fmt::print("{}", arg.as<string_type>());
-             } else {
-                 fmt::print("{}", std::to_string(arg.value));
-             }
-             first = false;
-         }
-         fmt::print("\n");
-         return {nil};
      }},
 };
 

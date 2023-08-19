@@ -13,8 +13,10 @@ enum class symbol_scope
 {
     global,
     local,
+    builtin,
 };
 auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&;
+
 struct symbol
 {
     std::string name;
@@ -37,12 +39,14 @@ struct symbol_table : std::enable_shared_from_this<symbol_table>
     }
     explicit symbol_table(symbol_table_ptr outer = {});
     auto define(const std::string& name) -> symbol;
+    auto define_builtin(size_t index, const std::string& name) -> symbol;
     auto resolve(const std::string& name) -> std::optional<symbol>;
     inline auto is_global() const -> bool { return !m_parent; }
     inline auto parent() const -> symbol_table_ptr { return m_parent; }
-    inline auto size() const -> size_t { return m_store.size(); }
+    inline auto num_definitions() const -> size_t { return m_defs; }
 
   private:
     symbol_table_ptr m_parent;
     string_map<symbol> m_store;
+    size_t m_defs {};
 };

@@ -63,6 +63,8 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "get_local";
         case set_local:
             return ostream << "set_local";
+        case get_builtin:
+            return ostream << "get_builtin";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));

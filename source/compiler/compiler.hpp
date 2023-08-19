@@ -33,8 +33,7 @@ struct compilation_scope
 struct compiler
 {
     auto compile(const program_ptr& program) -> void;
-    static inline auto create() -> compiler { return compiler {std::make_shared<constants>(), symbol_table::create()}; }
-
+    static auto create() -> compiler;
     static inline auto create_with_state(constants_ptr constants, symbol_table_ptr symbols) -> compiler
     {
         return compiler {std::move(constants), std::move(symbols)};
@@ -52,6 +51,7 @@ struct compiler
     auto current_instrs() const -> const instructions&;
     auto enter_scope() -> void;
     auto leave_scope() -> instructions;
+    auto load_symbol(const symbol& sym) -> void;
 
     constants_ptr consts;
     std::vector<compilation_scope> scopes;
