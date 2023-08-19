@@ -312,11 +312,13 @@ auto vm::current_frame() -> frame&
 {
     return m_frames[m_frame_index - 1];
 }
+
 auto vm::push_frame(frame&& frm) -> void
 {
     m_frames[m_frame_index] = std::move(frm);
     m_frame_index++;
 }
+
 auto vm::pop_frame() -> frame
 {
     m_frame_index--;
