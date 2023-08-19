@@ -1,4 +1,6 @@
 #include <cstdint>
+#include <exception>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -312,8 +314,177 @@ TEST(vm, callFirstClassFunctions)
                returnsOneReturner()();)",
             1,
         },
+        vt<int64_t> {
+            R"(
+        let globalSeed = 50;
+        let minusOne = fn() {
+            let num = 1;
+            globalSeed - num;
+        }
+        let minusTwo = fn() {
+            let num = 2;
+            globalSeed - num;
+        }
+        minusOne() + minusOne();)",
+            98,
+        },
     };
     run(tests);
+}
+
+TEST(vm, callFunctionsWithBindings)
+{
+    std::array tests {
+        vt<int64_t> {
+            R"(
+            let one = fn() { let one = 1; one };
+            one();
+            )",
+            1,
+        },
+        vt<int64_t> {
+            R"(
+        let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+        oneAndTwo();
+            )",
+            3,
+        },
+        vt<int64_t> {
+            R"(
+        let oneAndTwo = fn() { let one = 1; let two = 2; one + two; };
+        let threeAndFour = fn() { let three = 3; let four = 4; three + four; };
+        oneAndTwo() + threeAndFour();
+            )",
+            10,
+        },
+        vt<int64_t> {
+            R"(
+        let firstFoobar = fn() { let foobar = 50; foobar; };
+        let secondFoobar = fn() { let foobar = 100; foobar; };
+        firstFoobar() + secondFoobar();
+            )",
+            150,
+        },
+        vt<int64_t> {
+            R"(
+        let globalSeed = 50;
+        let minusOne = fn() {
+            let num = 1;
+            globalSeed - num;
+        }
+        let minusTwo = fn() {
+            let num = 2;
+            globalSeed - num;
+        }
+        minusOne() + minusTwo();
+            )",
+            97,
+        },
+    };
+    run(tests);
+}
+
+TEST(vm, callFunctionsWithArgumentsAndBindings)
+{
+    std::array tests {
+        vt<int64_t> {
+            R"(
+        let identity = fn(a) { a; };
+        identity(4);
+            )",
+            4,
+        },
+        vt<int64_t> {
+            R"(
+        let sum = fn(a, b) { a + b; };
+        sum(1, 2);
+            )",
+            3,
+        },
+        vt<int64_t> {
+            R"(
+         let sum = fn(a, b) {
+            let c = a + b;
+            c;
+        };
+        sum(1, 2);
+            )",
+            3,
+        },
+        vt<int64_t> {
+            R"(
+        let sum = fn(a, b) {
+            let c = a + b;
+            c;
+        };
+        sum(1, 2) + sum(3, 4);
+            )",
+            10,
+        },
+        vt<int64_t> {
+            R"(
+         let sum = fn(a, b) {
+            let c = a + b;
+            c;
+        };
+        let outer = fn() {
+            sum(1, 2) + sum(3, 4);
+        };
+        outer();
+            )",
+            10,
+        },
+        vt<int64_t> {
+            R"(
+        let globalNum = 10;
+
+        let sum = fn(a, b) {
+            let c = a + b;
+            c + globalNum;
+        };
+
+        let outer = fn() {
+            sum(1, 2) + sum(3, 4) + globalNum;
+        };
+
+        outer() + globalNum;
+            )",
+            50,
+        },
+    };
+    run(tests);
+}
+
+TEST(vm, callFunctionsWithWrongArgument)
+{
+    std::array tests {
+        vt<std::string> {
+            R"(fn() { 1; }(1);)",
+            "wrong number of arguments: want=0, got=1",
+        },
+        vt<std::string> {
+            R"(fn(a) { a; }();)",
+            "wrong number of arguments: want=1, got=0",
+
+        },
+        vt<std::string> {
+            R"(fn(a, b) { a + b; }(1);)",
+            "wrong number of arguments: want=2, got=1",
+        },
+    };
+    for (const auto& [input, expected] : tests) {
+        auto [prgrm, _] = assert_program(input);
+        auto cmplr = compiler::create();
+        cmplr.compile(prgrm);
+        auto mchn = vm::create(cmplr.byte_code());
+        try {
+            mchn.run();
+        } catch (const std::exception& e) {
+            ASSERT_STREQ(e.what(), std::get<std::string>(expected).c_str());
+            continue;
+        }
+        FAIL() << "Did not throw";
+    }
 }
 
 // NOLINTEND(*-magic-numbers)

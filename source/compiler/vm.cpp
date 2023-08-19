@@ -112,23 +112,43 @@ auto vm::run() -> void
                 exec_index(std::move(left), std::move(index));
             } break;
             case opcodes::call: {
-                auto maybe_compiled_func = m_stack[m_sp - 1];
+                auto num_args = code.at(instr_ptr + 1UL);
+                current_frame().ip += 1;
+                auto maybe_compiled_func = m_stack[m_sp - 1 - num_args];
                 if (!maybe_compiled_func.is<compiled_function>()) {
                     throw std::runtime_error("calling non-function");
                 }
-                frame frm {maybe_compiled_func.as<compiled_function>(), -1};
+                const auto& compiled = maybe_compiled_func.as<compiled_function>();
+                if (num_args != compiled.num_arguments) {
+                    throw std::runtime_error(
+                        fmt::format("wrong number of arguments: want={}, got={}", compiled.num_arguments, num_args));
+                }
+                frame frm {compiled, -1, static_cast<ssize_t>(m_sp - num_args)};
+                m_sp = static_cast<size_t>(frm.base_ptr) + compiled.num_locals;
                 push_frame(std::move(frm));
             } break;
             case opcodes::return_value: {
                 auto return_value = pop();
-                pop_frame();
-                pop();
+                auto frame = pop_frame();
+                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(return_value);
             } break;
             case opcodes::ret: {
-                pop_frame();
-                pop();
+                auto frame = pop_frame();
+                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(nil);
+            } break;
+            case opcodes::set_local: {
+                auto local_index = code.at(instr_ptr + 1UL);
+                current_frame().ip += 1;
+                auto& frame = current_frame();
+                m_stack[static_cast<size_t>(frame.base_ptr) + local_index] = pop();
+            } break;
+            case opcodes::get_local: {
+                auto local_index = code.at(instr_ptr + 1UL);
+                current_frame().ip += 1;
+                auto& frame = current_frame();
+                push(m_stack[static_cast<size_t>(frame.base_ptr) + local_index]);
             } break;
             default:
                 throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));

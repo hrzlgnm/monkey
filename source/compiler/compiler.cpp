@@ -4,6 +4,7 @@
 #include "compiler.hpp"
 
 #include "compiler/code.hpp"
+#include "symbol_table.hpp"
 
 compiler::compiler(constants_ptr&& consts, symbol_table_ptr symbols)
     : consts {std::move(consts)}
@@ -97,6 +98,7 @@ auto compiler::enter_scope() -> void
 {
     scopes.resize(scopes.size() + 1);
     scope_index++;
+    symbols = symbol_table::create_enclosed(symbols);
 }
 
 auto compiler::leave_scope() -> instructions
@@ -104,5 +106,6 @@ auto compiler::leave_scope() -> instructions
     auto instrs = scopes[scope_index].instrs;
     scopes.pop_back();
     scope_index--;
+    symbols = symbols->parent();
     return instrs;
 }
