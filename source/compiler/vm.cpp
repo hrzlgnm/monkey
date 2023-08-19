@@ -3,6 +3,7 @@
 
 #include "vm.hpp"
 
+#include <ast/builtin_function_expression.hpp>
 #include <eval/object.hpp>
 
 #include "code.hpp"
@@ -114,18 +115,7 @@ auto vm::run() -> void
             case opcodes::call: {
                 auto num_args = code.at(instr_ptr + 1UL);
                 current_frame().ip += 1;
-                auto maybe_compiled_func = m_stack[m_sp - 1 - num_args];
-                if (!maybe_compiled_func.is<compiled_function>()) {
-                    throw std::runtime_error("calling non-function");
-                }
-                const auto& compiled = maybe_compiled_func.as<compiled_function>();
-                if (num_args != compiled.num_arguments) {
-                    throw std::runtime_error(
-                        fmt::format("wrong number of arguments: want={}, got={}", compiled.num_arguments, num_args));
-                }
-                frame frm {compiled, -1, static_cast<ssize_t>(m_sp - num_args)};
-                m_sp = static_cast<size_t>(frm.base_ptr) + compiled.num_locals;
-                push_frame(std::move(frm));
+                exec_call(num_args);
             } break;
             case opcodes::return_value: {
                 auto return_value = pop();
@@ -149,6 +139,12 @@ auto vm::run() -> void
                 current_frame().ip += 1;
                 auto& frame = current_frame();
                 push(m_stack[static_cast<size_t>(frame.base_ptr) + local_index]);
+            } break;
+            case opcodes::get_builtin: {
+                auto builtin_index = code.at(instr_ptr + 1UL);
+                current_frame().ip += 1;
+                const auto& builtin = builtin_function_expression::builtins[builtin_index];
+                push({&builtin});
             } break;
             default:
                 throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
@@ -326,6 +322,32 @@ auto vm::exec_index(object&& left, object&& index) -> void
                     }},
         left.value,
         index.value);
+}
+
+auto vm::exec_call(size_t num_args) -> void
+{
+    auto callee = m_stack[m_sp - 1 - num_args];
+    std::visit(overloaded {[&](const compiled_function& compiled)
+                           {
+                               if (num_args != compiled.num_arguments) {
+                                   throw std::runtime_error(fmt::format(
+                                       "wrong number of arguments: want={}, got={}", compiled.num_arguments, num_args));
+                               }
+                               frame frm {compiled, -1, static_cast<ssize_t>(m_sp - num_args)};
+                               m_sp = static_cast<size_t>(frm.base_ptr) + compiled.num_locals;
+                               push_frame(std::move(frm));
+                           },
+                           [&](const builtin_function_expression* builtin)
+                           {
+                               array args;
+                               for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
+                                   args.push_back(m_stack[idx]);
+                               }
+                               auto result = builtin->body(std::move(args));
+                               push(result);
+                           },
+                           [](const auto& /*other*/) { throw std::runtime_error("calling non-function"); }},
+               callee.value);
 }
 
 auto vm::current_frame() -> frame&

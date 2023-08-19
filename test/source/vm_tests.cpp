@@ -55,6 +55,14 @@ auto assert_hash_object(const hash& expected, const object& actual, std::string_
     ASSERT_EQ(actual_hash.size(), expected.size());
 }
 
+auto assert_error_object(const error& expected, const object& actual, std::string_view input) -> void
+{
+    ASSERT_TRUE(actual.is<error>()) << input << " got " << actual.type_name() << " with "
+                                    << std::to_string(actual.value) << " instead ";
+    auto actual_error = actual.as<error>();
+    ASSERT_EQ(actual_error.message, expected.message);
+}
+
 template<typename... T>
 struct vt
 {
@@ -71,6 +79,7 @@ auto assert_expected_object(const std::variant<T...>& expected, const object& ac
             [&](const bool exp) { assert_bool_object(exp, actual, input); },
             [&](const nil_type) { ASSERT_TRUE(actual.is_nil()); },
             [&](const std::string& exp) { assert_string_object(exp, actual, input); },
+            [&](const error& exp) { assert_error_object(exp, actual, input); },
             [&](const std::vector<int>& exp) { assert_array_object(exp, actual, input); },
             [&](const hash& exp) { assert_hash_object(exp, actual, input); },
         },
@@ -485,6 +494,55 @@ TEST(vm, callFunctionsWithWrongArgument)
         }
         FAIL() << "Did not throw";
     }
+}
+
+TEST(vm, callBuiltins)
+{
+    std::array tests {
+        vt<int64_t> {R"(len(""))", 0}, vt<int64_t> {R"(len("four"))", 4}, vt<int64_t> {R"(len("hello world"))", 11},
+        /*
+                vt<int64_t, error, nil_type, std::vector<int>> {
+                    R"(len(1))",
+                    error {
+                        "argument to `len` not supported, got INTEGER",
+                    },
+                },
+                vt<int64_t, error, nil_type, std::vector<int64_t>> {
+                    R"(len("one", "two"))",
+                    error {
+                        "wrong number of arguments. got=2, want=1",
+                    },
+                },
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(len([1, 2, 3]))", 3},
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(len([]))", 0},
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(puts("hello", "world!"))", nilv},
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(first([1, 2, 3]))", 1},
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(first([]))", nilv},
+                vt<int64_t, error, nil_type, std::vector<int>> {
+                    R"(first(1))",
+                    error {
+                        "argument to `first` must be ARRAY, got INTEGER",
+                    },
+                },
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(last([1, 2, 3]))", 3},
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(last([]))", nilv},
+                {
+                    R"(last(1))",
+                    error {
+                        "argument to `last` must be ARRAY, got INTEGER",
+                    },
+                },
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(rest([1, 2, 3]))", maker<int>({2, 3})},
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(rest([]))", nilv},
+                vt<int64_t, error, nil_type, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
+                vt<int64_t, error, nil_type, std::vector<int>> {
+                    R"(push(1, 1))",
+                    error {
+                        "argument to `push` must be ARRAY, got INTEGER",
+                    },
+                },*/
+    };
+    run(tests);
 }
 
 // NOLINTEND(*-magic-numbers)

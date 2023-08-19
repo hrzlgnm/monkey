@@ -15,6 +15,8 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
             return ost << "global";
         case local:
             return ost << "local";
+        case builtin:
+            return ost << "builtin";
     }
     return ost;
 }
@@ -35,7 +37,16 @@ auto symbol_table::define(const std::string& name) -> symbol
     return m_store[name] = symbol {
                .name = name,
                .scope = m_parent ? local : global,
-               .index = m_store.size(),
+               .index = m_defs++,
+           };
+}
+
+auto symbol_table::define_builtin(size_t index, const std::string& name) -> symbol
+{
+    return m_store[name] = symbol {
+               .name = name,
+               .scope = symbol_scope::builtin,
+               .index = index,
            };
 }
 

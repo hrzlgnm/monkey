@@ -506,12 +506,6 @@ TEST(compiler, indexExpression)
     run(std::move(tests));
 }
 
-template<typename T>
-auto maker(std::initializer_list<T> list) -> std::vector<T>
-{
-    return std::vector<T> {list};
-}
-
 TEST(compiler, functions)
 {
     using enum opcodes;
@@ -729,6 +723,43 @@ TEST(compiler, letStatementScopes)
             },
             {
                 make(constant, 2),
+                make(pop),
+            },
+        },
+    };
+    run(std::move(tests));
+}
+
+TEST(compiler, builtins)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(
+            len([]);
+            push([], 1);
+            )",
+            {1},
+            {
+                make(get_builtin, 0),
+                make(array, 0),
+                make(call, 1),
+                make(pop),
+                make(get_builtin, 5),
+                make(array, 0),
+                make(constant, 0),
+                make(call, 2),
+                make(pop),
+
+            },
+        },
+        ctc {
+            R"(
+            fn() { len([]) }
+            )",
+            {maker({make(get_builtin, 0), make(array, 0), make(call, 1), make(return_value)})},
+            {
+                make(constant, 0),
                 make(pop),
             },
         },

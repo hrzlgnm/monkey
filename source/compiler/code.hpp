@@ -39,6 +39,7 @@ enum class opcodes : uint8_t
     ret,
     get_local,
     set_local,
+    get_builtin,
 };
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
@@ -81,6 +82,7 @@ const definition_type definitions {
     {opcodes::ret, definition {"OpReturn"}},
     {opcodes::get_local, definition {"OpGetLocal", {1}}},
     {opcodes::set_local, definition {"OpSetLocal", {1}}},
+    {opcodes::get_builtin, definition {"OpGetBuiltin", {1}}},
 };
 
 auto make(opcodes opcode, operands&& operands = {}) -> instructions;

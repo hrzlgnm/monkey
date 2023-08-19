@@ -101,5 +101,30 @@ TEST(symboltable, resolveNestedLocals)
         EXPECT_EQ(nested->resolve(expected.name), expected);
     }
 }
+
+TEST(symboltable, defineResolveBuiltin)
+{
+    using enum symbol_scope;
+    std::array expecteds {
+        symbol {"a", builtin, 0},
+        symbol {"c", builtin, 1},
+        symbol {"e", builtin, 2},
+        symbol {"f", builtin, 3},
+    };
+
+    auto globals = symbol_table::create();
+    auto first = symbol_table::create_enclosed(globals);
+    auto nested = symbol_table::create_enclosed(first);
+    for (size_t i = 0; const auto& expected : expecteds) {
+        globals->define_builtin(i, expected.name);
+        i++;
+    }
+
+    for (const auto& table : {globals, first, nested}) {
+        for (const auto& expected : expecteds) {
+            EXPECT_EQ(table->resolve(expected.name), expected);
+        }
+    }
+}
 // NOLINTEND(*-identifier-length)
 // NOLINTEND(*-magic-numbers)
