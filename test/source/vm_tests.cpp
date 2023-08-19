@@ -499,50 +499,54 @@ TEST(vm, callFunctionsWithWrongArgument)
 TEST(vm, callBuiltins)
 {
     std::array tests {
-        vt<int64_t> {R"(len(""))", 0}, vt<int64_t> {R"(len("four"))", 4}, vt<int64_t> {R"(len("hello world"))", 11},
-        /*
-                vt<int64_t, error, nil_type, std::vector<int>> {
-                    R"(len(1))",
-                    error {
-                        "argument to `len` not supported, got INTEGER",
-                    },
-                },
-                vt<int64_t, error, nil_type, std::vector<int64_t>> {
-                    R"(len("one", "two"))",
-                    error {
-                        "wrong number of arguments. got=2, want=1",
-                    },
-                },
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(len([1, 2, 3]))", 3},
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(len([]))", 0},
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(puts("hello", "world!"))", nilv},
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(first([1, 2, 3]))", 1},
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(first([]))", nilv},
-                vt<int64_t, error, nil_type, std::vector<int>> {
-                    R"(first(1))",
-                    error {
-                        "argument to `first` must be ARRAY, got INTEGER",
-                    },
-                },
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(last([1, 2, 3]))", 3},
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(last([]))", nilv},
-                {
-                    R"(last(1))",
-                    error {
-                        "argument to `last` must be ARRAY, got INTEGER",
-                    },
-                },
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(rest([1, 2, 3]))", maker<int>({2, 3})},
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(rest([]))", nilv},
-                vt<int64_t, error, nil_type, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
-                vt<int64_t, error, nil_type, std::vector<int>> {
-                    R"(push(1, 1))",
-                    error {
-                        "argument to `push` must be ARRAY, got INTEGER",
-                    },
-                },*/
+        vt<int64_t, nil_type, std::vector<int>> {R"(len(""))", 0},
+        vt<int64_t, nil_type, std::vector<int>> {R"(len("four"))", 4},
+        vt<int64_t, nil_type, std::vector<int>> {R"(len("hello world"))", 11},
+        vt<int64_t, nil_type, std::vector<int>> {R"(len([1, 2, 3]))", 3},
+        vt<int64_t, nil_type, std::vector<int>> {R"(len([]))", 0},
+        vt<int64_t, nil_type, std::vector<int>> {R"(puts("hello", "world!"))", nilv},
+        vt<int64_t, nil_type, std::vector<int>> {R"(first([1, 2, 3]))", 1},
+        vt<int64_t, nil_type, std::vector<int>> {R"(first([]))", nilv},
+        vt<int64_t, nil_type, std::vector<int>> {R"(last([]))", nilv},
+        vt<int64_t, nil_type, std::vector<int>> {R"(rest([1, 2, 3]))", maker<int>({2, 3})},
+        vt<int64_t, nil_type, std::vector<int>> {R"(rest([]))", nilv},
+        vt<int64_t, nil_type, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
+        vt<int64_t, nil_type, std::vector<int>> {R"(last([1, 2, 3]))", 3},
+    };
+    std::array errortests {
+        vt<error> {
+            R"(len(1))",
+            error {
+                "argument of type integer to len() is not supported",
+            },
+        },
+        vt<error> {
+            R"(len("one", "two"))",
+            error {
+                "wrong number of arguments to len(): expected=1, got=2",
+            },
+        },
+        vt<error> {
+            R"(first(1))",
+            error {
+                "argument of type integer to first() is not supported",
+            },
+        },
+        vt<error> {
+            R"(last(1))",
+            error {
+                "argument of type integer to last() is not supported",
+            },
+        },
+        vt<error> {
+            R"(push(1, 1))",
+            error {
+                "argument of type integer and integer to push() are not supported",
+            },
+        },
     };
     run(tests);
+    run(errortests);
 }
 
 // NOLINTEND(*-magic-numbers)
