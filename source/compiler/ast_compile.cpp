@@ -11,6 +11,7 @@
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 
+#include "code.hpp"
 #include "compiler.hpp"
 
 auto array_expression::compile(compiler& comp) const -> void
@@ -84,24 +85,25 @@ auto identifier::compile(compiler& comp) const -> void
 auto if_expression::compile(compiler& comp) const -> void
 {
     condition->compile(comp);
-    auto jump_not_truthy_pos = comp.emit(opcodes::jump_not_truthy, 0);
+    using enum opcodes;
+    auto jump_not_truthy_pos = comp.emit(jump_not_truthy, 0);
     consequence->compile(comp);
-    if (comp.last_is_pop()) {
+    if (comp.last_instruction_is(pop)) {
         comp.remove_last_pop();
     }
-    auto jump_pos = comp.emit(opcodes::jump, 0);
-    auto after_consequence = comp.code.instrs.size();
+    auto jump_pos = comp.emit(jump, 0);
+    auto after_consequence = comp.current_instrs().size();
     comp.change_operand(jump_not_truthy_pos, after_consequence);
 
     if (!alternative) {
-        comp.emit(opcodes::null);
+        comp.emit(null);
     } else {
         alternative->compile(comp);
-        if (comp.last_is_pop()) {
+        if (comp.last_instruction_is(pop)) {
             comp.remove_last_pop();
         }
     }
-    auto after_alternative = comp.code.instrs.size();
+    auto after_alternative = comp.current_instrs().size();
     comp.change_operand(jump_pos, after_alternative);
 }
 
@@ -134,6 +136,7 @@ auto let_statement::compile(compiler& comp) const -> void
 auto return_statement::compile(compiler& comp) const -> void
 {
     value->compile(comp);
+    comp.emit(opcodes::return_value);
 }
 
 auto expression_statement::compile(compiler& comp) const -> void
@@ -167,4 +170,26 @@ auto unary_expression::compile(compiler& comp) const -> void
         default:
             throw std::runtime_error(fmt::format("invalid operator {}", op));
     }
+}
+
+auto function_expression::compile(compiler& comp) const -> void
+{
+    comp.enter_scope();
+    body->compile(comp);
+
+    using enum opcodes;
+    if (comp.last_instruction_is(pop)) {
+        comp.replace_last_pop_with_return();
+    }
+    if (!comp.last_instruction_is(return_value)) {
+        comp.emit(ret);
+    }
+    auto instrs = comp.leave_scope();
+    comp.emit(constant, comp.add_constant({compiled_function {instrs}}));
+}
+
+auto call_expression::compile(compiler& comp) const -> void
+{
+    function->compile(comp);
+    comp.emit(opcodes::call);
 }
