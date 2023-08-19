@@ -130,7 +130,7 @@ auto main(int argc, char* argv[]) -> int
             if (opts.mode == run_mode::compile) {
                 auto cmplr = compiler::create_with_state(consts, symbols);
                 cmplr.compile(prgrm);
-                auto machine = vm::create_with_state(std::move(cmplr.code), globals);
+                auto machine = vm::create_with_state(cmplr.byte_code(), globals);
                 machine.run();
                 auto stack_top = machine.last_popped();
                 std::cout << std::to_string(stack_top.value) << "\n";

@@ -41,7 +41,26 @@ TEST(compiler, make)
     };
 }
 
-using expected_value = std::variant<int64_t, std::string>;
+TEST(compiler, compilerScopes)
+{
+    using enum opcodes;
+    auto cmplr = compiler::create();
+    ASSERT_EQ(cmplr.scope_index, 0);
+    cmplr.emit(mul);
+    cmplr.enter_scope();
+    ASSERT_EQ(cmplr.scope_index, 1);
+    cmplr.emit(sub);
+    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].instrs.size(), 1);
+    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].last_instr.opcode, sub);
+    cmplr.leave_scope();
+    ASSERT_EQ(cmplr.scope_index, 0);
+    cmplr.emit(add);
+    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].instrs.size(), 2);
+    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].last_instr.opcode, add);
+    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].previous_instr.opcode, mul);
+}
+
+using expected_value = std::variant<int64_t, std::string, std::vector<instructions>>;
 
 struct ctc
 {
@@ -64,7 +83,7 @@ auto assert_instructions(const std::vector<instructions>& instructions, const ::
 {
     auto flattened = flatten(instructions);
     EXPECT_EQ(flattened.size(), code.size());
-    EXPECT_EQ(flattened, code) << "expected " << to_string(flattened) << ", got " << to_string(code);
+    EXPECT_EQ(flattened, code) << "expected: \n" << to_string(flattened) << "got: \n" << to_string(code);
 }
 
 auto assert_constants(const std::vector<expected_value>& expecteds, const constants& consts)
@@ -76,6 +95,8 @@ auto assert_constants(const std::vector<expected_value>& expecteds, const consta
             overloaded {
                 [&](const int64_t val) { ASSERT_EQ(val, actual.as<integer_type>()); },
                 [&](const std::string& val) { ASSERT_EQ(val, actual.as<string_type>()); },
+                [&](const std::vector<instructions>& instrs)
+                { assert_instructions(instrs, actual.as<compiled_function>().instrs); },
             },
             expected);
         idx++;
@@ -83,14 +104,14 @@ auto assert_constants(const std::vector<expected_value>& expecteds, const consta
 }
 
 template<size_t N>
-auto rct(std::array<ctc, N>&& tests)
+auto run(std::array<ctc, N>&& tests)
 {
     for (const auto& [input, constants, instructions] : tests) {
         auto [prgrm, _] = assert_program(input);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
-        assert_instructions(instructions, cmplr.code.instrs);
-        assert_constants(constants, *cmplr.code.consts);
+        assert_instructions(instructions, cmplr.current_instrs());
+        assert_constants(constants, *cmplr.consts);
     }
 }
 
@@ -170,7 +191,7 @@ TEST(compiler, integerArithmetics)
             {make(constant, 0), make(minus), make(pop)},
         },
     };
-    rct(std::move(tests));
+    run(std::move(tests));
 }
 
 TEST(compiler, booleanExpressions)
@@ -223,7 +244,7 @@ TEST(compiler, booleanExpressions)
             {make(tru), make(bang), make(pop)},
         },
     };
-    rct(std::move(tests));
+    run(std::move(tests));
 }
 TEST(compiler, conditionals)
 {
@@ -265,7 +286,7 @@ TEST(compiler, conditionals)
             },
         },
     };
-    rct(std::move(tests));
+    run(std::move(tests));
 }
 
 TEST(compiler, globalLetStatements)
@@ -312,7 +333,7 @@ TEST(compiler, globalLetStatements)
         },
     };
 
-    rct(std::move(tests));
+    run(std::move(tests));
 }
 
 TEST(compiler, stringExpression)
@@ -381,7 +402,7 @@ TEST(compiler, arrayLiterals)
             },
         },
     };
-    rct(std::move(tests));
+    run(std::move(tests));
 }
 
 TEST(compiler, hashLiterals)
@@ -427,7 +448,7 @@ TEST(compiler, hashLiterals)
             },
         },
     };
-    rct(std::move(tests));
+    run(std::move(tests));
 }
 
 TEST(compiler, indexExpression)
@@ -464,6 +485,102 @@ TEST(compiler, indexExpression)
             },
         },
     };
-    rct(std::move(tests));
+    run(std::move(tests));
 }
+
+template<typename T>
+auto maker(std::initializer_list<T> list) -> std::vector<T>
+{
+    return std::vector<T> {list};
+}
+
+TEST(compiler, functions)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(fn() { return  5 + 10 })",
+            {
+                5,
+                10,
+                maker({make(constant, 0), make(constant, 1), make(add), make(return_value)}),
+            },
+            {
+                make(constant, 2),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(fn() { 5 + 10 })",
+            {
+                5,
+                10,
+                maker({make(constant, 0), make(constant, 1), make(add), make(return_value)}),
+            },
+            {
+                make(constant, 2),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(fn() { 1; 2})",
+            {
+                1,
+                2,
+                maker({make(constant, 0), make(pop), make(constant, 1), make(return_value)}),
+            },
+            {
+                make(constant, 2),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(fn() { })",
+            {
+                maker({make(ret)}),
+            },
+            {
+                make(constant, 0),
+                make(pop),
+            },
+        },
+    };
+    run(std::move(tests));
+}
+
+TEST(compiler, functionCalls)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(fn() { 24 }();)",
+            {
+                24,
+                maker({make(constant, 0), make(return_value)}),
+            },
+            {
+                make(constant, 1),
+                make(call),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(let noArg = fn() { 24 };
+               noArg())",
+            {
+                24,
+                maker({make(constant, 0), make(return_value)}),
+            },
+            {
+                make(constant, 1),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(call),
+                make(pop),
+            },
+        },
+    };
+    run(std::move(tests));
+}
+
 // NOLINTEND(*-magic-numbers)

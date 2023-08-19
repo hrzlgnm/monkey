@@ -13,7 +13,7 @@ struct function_expression : callable_expression
     auto call(environment_ptr closure_env,
               environment_ptr caller_env,
               const std::vector<expression_ptr>& arguments) const -> object override;
-    // auto compile(compiler& comp) const -> void override;
+    auto compile(compiler& comp) const -> void override;
 
     environment_ptr parent_env;
     statement_ptr body;

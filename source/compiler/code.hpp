@@ -34,6 +34,9 @@ enum class opcodes : uint8_t
     array,
     hash,
     index,
+    call,
+    return_value,
+    ret,
 };
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
@@ -71,6 +74,9 @@ const definition_type definitions {
     {opcodes::array, definition {"OpArray", {2}}},
     {opcodes::hash, definition {"OpHash", {2}}},
     {opcodes::index, definition {"OpIndex"}},
+    {opcodes::call, definition {"OpCall"}},
+    {opcodes::return_value, definition {"OpReturnValue"}},
+    {opcodes::ret, definition {"OpReturn"}},
 };
 
 auto make(opcodes opcode, operands&& operands = {}) -> instructions;

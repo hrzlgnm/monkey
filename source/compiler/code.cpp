@@ -53,6 +53,12 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "hash";
         case index:
             return ostream << "index";
+        case call:
+            return ostream << "call";
+        case return_value:
+            return ostream << "return_value";
+        case ret:
+            return ostream << "return";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));

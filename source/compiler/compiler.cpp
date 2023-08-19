@@ -5,8 +5,9 @@
 
 #include "compiler/code.hpp"
 
-compiler::compiler(bytecode&& code, symbol_table_ptr symbols)
-    : code {std::move(code)}
+compiler::compiler(constants_ptr&& consts, symbol_table_ptr symbols)
+    : consts {std::move(consts)}
+    , scopes {1}
     , symbols {std::move(symbols)}
 {
 }
@@ -18,50 +19,90 @@ auto compiler::compile(const program_ptr& program) -> void
 
 auto compiler::add_constant(object&& obj) -> size_t
 {
-    code.consts->push_back(std::move(obj));
-    return code.consts->size() - 1;
+    consts->push_back(std::move(obj));
+    return consts->size() - 1;
 }
 
 auto compiler::add_instructions(instructions&& ins) -> size_t
 {
-    auto pos = code.instrs.size();
-    std::copy(ins.begin(), ins.end(), std::back_inserter(code.instrs));
+    auto& scope = scopes[scope_index];
+    auto pos = scope.instrs.size();
+    std::copy(ins.begin(), ins.end(), std::back_inserter(scope.instrs));
     return pos;
 }
 
 auto compiler::emit(opcodes opcode, operands&& operands) -> size_t
 {
-    previous_instr = last_instr;
+    auto& scope = scopes[scope_index];
+    scope.previous_instr = scope.last_instr;
 
     auto instr = make(opcode, std::move(operands));
     auto pos = add_instructions(std::move(instr));
-    last_instr.opcode = opcode;
-    last_instr.position = pos;
+    scope.last_instr.opcode = opcode;
+    scope.last_instr.position = pos;
     return pos;
 }
 
-auto compiler::last_is_pop() const -> bool
+auto compiler::last_instruction_is(opcodes opcode) const -> bool
 {
-    return last_instr.opcode == opcodes::pop;
+    if (current_instrs().empty()) {
+        return false;
+    }
+    return scopes[scope_index].last_instr.opcode == opcode;
 }
 
 auto compiler::remove_last_pop() -> void
 {
-    code.instrs.resize(last_instr.position);
-    last_instr = previous_instr;
+    auto& scope = scopes[scope_index];
+    scope.instrs.resize(scope.last_instr.position);
+    scope.last_instr = scope.previous_instr;
+}
+
+auto compiler::replace_last_pop_with_return() -> void
+{
+    auto last = scopes[scope_index].last_instr.position;
+    using enum opcodes;
+    replace_instruction(last, make(return_value));
+    scopes[scope_index].last_instr.opcode = return_value;
 }
 
 auto compiler::replace_instruction(size_t pos, const instructions& instr) -> void
 {
+    auto& scope = scopes[scope_index];
     for (auto idx = 0UL; const auto& inst : instr) {
-        code.instrs[pos + idx] = inst;
+        scope.instrs[pos + idx] = inst;
         idx++;
     }
 }
 
 auto compiler::change_operand(size_t pos, size_t operand) -> void
 {
-    auto opcode = static_cast<opcodes>(code.instrs.at(pos));
+    auto& scope = scopes[scope_index];
+    auto opcode = static_cast<opcodes>(scope.instrs.at(pos));
     auto instr = make(opcode, operand);
     replace_instruction(pos, instr);
+}
+
+auto compiler::current_instrs() const -> const instructions&
+{
+    return scopes[scope_index].instrs;
+}
+
+auto compiler::byte_code() const -> bytecode
+{
+    return {scopes[scope_index].instrs, consts};
+}
+
+auto compiler::enter_scope() -> void
+{
+    scopes.resize(scopes.size() + 1);
+    scope_index++;
+}
+
+auto compiler::leave_scope() -> instructions
+{
+    auto instrs = scopes[scope_index].instrs;
+    scopes.pop_back();
+    scope_index--;
+    return instrs;
 }

@@ -7,32 +7,37 @@
 
 #include "code.hpp"
 
+using std::move;
+
 static const object tru {true};
 static const object fals {false};
 
-vm::vm(bytecode&& code, constants_ptr globals)
-    : code {std::move(code)}
-    , globals {std::move(globals)}
+vm::vm(frames&& frames, constants_ptr&& consts, constants_ptr globals)
+    : m_constans {std::move(consts)}
+    , m_globals {std::move(globals)}
+    , m_frames {std::move(frames)}
 {
 }
 
 auto vm::stack_top() const -> object
 {
-    if (stack_pointer == 0) {
+    if (m_sp == 0) {
         return {};
     }
-    return stack.at(stack_pointer - 1);
+    return m_stack.at(m_sp - 1);
 }
 
 auto vm::run() -> void
 {
-    for (auto ip = 0U; ip < code.instrs.size(); ip++) {
-        const auto op_code = static_cast<opcodes>(code.instrs.at(ip));
+    for (; current_frame().ip < static_cast<ssize_t>(current_frame().fn.instrs.size()); current_frame().ip++) {
+        const auto instr_ptr = static_cast<size_t>(current_frame().ip);
+        auto& code = current_frame().fn.instrs;
+        const auto op_code = static_cast<opcodes>(code.at(instr_ptr));
         switch (op_code) {
             case opcodes::constant: {
-                auto const_idx = read_uint16_big_endian(code.instrs, ip + 1UL);
-                ip += 2;
-                push(code.consts->at(const_idx));
+                auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
+                current_frame().ip += 2;
+                push(m_constans->at(const_idx));
             } break;
             case opcodes::sub:  // fallthrough
             case opcodes::mul:  // fallthrough
@@ -61,15 +66,15 @@ auto vm::run() -> void
                 exec_minus();
                 break;
             case opcodes::jump: {
-                auto pos = read_uint16_big_endian(code.instrs, ip + 1UL);
-                ip = pos - 1;
+                auto pos = read_uint16_big_endian(code, instr_ptr + 1UL);
+                current_frame().ip = pos - 1;
             } break;
             case opcodes::jump_not_truthy: {
-                auto pos = read_uint16_big_endian(code.instrs, ip + 1UL);
-                ip += 2;
+                auto pos = read_uint16_big_endian(code, instr_ptr + 1UL);
+                current_frame().ip += 2;
                 auto condition = pop();
                 if (!condition.is_truthy()) {
-                    ip = pos - 1;
+                    current_frame().ip = pos - 1;
                 }
 
             } break;
@@ -77,34 +82,53 @@ auto vm::run() -> void
                 push(nil);
                 break;
             case opcodes::set_global: {
-                auto global_index = read_uint16_big_endian(code.instrs, ip + 1UL);
-                ip += 2;
-                globals->at(global_index) = pop();
+                auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
+                current_frame().ip += 2;
+                m_globals->at(global_index) = pop();
             } break;
             case opcodes::get_global: {
-                auto global_index = read_uint16_big_endian(code.instrs, ip + 1UL);
-                ip += 2;
-                push(globals->at(global_index));
+                auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
+                current_frame().ip += 2;
+                push(m_globals->at(global_index));
             } break;
             case opcodes::array: {
-                auto num_elements = read_uint16_big_endian(code.instrs, ip + 1UL);
-                ip += 2;
-                auto arr = build_array(stack_pointer - num_elements, stack_pointer);
-                stack_pointer -= num_elements;
+                auto num_elements = read_uint16_big_endian(code, instr_ptr + 1UL);
+                current_frame().ip += 2;
+                auto arr = build_array(m_sp - num_elements, m_sp);
+                m_sp -= num_elements;
                 push(arr);
             } break;
             case opcodes::hash: {
-                auto num_elements = read_uint16_big_endian(code.instrs, ip + 1UL);
-                ip += 2;
+                auto num_elements = read_uint16_big_endian(code, instr_ptr + 1UL);
+                current_frame().ip += 2;
 
-                auto hsh = build_hash(stack_pointer - num_elements, stack_pointer);
-                stack_pointer -= num_elements;
+                auto hsh = build_hash(m_sp - num_elements, m_sp);
+                m_sp -= num_elements;
                 push(hsh);
             } break;
             case opcodes::index: {
                 auto index = pop();
                 auto left = pop();
                 exec_index(std::move(left), std::move(index));
+            } break;
+            case opcodes::call: {
+                auto maybe_compiled_func = m_stack[m_sp - 1];
+                if (!maybe_compiled_func.is<compiled_function>()) {
+                    throw std::runtime_error("calling non-function");
+                }
+                frame frm {maybe_compiled_func.as<compiled_function>(), -1};
+                push_frame(std::move(frm));
+            } break;
+            case opcodes::return_value: {
+                auto return_value = pop();
+                pop_frame();
+                pop();
+                push(return_value);
+            } break;
+            case opcodes::ret: {
+                pop_frame();
+                pop();
+                push(nil);
             } break;
             default:
                 throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
@@ -114,26 +138,26 @@ auto vm::run() -> void
 
 auto vm::push(const object& obj) -> void
 {
-    if (stack_pointer >= stack_size) {
+    if (m_sp >= stack_size) {
         throw std::runtime_error("stack overflow");
     }
-    stack[stack_pointer] = obj;
-    stack_pointer++;
+    m_stack[m_sp] = obj;
+    m_sp++;
 }
 
 auto vm::pop() -> object
 {
-    if (stack_pointer == 0) {
+    if (m_sp == 0) {
         throw std::runtime_error("stack empty");
     }
-    auto result = stack[stack_pointer - 1];
-    stack_pointer--;
+    auto result = m_stack[m_sp - 1];
+    m_sp--;
     return result;
 }
 
 auto vm::last_popped() const -> object
 {
-    return stack[stack_pointer];
+    return m_stack[m_sp];
 }
 auto vm::exec_binary_op(opcodes opcode) -> void
 {
@@ -237,7 +261,7 @@ auto vm::build_array(size_t start, size_t end) const -> object
 {
     array arr;
     for (auto idx = start; idx < end; idx++) {
-        arr.push_back(stack.at(idx));
+        arr.push_back(m_stack.at(idx));
     }
     return {arr};
 }
@@ -246,8 +270,8 @@ auto vm::build_hash(size_t start, size_t end) const -> object
 {
     hash hsh;
     for (auto idx = start; idx < end; idx += 2) {
-        auto key = stack[idx];
-        auto val = stack[idx + 1];
+        auto key = m_stack[idx];
+        auto val = m_stack[idx + 1];
         hsh[key.hash_key()] = val;
     }
     return {hsh};
@@ -282,4 +306,21 @@ auto vm::exec_index(object&& left, object&& index) -> void
                     }},
         left.value,
         index.value);
+}
+
+auto vm::current_frame() -> frame&
+{
+    return m_frames[m_frame_index - 1];
+}
+
+auto vm::push_frame(frame&& frm) -> void
+{
+    m_frames[m_frame_index] = std::move(frm);
+    m_frame_index++;
+}
+
+auto vm::pop_frame() -> frame
+{
+    m_frame_index--;
+    return m_frames[m_frame_index];
 }

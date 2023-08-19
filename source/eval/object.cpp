@@ -27,7 +27,6 @@ auto to_string(const value_type& value) -> std::string
                     [](const string_type& val) -> std::string { return "\"" + val + "\""; },
                     [](const bool val) -> std::string { return val ? "true" : "false"; },
                     [](const error& val) -> std::string { return "ERROR: " + val.message; },
-                    [](const bound_function& func) -> std::string { return func.first->string(); },
                     [](const ::array& arr) -> std::string
                     {
                         std::vector<std::string> result;
@@ -50,7 +49,9 @@ auto to_string(const value_type& value) -> std::string
                                        });
                         return fmt::format("{{{}}}", fmt::join(pairs, ", "));
                     },
-                    [](const auto&) -> std::string { return "unknown"; }},
+                    [](const bound_function& func) -> std::string { return func.first->string(); },
+                    [](const compiled_function& compf) -> std::string
+                    { return fmt::format("compiled[{}]", compf.instrs.size()); }},
         value);
 }
 }  // namespace std
@@ -70,7 +71,7 @@ auto object::type_name() const -> std::string
             [](const bound_function&) { return "function"; },
             [](const array&) { return "array"; },
             [](const hash&) { return "hash"; },
-            [](const auto&) { return "unknown"; },
+            [](const compiled_function&) { return "compiled_function"; },
         },
         value);
 }

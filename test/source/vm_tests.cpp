@@ -76,16 +76,16 @@ auto assert_expected_object(const std::variant<T...>& expected, const object& ac
 }
 
 template<size_t N, typename... Expecteds>
-auto rvt(std::array<vt<Expecteds...>, N> tests)
+auto run(std::array<vt<Expecteds...>, N> tests)
 {
     for (const auto& [input, expected] : tests) {
         auto [prgrm, _] = assert_program(input);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
-        auto vm = vm::create(std::move(cmplr.code));
-        vm.run();
+        auto mchn = vm::create(cmplr.byte_code());
+        mchn.run();
 
-        auto top = vm.last_popped();
+        auto top = mchn.last_popped();
         assert_expected_object(expected, top, input);
     }
 }
@@ -112,7 +112,7 @@ TEST(vm, integerArithmetics)
         vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
-    rvt(tests);
+    run(tests);
 }
 
 TEST(vm, booleanExpressions)
@@ -145,7 +145,7 @@ TEST(vm, booleanExpressions)
         vt<bool> {"!!5", true},
         vt<bool> {"!(if (false) { 5; })", true},
     };
-    rvt(tests);
+    run(tests);
 }
 
 TEST(vm, conditionals)
@@ -162,7 +162,7 @@ TEST(vm, conditionals)
         vt<int64_t, nil_type> {"if (false) { 10 }", nil_type {}},
         vt<int64_t, nil_type> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
     };
-    rvt(tests);
+    run(tests);
 }
 
 TEST(vm, globalLetStatemets)
@@ -172,7 +172,7 @@ TEST(vm, globalLetStatemets)
         vt<int64_t> {"let one = 1; let two = 2; one + two", 3},
         vt<int64_t> {"let one = 1; let two = one + one; one + two", 3},
     };
-    rvt(tests);
+    run(tests);
 }
 
 TEST(vm, stringExpression)
@@ -183,7 +183,7 @@ TEST(vm, stringExpression)
         vt<std::string> {R"("mon" + "key" + "banana")", "monkeybanana"},
 
     };
-    rvt(tests);
+    run(tests);
 }
 
 TEST(vm, arrayLiterals)
@@ -202,7 +202,7 @@ TEST(vm, arrayLiterals)
             {std::vector<int> {3, 12, 11}},
         },
     };
-    rvt(tests);
+    run(tests);
 }
 
 TEST(vm, hashLiterals)
@@ -222,7 +222,7 @@ TEST(vm, hashLiterals)
 
         },
     };
-    rvt(tests);
+    run(tests);
 }
 
 TEST(vm, indexExpressions)
@@ -239,6 +239,81 @@ TEST(vm, indexExpressions)
         vt<int64_t, nil_type> {"{1: 1}[0]", nil_type {}},
         vt<int64_t, nil_type> {"{}[0]", nil_type {}},
     };
-    rvt(tests);
+    run(tests);
 }
+
+TEST(vm, callFunctionsWithoutArgs)
+{
+    std::array tests {
+        vt<int64_t> {
+            R"(let fivePlusTen = fn() { 5 + 10; };
+               fivePlusTen();)",
+            15,
+        },
+        vt<int64_t> {
+            R"(let one = fn() { 1; };
+               let two = fn() { 2; };
+               one() + two())",
+            3,
+        },
+        vt<int64_t> {
+            R"(let a = fn() { 1 };
+               let b = fn() { a() + 1 };
+               let c = fn() { b() + 1 };
+               c();)",
+            3,
+        },
+    };
+    run(tests);
+}
+
+TEST(vm, callFunctionsWithReturnStatements)
+{
+    std::array tests {
+        vt<int64_t> {
+            R"(let earlyExit = fn() { return 99; 100; };
+               earlyExit();)",
+            99,
+        },
+        vt<int64_t> {
+            R"(let earlyExit = fn() { return 99; return 100; };
+               earlyExit();)",
+            99,
+        },
+    };
+    run(tests);
+}
+
+TEST(vm, callFunctionsWithNoReturnValue)
+{
+    std::array tests {
+        vt<nil_type> {
+            R"(let noReturn = fn() { };
+               noReturn();)",
+            nilv,
+        },
+        vt<nil_type> {
+            R"(let noReturn = fn() { };
+               let noReturnTwo = fn() { noReturn(); };
+               noReturn();
+               noReturnTwo();)",
+            nilv,
+        },
+    };
+    run(tests);
+}
+
+TEST(vm, callFirstClassFunctions)
+{
+    std::array tests {
+        vt<int64_t> {
+            R"(let returnsOne = fn() { 1; };
+               let returnsOneReturner = fn() { returnsOne; };
+               returnsOneReturner()();)",
+            1,
+        },
+    };
+    run(tests);
+}
+
 // NOLINTEND(*-magic-numbers)
