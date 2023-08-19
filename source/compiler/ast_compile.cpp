@@ -13,6 +13,7 @@
 
 #include "code.hpp"
 #include "compiler.hpp"
+#include "symbol_table.hpp"
 
 auto array_expression::compile(compiler& comp) const -> void
 {
@@ -75,11 +76,16 @@ auto hash_literal_expression::compile(compiler& comp) const -> void
 
 auto identifier::compile(compiler& comp) const -> void
 {
-    auto symbol = comp.symbols->resolve(value);
-    if (!symbol.has_value()) {
+    auto maybe_symbol = comp.symbols->resolve(value);
+    if (!maybe_symbol.has_value()) {
         throw std::runtime_error(fmt::format("undefined variable {}", value));
     }
-    comp.emit(opcodes::get_global, symbol.value().index);
+    auto symbol = maybe_symbol.value();
+    if (symbol.is_local()) {
+        comp.emit(opcodes::get_local, symbol.index);
+    } else {
+        comp.emit(opcodes::get_global, symbol.index);
+    }
 }
 
 auto if_expression::compile(compiler& comp) const -> void
@@ -130,7 +136,12 @@ auto let_statement::compile(compiler& comp) const -> void
 {
     value->compile(comp);
     auto symbol = comp.symbols->define(name->value);
-    comp.emit(opcodes::set_global, symbol.index);
+
+    if (symbol.is_local()) {
+        comp.emit(opcodes::set_local, symbol.index);
+    } else {
+        comp.emit(opcodes::set_global, symbol.index);
+    }
 }
 
 auto return_statement::compile(compiler& comp) const -> void
@@ -175,6 +186,9 @@ auto unary_expression::compile(compiler& comp) const -> void
 auto function_expression::compile(compiler& comp) const -> void
 {
     comp.enter_scope();
+    for (const auto& param : parameters) {
+        comp.symbols->define(param);
+    }
     body->compile(comp);
 
     using enum opcodes;
@@ -184,12 +198,16 @@ auto function_expression::compile(compiler& comp) const -> void
     if (!comp.last_instruction_is(return_value)) {
         comp.emit(ret);
     }
+    auto num_locals = comp.symbols->size();
     auto instrs = comp.leave_scope();
-    comp.emit(constant, comp.add_constant({compiled_function {instrs}}));
+    comp.emit(constant, comp.add_constant({compiled_function {instrs, num_locals, parameters.size()}}));
 }
 
 auto call_expression::compile(compiler& comp) const -> void
 {
     function->compile(comp);
-    comp.emit(opcodes::call);
+    for (const auto& arg : arguments) {
+        arg->compile(comp);
+    }
+    comp.emit(opcodes::call, arguments.size());
 }

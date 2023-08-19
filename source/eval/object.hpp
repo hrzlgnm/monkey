@@ -43,6 +43,8 @@ using bound_function = std::pair<const callable_expression*, environment_ptr>;
 struct compiled_function
 {
     instructions instrs;
+    size_t num_locals {};
+    size_t num_arguments {};
 };
 using value_type =
     std::variant<nil_type, bool, integer_type, string_type, error, array, hash, bound_function, compiled_function>;

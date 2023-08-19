@@ -51,7 +51,7 @@ auto to_string(const value_type& value) -> std::string
                     },
                     [](const bound_function& func) -> std::string { return func.first->string(); },
                     [](const compiled_function& compf) -> std::string
-                    { return fmt::format("compiled[{}]", compf.instrs.size()); }},
+                    { return fmt::format("compiled[{},{}]", compf.instrs.size(), compf.num_locals); }},
         value);
 }
 }  // namespace std

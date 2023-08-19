@@ -116,7 +116,7 @@ auto main(int argc, char* argv[]) -> int
     }
     auto consts = std::make_shared<constants>();
     auto globals = std::make_shared<constants>(globals_size);
-    auto symbols = std::make_shared<symbol_table>();
+    auto symbols = symbol_table::create();
     try {
         auto cache = std::vector<statement_ptr>();
         while (getline(std::cin, input)) {

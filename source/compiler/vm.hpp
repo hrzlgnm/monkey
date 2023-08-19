@@ -15,6 +15,7 @@ struct frame
 {
     compiled_function fn {};
     ssize_t ip {};
+    ssize_t base_ptr {};
 };
 using frames = std::array<frame, max_frames>;
 

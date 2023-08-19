@@ -33,6 +33,12 @@ struct compilation_scope
 struct compiler
 {
     auto compile(const program_ptr& program) -> void;
+    static inline auto create() -> compiler { return compiler {std::make_shared<constants>(), symbol_table::create()}; }
+
+    static inline auto create_with_state(constants_ptr constants, symbol_table_ptr symbols) -> compiler
+    {
+        return compiler {std::move(constants), std::move(symbols)};
+    }
     auto add_constant(object&& obj) -> size_t;
     auto add_instructions(instructions&& ins) -> size_t;
     auto emit(opcodes opcode, operands&& operands = {}) -> size_t;
@@ -51,16 +57,6 @@ struct compiler
     std::vector<compilation_scope> scopes;
     size_t scope_index {0};
     symbol_table_ptr symbols;
-
-    static inline auto create() -> compiler
-    {
-        return compiler {std::make_shared<constants>(), std::make_shared<symbol_table>()};
-    }
-
-    static inline auto create_with_state(constants_ptr constants, symbol_table_ptr symbols) -> compiler
-    {
-        return compiler {std::move(constants), std::move(symbols)};
-    }
 
   private:
     compiler(constants_ptr&& consts, symbol_table_ptr symbols);

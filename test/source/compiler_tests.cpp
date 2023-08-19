@@ -9,6 +9,16 @@
 
 #include "testutils.hpp"
 
+template<typename T>
+auto flatten(const std::vector<std::vector<T>>& arrs) -> std::vector<T>
+{
+    std::vector<T> result;
+    for (const auto& arr : arrs) {
+        std::copy(arr.cbegin(), arr.cend(), std::back_inserter(result));
+    }
+    return result;
+}
+
 // NOLINTBEGIN(*-magic-numbers)
 TEST(compiler, make)
 {
@@ -18,21 +28,27 @@ TEST(compiler, make)
         operands opers;
         instructions expected;
     };
+    using enum opcodes;
     std::array tests {
         test {
-            opcodes::constant,
+            constant,
             {65534},
-            {static_cast<uint8_t>(opcodes::constant), 255, 254},
+            {static_cast<uint8_t>(constant), 255, 254},
         },
         test {
-            opcodes::add,
+            add,
             {},
-            {static_cast<uint8_t>(opcodes::add)},
+            {static_cast<uint8_t>(add)},
         },
         test {
-            opcodes::pop,
+            pop,
             {},
-            {static_cast<uint8_t>(opcodes::pop)},
+            {static_cast<uint8_t>(pop)},
+        },
+        test {
+            get_local,
+            {255},
+            {static_cast<uint8_t>(get_local), 255},
         },
     };
     for (auto&& [opcode, operands, expected] : tests) {
@@ -41,19 +57,72 @@ TEST(compiler, make)
     };
 }
 
+TEST(compiler, instructionsToString)
+{
+    const auto* const expected = R"(0000 OpAdd
+0001 OpGetLocal 1
+0003 OpConstant 2
+0006 OpConstant 65535
+)";
+    std::vector<instructions> instrs {
+        make(opcodes::add),
+        make(opcodes::get_local, 1),
+        make(opcodes::constant, 2),
+        make(opcodes::constant, 65535),
+    };
+    auto concatenated = flatten(instrs);
+    auto actual = to_string(concatenated);
+    ASSERT_EQ(expected, actual);
+}
+
+TEST(compiler, readOperands)
+{
+    struct test
+    {
+        opcodes opcode;
+        operands opers;
+        int bytes_read;
+    };
+    std::array tests {
+        test {
+            opcodes::constant,
+            {65534},
+            2,
+        },
+    };
+    for (auto&& [opcode, operands, bytes] : tests) {
+        const auto instr = make(opcode, std::move(operands));
+        const auto def = lookup(opcode);
+
+        ASSERT_TRUE(def.has_value());
+
+        const auto actual = read_operands(def.value(), {instr.begin() + 1, instr.end()});
+        EXPECT_EQ(actual.second, bytes);
+        for (size_t iidx = 0; iidx < operands.size(); ++iidx) {
+            EXPECT_EQ(operands[iidx], actual.first[iidx]) << "at " << iidx;
+        }
+    }
+}
+
 TEST(compiler, compilerScopes)
 {
     using enum opcodes;
     auto cmplr = compiler::create();
     ASSERT_EQ(cmplr.scope_index, 0);
+
     cmplr.emit(mul);
     cmplr.enter_scope();
     ASSERT_EQ(cmplr.scope_index, 1);
+    EXPECT_FALSE(cmplr.symbols->is_global());
+
     cmplr.emit(sub);
     ASSERT_EQ(cmplr.scopes[cmplr.scope_index].instrs.size(), 1);
     ASSERT_EQ(cmplr.scopes[cmplr.scope_index].last_instr.opcode, sub);
+
     cmplr.leave_scope();
     ASSERT_EQ(cmplr.scope_index, 0);
+    EXPECT_TRUE(cmplr.symbols->is_global());
+
     cmplr.emit(add);
     ASSERT_EQ(cmplr.scopes[cmplr.scope_index].instrs.size(), 2);
     ASSERT_EQ(cmplr.scopes[cmplr.scope_index].last_instr.opcode, add);
@@ -68,16 +137,6 @@ struct ctc
     std::vector<expected_value> expected_constants;
     std::vector<instructions> expected_instructions;
 };
-
-template<typename T>
-auto flatten(const std::vector<std::vector<T>>& arrs) -> std::vector<T>
-{
-    std::vector<T> result;
-    for (const auto& arr : arrs) {
-        std::copy(arr.cbegin(), arr.cend(), std::back_inserter(result));
-    }
-    return result;
-}
 
 auto assert_instructions(const std::vector<instructions>& instructions, const ::instructions& code)
 {
@@ -112,47 +171,6 @@ auto run(std::array<ctc, N>&& tests)
         cmplr.compile(prgrm);
         assert_instructions(instructions, cmplr.current_instrs());
         assert_constants(constants, *cmplr.consts);
-    }
-}
-
-TEST(compiler, instructionsToString)
-{
-    const auto* const expected = R"(0000 OpAdd
-0001 OpConstant 2
-0004 OpConstant 65535
-)";
-    std::vector<instructions> instrs {make(opcodes::add), make(opcodes::constant, 2), make(opcodes::constant, 65535)};
-    auto concatenated = flatten(instrs);
-    auto actual = to_string(concatenated);
-    ASSERT_EQ(expected, actual);
-}
-
-TEST(compiler, readOperands)
-{
-    struct test
-    {
-        opcodes opcode;
-        operands opers;
-        int bytes_read;
-    };
-    std::array tests {
-        test {
-            opcodes::constant,
-            {65534},
-            2,
-        },
-    };
-    for (auto&& [opcode, operands, bytes] : tests) {
-        const auto instr = make(opcode, std::move(operands));
-        const auto def = lookup(opcode);
-
-        ASSERT_TRUE(def.has_value());
-
-        const auto actual = read_operands(def.value(), {instr.begin() + 1, instr.end()});
-        EXPECT_EQ(actual.second, bytes);
-        for (size_t iidx = 0; iidx < operands.size(); ++iidx) {
-            EXPECT_EQ(operands[iidx], actual.first[iidx]) << "at " << iidx;
-        }
     }
 }
 
@@ -560,7 +578,7 @@ TEST(compiler, functionCalls)
             },
             {
                 make(constant, 1),
-                make(call),
+                make(call, 0),
                 make(pop),
             },
         },
@@ -575,7 +593,84 @@ TEST(compiler, functionCalls)
                 make(constant, 1),
                 make(set_global, 0),
                 make(get_global, 0),
-                make(call),
+                make(call, 0),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(let oneArg = fn(a) { };
+               oneArg(24);)",
+            {
+                maker({make(ret)}),
+                24,
+            },
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(constant, 1),
+                make(call, 1),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(let manyArg = fn(a, b, c) { };
+               manyArg(24, 25, 26);)",
+            {
+                maker({make(ret)}),
+                24,
+                25,
+                26,
+            },
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(constant, 3),
+                make(call, 3),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(let oneArg = fn(a) { a };
+               oneArg(24);)",
+            {
+                maker({make(get_local, 0), make(return_value)}),
+                24,
+            },
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(constant, 1),
+                make(call, 1),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(let manyArg = fn(a, b, c) { a; b; c; }
+               manyArg(24, 25, 26);)",
+            {
+                maker({make(get_local, 0),
+                       make(pop),
+                       make(get_local, 1),
+                       make(pop),
+                       make(get_local, 2),
+                       make(return_value)}),
+                24,
+                25,
+                26,
+            },
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(constant, 3),
+                make(call, 3),
                 make(pop),
             },
         },
@@ -583,4 +678,61 @@ TEST(compiler, functionCalls)
     run(std::move(tests));
 }
 
+TEST(compiler, letStatementScopes)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(let num = 55; fn() { num };)",
+            {
+                55,
+                maker({make(get_global, 0), make(return_value)}),
+            },
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(constant, 1),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(fn() {
+                let num = 55;
+                num 
+            })",
+            {
+                55,
+                maker({make(constant, 0), make(set_local, 0), make(get_local, 0), make(return_value)}),
+            },
+            {
+                make(constant, 1),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(fn() {
+                let a = 55;
+                let b = 77;
+                a + b 
+            })",
+            {
+                55,
+                77,
+                maker({make(constant, 0),
+                       make(set_local, 0),
+                       make(constant, 1),
+                       make(set_local, 1),
+                       make(get_local, 0),
+                       make(get_local, 1),
+                       make(add),
+                       make(return_value)}),
+            },
+            {
+                make(constant, 2),
+                make(pop),
+            },
+        },
+    };
+    run(std::move(tests));
+}
 // NOLINTEND(*-magic-numbers)

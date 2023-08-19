@@ -59,6 +59,10 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "return_value";
         case ret:
             return ostream << "return";
+        case get_local:
+            return ostream << "get_local";
+        case set_local:
+            return ostream << "set_local";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));
@@ -78,7 +82,11 @@ auto make(opcodes opcode, operands&& operands) -> instructions
             case 2:
                 write_uint16_big_endian(instr, instr.size(), static_cast<uint16_t>(operand));
                 break;
+            case 1:
+                instr.push_back(static_cast<uint8_t>(operand));
+                break;
         }
+        break;
         idx++;
     }
     return instr;
@@ -101,6 +109,8 @@ auto read_operands(const definition& def, const instructions& instr) -> std::pai
             case 2:
                 result.first[idx] = read_uint16_big_endian(instr, offset);
                 break;
+            case 1:
+                result.first[idx] = instr.at(offset);
         }
         offset += width;
         idx++;

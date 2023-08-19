@@ -37,6 +37,8 @@ enum class opcodes : uint8_t
     call,
     return_value,
     ret,
+    get_local,
+    set_local,
 };
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
@@ -74,9 +76,11 @@ const definition_type definitions {
     {opcodes::array, definition {"OpArray", {2}}},
     {opcodes::hash, definition {"OpHash", {2}}},
     {opcodes::index, definition {"OpIndex"}},
-    {opcodes::call, definition {"OpCall"}},
+    {opcodes::call, definition {"OpCall", {1}}},
     {opcodes::return_value, definition {"OpReturnValue"}},
     {opcodes::ret, definition {"OpReturn"}},
+    {opcodes::get_local, definition {"OpGetLocal", {1}}},
+    {opcodes::set_local, definition {"OpSetLocal", {1}}},
 };
 
 auto make(opcodes opcode, operands&& operands = {}) -> instructions;
