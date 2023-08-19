@@ -3,7 +3,6 @@ set(FORMAT_PATTERNS
     source/*.hpp
     source/**/*.cpp
     source/**/*.hpp
-    source/*.hpp
     include/*.hpp
     test/*.cpp
     test/*.hpp
