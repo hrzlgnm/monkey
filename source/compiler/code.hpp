@@ -70,7 +70,7 @@ const definition_type definitions {
     {opcodes::set_global, definition {"OpSetGlobal", {2}}},
     {opcodes::array, definition {"OpArray", {2}}},
     {opcodes::hash, definition {"OpHash", {2}}},
-    {opcodes::index, definition {"OpHash"}},
+    {opcodes::index, definition {"OpIndex"}},
 };
 
 auto make(opcodes opcode, operands&& operands = {}) -> instructions;
