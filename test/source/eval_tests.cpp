@@ -62,7 +62,7 @@ auto test_eval(std::string_view input) -> object
     return result;
 }
 
-TEST(eval, evalIntegerExpresssion)
+TEST(eval, integerExpresssion)
 {
     struct expression_test
     {
@@ -92,7 +92,7 @@ TEST(eval, evalIntegerExpresssion)
     }
 }
 
-TEST(eval, evalBooleanExpresssion)
+TEST(eval, booleanExpresssion)
 {
     struct expression_test
     {
@@ -118,14 +118,14 @@ TEST(eval, evalBooleanExpresssion)
     }
 }
 
-TEST(eval, evalStringExpression)
+TEST(eval, stringExpression)
 {
     auto evaluated = test_eval(R"("Hello World!")");
     ASSERT_TRUE(evaluated.is<string_type>());
     ASSERT_EQ(evaluated.as<string_type>(), "Hello World!");
 }
 
-TEST(eval, evalStringConcatenation)
+TEST(eval, stringConcatenation)
 {
     auto evaluated = test_eval(R"("Hello" + " " + "World!")");
     ASSERT_TRUE(evaluated.is<string_type>()) << "expected a string, got " << evaluated.type_name() << " instead";
