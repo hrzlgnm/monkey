@@ -62,7 +62,7 @@ auto test_eval(std::string_view input) -> object
     return result;
 }
 
-TEST(eval, testEvalIntegerExpresssion)
+TEST(eval, evalIntegerExpresssion)
 {
     struct expression_test
     {
@@ -92,7 +92,7 @@ TEST(eval, testEvalIntegerExpresssion)
     }
 }
 
-TEST(eval, testEvalBooleanExpresssion)
+TEST(eval, evalBooleanExpresssion)
 {
     struct expression_test
     {
@@ -118,14 +118,14 @@ TEST(eval, testEvalBooleanExpresssion)
     }
 }
 
-TEST(eval, testEvalStringExpression)
+TEST(eval, evalStringExpression)
 {
     auto evaluated = test_eval(R"("Hello World!")");
     ASSERT_TRUE(evaluated.is<string_type>());
     ASSERT_EQ(evaluated.as<string_type>(), "Hello World!");
 }
 
-TEST(eval, testEvalStringConcatenation)
+TEST(eval, evalStringConcatenation)
 {
     auto evaluated = test_eval(R"("Hello" + " " + "World!")");
     ASSERT_TRUE(evaluated.is<string_type>()) << "expected a string, got " << evaluated.type_name() << " instead";
@@ -133,7 +133,7 @@ TEST(eval, testEvalStringConcatenation)
     ASSERT_EQ(evaluated.as<string_type>(), "Hello World!");
 }
 
-TEST(eval, testBangOperator)
+TEST(eval, bangOperator)
 {
     struct expression_test
     {
@@ -155,7 +155,7 @@ TEST(eval, testBangOperator)
     }
 }
 
-TEST(eval, testIfElseExpressions)
+TEST(eval, ifElseExpressions)
 {
     struct expression_test
     {
@@ -181,7 +181,7 @@ TEST(eval, testIfElseExpressions)
     }
 }
 
-TEST(eval, testReturnStatemets)
+TEST(eval, returnStatemets)
 {
     struct return_test
     {
@@ -206,7 +206,7 @@ if (10 > 1) {
     }
 }
 
-TEST(eval, testErrorHandling)
+TEST(eval, errorHandling)
 {
     struct error_test
     {
@@ -271,7 +271,7 @@ return 1;
     }
 }
 
-TEST(eval, testIntegerLetStatements)
+TEST(eval, integerLetStatements)
 {
     struct let_test
     {
@@ -291,7 +291,7 @@ TEST(eval, testIntegerLetStatements)
     }
 }
 
-TEST(eval, testFunctionObject)
+TEST(eval, functionObject)
 {
     const auto* input = "fn(x) {x + 2; };";
     auto evaluated = test_eval(input);
@@ -299,7 +299,7 @@ TEST(eval, testFunctionObject)
         << "expected a function object, got " << std::to_string(evaluated.value) << " instead ";
 }
 
-TEST(eval, testFunctionApplication)
+TEST(eval, functionApplication)
 {
     struct func_test
     {
@@ -339,7 +339,7 @@ auto test_multi_eval(std::deque<std::string>& inputs) -> object
     return result;
 }
 
-TEST(eval, testMultipleEvaluationsWithSameEnvAndDestroyedSources)
+TEST(eval, multipleEvaluationsWithSameEnvAndDestroyedSources)
 {
     const auto* input1 {R"(let makeGreeter = fn(greeting) { fn(name) { greeting + " " + name + "!" } };)"};
     const auto* input2 {"let hello = makeGreeter(\"hello\");"};
@@ -348,7 +348,7 @@ TEST(eval, testMultipleEvaluationsWithSameEnvAndDestroyedSources)
     assert_string_object(test_multi_eval(inputs), "hello banana!");
 }
 
-TEST(eval, testBuiltinFunctions)
+TEST(eval, builtinFunctions)
 {
     struct bt
     {
@@ -396,7 +396,7 @@ TEST(eval, testBuiltinFunctions)
                    test.expected);
     }
 }
-TEST(eval, testArrayExpression)
+TEST(eval, arrayExpression)
 {
     auto evaluated = test_eval("[1, 2 * 2, 3 + 3]");
     ASSERT_TRUE(evaluated.is<array>()) << "got: " << evaluated.type_name() << " instead";
@@ -406,7 +406,7 @@ TEST(eval, testArrayExpression)
     assert_integer_object(as_arr[2], 6);
 }
 
-TEST(eval, testIndexOperatorExpressions)
+TEST(eval, indexOperatorExpressions)
 {
     struct test
     {

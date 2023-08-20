@@ -2,7 +2,7 @@
 #include <lexer/lexer.hpp>
 #include <lexer/token_type.hpp>
 
-TEST(lexing, testNextToken)
+TEST(lexing, nextToken)
 {
     using enum token_type;
     auto lxr = lexer {R"r(let five = 5;

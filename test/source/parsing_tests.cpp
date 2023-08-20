@@ -123,7 +123,7 @@ auto assert_let_statement(statement* stmt, const std::string& expected_identifie
 }
 
 // NOLINTBEGIN(*-magic-numbers)
-TEST(parsing, testLetStatement)
+TEST(parsing, letStatement)
 {
     using enum token_type;
     auto [program, prsr] = assert_program(
@@ -138,7 +138,7 @@ let foobar = 838383;
     }
 }
 
-TEST(parsing, testLetStatements)
+TEST(parsing, letStatements)
 {
     struct let_test
     {
