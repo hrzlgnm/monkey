@@ -1,5 +1,3 @@
-#include <cstdint>
-
 #include "index_expression.hpp"
 
 #include <fmt/core.h>
