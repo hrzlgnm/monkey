@@ -48,7 +48,7 @@ auto compiler::emit(opcodes opcode, operands&& operands) -> size_t
     auto& scope = scopes[scope_index];
     scope.previous_instr = scope.last_instr;
 
-    auto instr = make(opcode, std::move(operands));
+    auto instr = make(opcode, operands);
     auto pos = add_instructions(std::move(instr));
     scope.last_instr.opcode = opcode;
     scope.last_instr.position = pos;

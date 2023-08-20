@@ -9,8 +9,6 @@
 #include "code.hpp"
 #include "compiler.hpp"
 
-using std::move;
-
 static const object tru {true};
 static const object fals {false};
 

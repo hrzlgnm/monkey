@@ -43,7 +43,7 @@ TEST(code, make)
         },
     };
     for (auto&& [opcode, operands, expected] : tests) {
-        auto actual = make(opcode, std::move(operands));
+        auto actual = make(opcode, operands);
         ASSERT_EQ(actual, expected);
     };
 }
@@ -84,7 +84,7 @@ TEST(code, readOperands)
         },
     };
     for (auto&& [opcode, operands, bytes] : tests) {
-        const auto instr = make(opcode, std::move(operands));
+        const auto instr = make(opcode, operands);
         const auto def = lookup(opcode);
 
         ASSERT_TRUE(def.has_value());

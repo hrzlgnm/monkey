@@ -6,8 +6,6 @@
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
 
-const object nil {nilv};
-
 auto to_string(const hash_key_type& hash_key)
 {
     return std::visit(overloaded {[](const integer_type val) -> std::string { return std::to_string(val); },

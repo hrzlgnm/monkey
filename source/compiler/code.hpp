@@ -91,7 +91,7 @@ const definition_type definitions {
     {opcodes::current_closure, definition {"OpCurrentClosure"}},
 };
 
-auto make(opcodes opcode, operands&& operands = {}) -> instructions;
+auto make(opcodes opcode, const operands& operands = {}) -> instructions;
 auto make(opcodes opcode, size_t operand) -> instructions;
 auto lookup(opcodes opcode) -> std::optional<definition>;
 auto read_operands(const definition& def, const instructions& instr) -> std::pair<operands, operands::size_type>;

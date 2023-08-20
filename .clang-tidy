@@ -6,18 +6,17 @@ Checks: "*,\
     -google-readability-todo,\
     -altera-*,\
     -fuchsia-*,\
-    -fuchsia-multiple-inheritance,\
     -llvm-header-guard,\
     -llvm-include-order,\
     -llvmlibc-*,\
-    -modernize-use-nodiscard,\
     -misc-non-private-member-variables-in-classes,\
     -cert-dcl58-cpp,\
     -misc-no-recursion,\
     -cert-err58-cpp,\
     -*c++98-compat-*,\
-    -bugprone-easily-swappable-parameters\
-    -readability-identifier-length"
+    -bugprone-easily-swappable-parameters,\
+    -readability-identifier-length,\
+    -hicpp-multiway-paths-covered"
 WarningsAsErrors: ''
 CheckOptions:
     - key: 'bugprone-argument-comment.StrictMode'

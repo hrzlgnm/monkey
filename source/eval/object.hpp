@@ -69,7 +69,7 @@ using value_type = std::variant<nil_type,
 
 namespace std
 {
-auto to_string(const value_type&) -> std::string;
+auto to_string(const value_type& value) -> std::string;
 }  // namespace std
 
 struct object
@@ -113,7 +113,7 @@ struct object
 };
 
 static const nil_type nilv {};
-extern const object nil;
+static const object nil {nilv};
 auto unwrap(const std::any& obj) -> object;
 
 template<typename... T>

@@ -23,8 +23,8 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&;
 struct symbol
 {
     std::string name;
-    symbol_scope scope;
-    size_t index;
+    symbol_scope scope {};
+    size_t index {};
     inline auto is_local() const -> bool { return scope == symbol_scope::local; }
 };
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool;
