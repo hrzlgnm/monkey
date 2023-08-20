@@ -58,6 +58,7 @@ fibonacci(35);
         result = prgrm->eval(env);
         auto end = std::chrono::steady_clock::now();
         duration = end - start;
+        env->break_cycle();
     }
     fmt::print("engine={}, result={}, duration={}\n",
                (engine_vm ? "vm" : "eval"),
