@@ -13,4 +13,5 @@ struct program : expression
 
     std::vector<statement_ptr> statements {};
 };
+
 using program_ptr = std::unique_ptr<program>;

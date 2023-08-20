@@ -20,4 +20,5 @@ struct expression
     [[nodiscard]] virtual auto eval(environment_ptr) const -> object = 0;
     virtual inline auto compile(compiler& /*comp*/) const -> void = 0;
 };
+
 using expression_ptr = std::unique_ptr<expression>;

@@ -8,6 +8,7 @@ builtin_function_expression::builtin_function_expression(std::string&& name,
     , body {std::move(bod)}
 {
 }
+
 auto builtin_function_expression::string() const -> std::string
 {
     return fmt::format("{}(){}", name, "{...}");

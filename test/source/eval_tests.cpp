@@ -69,6 +69,7 @@ TEST(eval, integerExpresssion)
         std::string_view input;
         int64_t expected;
     };
+
     std::array expression_tests {
         expression_test {"5", 5},
         expression_test {"10", 10},
@@ -99,6 +100,7 @@ TEST(eval, booleanExpresssion)
         std::string_view input;
         bool expected;
     };
+
     std::array expression_tests {
         expression_test {"true", true},
         expression_test {"false", false},
@@ -140,6 +142,7 @@ TEST(eval, bangOperator)
         std::string_view input;
         bool expected;
     };
+
     std::array expression_tests {
         expression_test {"!true", false},
         expression_test {"!false", true},
@@ -162,6 +165,7 @@ TEST(eval, ifElseExpressions)
         std::string_view input;
         object expected;
     };
+
     std::array expression_tests {
         expression_test {"if (true) { 10 }", {10}},
         expression_test {"if (false) { 10 }", {}},
@@ -188,6 +192,7 @@ TEST(eval, returnStatemets)
         std::string_view input;
         integer_type expected;
     };
+
     std::array return_tests {return_test {"return 10;", 10},
                              return_test {"return 10; 9;", 10},
                              return_test {"return 2 * 5; 9;", 10},
@@ -213,6 +218,7 @@ TEST(eval, errorHandling)
         std::string_view input;
         std::string expected_message;
     };
+
     std::array error_tests {
 
         error_test {
@@ -306,6 +312,7 @@ TEST(eval, functionApplication)
         std::string_view input;
         int64_t expected;
     };
+
     std::array func_tests {
         func_test {"let identity = fn(x) { x; }; identity(5);", 5},
         func_test {"let identity = fn(x) { return x; }; identity(5);", 5},
@@ -355,6 +362,7 @@ TEST(eval, builtinFunctions)
         std::string_view input;
         std::variant<std::int64_t, std::string, error, nil_type, array> expected;
     };
+
     std::array tests {
         bt {R"(len(""))", 0},
         bt {R"(len("four"))", 4},
@@ -396,6 +404,7 @@ TEST(eval, builtinFunctions)
                    test.expected);
     }
 }
+
 TEST(eval, arrayExpression)
 {
     auto evaluated = test_eval("[1, 2 * 2, 3 + 3]");
@@ -413,6 +422,7 @@ TEST(eval, indexOperatorExpressions)
         std::string_view input;
         value_type expected;
     };
+
     std::array tests {
         test {
             "[1, 2, 3][0]",
@@ -462,6 +472,7 @@ TEST(eval, indexOperatorExpressions)
             << "expected " << std::to_string(expected) << ", got " << evaluated.type_name();
     }
 }
+
 TEST(eval, hashLiterals)
 {
     auto evaluated = test_eval(R"(let two = "two";
@@ -475,11 +486,13 @@ TEST(eval, hashLiterals)
     })");
 
     ASSERT_TRUE(evaluated.is<hash>()) << "expected hash, got " << evaluated.type_name() << " instead";
+
     struct expect
     {
         hash_key_type key;
         int64_t value;
     };
+
     std::array expected {
         expect {"one", 1}, expect {"two", 2}, expect {"three", 3}, expect {4, 4}, expect {true, 5}, expect {false, 6}};
     const auto& as_hash = evaluated.as<hash>();
@@ -496,6 +509,7 @@ TEST(eval, hashIndexExpression)
         std::string_view input;
         value_type expected;
     };
+
     std::array inputs {
         hash_test {
             R"({"foo": 5}["foo"])",
@@ -532,4 +546,5 @@ TEST(eval, hashIndexExpression)
         EXPECT_EQ(evaluated, object {expected});
     }
 }
+
 // NOLINTEND(*-magic-numbers)

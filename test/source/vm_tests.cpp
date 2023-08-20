@@ -619,6 +619,7 @@ TEST(vm, recursiveFunction)
     };
     run(tests);
 }
+
 TEST(vm, recuriveFibonnacci)
 {
     std::array tests {
@@ -640,4 +641,5 @@ TEST(vm, recuriveFibonnacci)
     };
     run(tests);
 }
+
 // NOLINTEND(*-magic-numbers)

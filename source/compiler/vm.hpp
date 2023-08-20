@@ -18,6 +18,7 @@ struct frame
     ssize_t ip {};
     ssize_t base_ptr {};
 };
+
 using frames = std::array<frame, max_frames>;
 
 struct vm

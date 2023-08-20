@@ -181,6 +181,7 @@ auto vm::last_popped() const -> object
 {
     return m_stack[m_sp];
 }
+
 auto vm::exec_binary_op(opcodes opcode) -> void
 {
     auto right = pop();

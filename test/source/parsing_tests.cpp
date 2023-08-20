@@ -146,6 +146,7 @@ TEST(parsing, letStatements)
         std::string expected_identifier;
         expected_value_type expected_value;
     };
+
     std::array let_tests {
         // clang-format: off
         let_test {"let x = 5;", "x", 5},
@@ -229,12 +230,14 @@ TEST(parsing, integerExpression)
 TEST(parsing, unaryExpressions)
 {
     using enum token_type;
+
     struct unary_test
     {
         std::string_view input;
         token_type op;
         int64_t integer_value;
     };
+
     std::array unary_tests {unary_test {"!5;", exclamation, 5}, unary_test {"-15;", minus, 15}};
 
     for (const auto& unary_test : unary_tests) {
@@ -250,6 +253,7 @@ TEST(parsing, unaryExpressions)
 TEST(parsing, binaryExpressions)
 {
     using enum token_type;
+
     struct binary_test
     {
         std::string_view input;
@@ -257,6 +261,7 @@ TEST(parsing, binaryExpressions)
         token_type op;
         int64_t right_value;
     };
+
     std::array binary_tests {
         binary_test {"5 + 5;", 5, plus, 5},
         binary_test {"5 - 5;", 5, minus, 5},
@@ -283,6 +288,7 @@ TEST(parsing, operatorPrecedenceParsing)
         std::string_view input;
         std::string expected;
     };
+
     std::array operator_precedence_tests {
         oper_test {
             "-a * b",
@@ -469,6 +475,7 @@ TEST(parsing, functionParameters)
         std::string_view input;
         std::vector<std::string> expected;
     };
+
     std::array parameter_tests {
         parameters_test {"fn() {};", {}},
         parameters_test {"fn(x) {};", {"x"}},
@@ -542,12 +549,14 @@ TEST(parsing, hashLiteralWithExpression)
     auto [prgrm, _] = assert_program(R"({"one": 0 + 1, "two": 10 - 8, "three": 15 / 5})");
     auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
     std::array keys {"one", "two", "three"};
+
     struct test
     {
         int64_t left;
         token_type oper;
         int64_t right;
     };
+
     std::array expected {
         test {0, token_type::plus, 1}, test {10, token_type::minus, 8}, test {15, token_type::slash, 5}};
     for (size_t idx = 0; const auto& [k, v] : hash_lit->pairs) {
@@ -563,4 +572,5 @@ TEST(parsing, emptyHashLiteral)
     auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
     ASSERT_TRUE(hash_lit->pairs.empty());
 }
+
 // NOLINTEND(*-magic-numbers)

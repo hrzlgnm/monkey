@@ -32,6 +32,7 @@ auto environment::set(std::string_view name, object&& val) -> void
         m_store.emplace(std::string(name), val);
     }
 }
+
 auto environment::set(std::string_view name, const object& val) -> void
 {
     m_store[std::string {name}] = val;

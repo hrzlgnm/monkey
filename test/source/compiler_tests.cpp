@@ -164,6 +164,7 @@ TEST(compiler, booleanExpressions)
     };
     run(std::move(tests));
 }
+
 TEST(compiler, conditionals)
 {
     using enum opcodes;
@@ -814,4 +815,5 @@ TEST(compiler, recursiveFunctions)
     };
     run(std::move(tests));
 }
+
 // NOLINTEND(*-magic-numbers)

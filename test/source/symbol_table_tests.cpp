@@ -174,5 +174,6 @@ TEST(symboltable, shadowFunctionNames)
     ASSERT_TRUE(resolved.has_value());
     ASSERT_EQ(resolved.value(), expected);
 }
+
 // NOLINTEND(*-identifier-length)
 // NOLINTEND(*-magic-numbers)
