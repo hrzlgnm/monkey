@@ -549,4 +549,20 @@ TEST(vm, callBuiltins)
     run(errortests);
 }
 
+TEST(vm, closures)
+{
+    std::array tests {
+        vt<int64_t> {
+            R"(
+        let newClosure = fn(a) {
+            fn() { a; };
+        };
+        let closure = newClosure(99);
+        closure();
+            )",
+            99,
+        },
+    };
+    run(tests);
+}
 // NOLINTEND(*-magic-numbers)

@@ -135,5 +135,8 @@ auto compiler::load_symbol(const symbol& sym) -> void
         case builtin:
             emit(get_builtin, sym.index);
             break;
+        case free:
+            emit(get_free, sym.index);
+            break;
     }
 }

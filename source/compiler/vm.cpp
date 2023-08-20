@@ -7,6 +7,7 @@
 #include <eval/object.hpp>
 
 #include "code.hpp"
+#include "compiler.hpp"
 
 using std::move;
 
@@ -30,9 +31,9 @@ auto vm::stack_top() const -> object
 
 auto vm::run() -> void
 {
-    for (; current_frame().ip < static_cast<ssize_t>(current_frame().fn.instrs.size()); current_frame().ip++) {
+    for (; current_frame().ip < static_cast<ssize_t>(current_frame().cl.fn.instrs.size()); current_frame().ip++) {
         const auto instr_ptr = static_cast<size_t>(current_frame().ip);
-        auto& code = current_frame().fn.instrs;
+        auto& code = current_frame().cl.fn.instrs;
         const auto op_code = static_cast<opcodes>(code.at(instr_ptr));
         switch (op_code) {
             case opcodes::constant: {
@@ -145,6 +146,18 @@ auto vm::run() -> void
                 current_frame().ip += 1;
                 const auto& builtin = builtin_function_expression::builtins[builtin_index];
                 push({&builtin});
+            } break;
+            case opcodes::closure: {
+                auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
+                auto num_free = code.at(instr_ptr + 3UL);
+                current_frame().ip += 3;
+                push_closure(const_idx, num_free);
+            } break;
+            case opcodes::get_free: {
+                auto free_index = code.at(instr_ptr + 1UL);
+                current_frame().ip += 1;
+                auto current_closure = current_frame().cl;
+                push(current_closure.free[free_index]);
             } break;
             default:
                 throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
@@ -327,27 +340,28 @@ auto vm::exec_index(object&& left, object&& index) -> void
 auto vm::exec_call(size_t num_args) -> void
 {
     auto callee = m_stack[m_sp - 1 - num_args];
-    std::visit(overloaded {[&](const compiled_function& compiled)
-                           {
-                               if (num_args != compiled.num_arguments) {
-                                   throw std::runtime_error(fmt::format(
-                                       "wrong number of arguments: want={}, got={}", compiled.num_arguments, num_args));
-                               }
-                               frame frm {compiled, -1, static_cast<ssize_t>(m_sp - num_args)};
-                               m_sp = static_cast<size_t>(frm.base_ptr) + compiled.num_locals;
-                               push_frame(std::move(frm));
-                           },
-                           [&](const builtin_function_expression* builtin)
-                           {
-                               array args;
-                               for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
-                                   args.push_back(m_stack[idx]);
-                               }
-                               auto result = builtin->body(std::move(args));
-                               push(result);
-                           },
-                           [](const auto& /*other*/) { throw std::runtime_error("calling non-function"); }},
-               callee.value);
+    std::visit(
+        overloaded {[&](const closure& closure)
+                    {
+                        if (num_args != closure.fn.num_arguments) {
+                            throw std::runtime_error(fmt::format(
+                                "wrong number of arguments: want={}, got={}", closure.fn.num_arguments, num_args));
+                        }
+                        frame frm {closure, -1, static_cast<ssize_t>(m_sp - num_args)};
+                        m_sp = static_cast<size_t>(frm.base_ptr) + closure.fn.num_locals;
+                        push_frame(std::move(frm));
+                    },
+                    [&](const builtin_function_expression* builtin)
+                    {
+                        array args;
+                        for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
+                            args.push_back(m_stack[idx]);
+                        }
+                        auto result = builtin->body(std::move(args));
+                        push(result);
+                    },
+                    [](const auto& /*other*/) { throw std::runtime_error("calling non-function"); }},
+        callee.value);
 }
 
 auto vm::current_frame() -> frame&
@@ -365,4 +379,18 @@ auto vm::pop_frame() -> frame
 {
     m_frame_index--;
     return m_frames[m_frame_index];
+}
+
+auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
+{
+    auto constant = m_constans->at(const_idx);
+    if (!constant.is<compiled_function>()) {
+        throw std::runtime_error("not a function");
+    }
+    array free;
+    for (auto i = 0UL; i < num_free; i++) {
+        free.push_back(m_stack.at(m_sp - num_free + i));
+    }
+    m_sp -= num_free;
+    push({closure {.fn = constant.as<compiled_function>(), .free = free}});
 }

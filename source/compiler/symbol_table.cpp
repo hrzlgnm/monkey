@@ -17,6 +17,8 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
             return ost << "local";
         case builtin:
             return ost << "builtin";
+        case free:
+            return ost << "free";
     }
     return ost;
 }
@@ -52,10 +54,30 @@ auto symbol_table::define_builtin(size_t index, const std::string& name) -> symb
 
 auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
 {
-    for (auto tbl = shared_from_this(); tbl; tbl = tbl->m_parent) {
-        if (const auto itr = tbl->m_store.find(name); itr != tbl->m_store.end()) {
-            return itr->second;
+    using enum symbol_scope;
+    if (m_store.contains(name)) {
+        return m_store[name];
+    }
+    if (m_parent) {
+        auto maybe_symbol = m_parent->resolve(name);
+        if (!maybe_symbol.has_value()) {
+            return maybe_symbol;
         }
+        auto symbol = maybe_symbol.value();
+        if (symbol.scope == global || symbol.scope == builtin) {
+            return symbol;
+        }
+        return define_free(symbol);
     }
     return {};
+}
+auto symbol_table::free() const -> std::vector<symbol>
+{
+    return m_free;
+}
+
+auto symbol_table::define_free(const symbol& sym) -> symbol
+{
+    m_free.push_back(sym);
+    return m_store[sym.name] = symbol {.name = sym.name, .scope = symbol_scope::free, .index = m_free.size() - 1};
 }

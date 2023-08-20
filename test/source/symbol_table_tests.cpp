@@ -92,8 +92,8 @@ TEST(symboltable, resolveNestedLocals)
     std::array expecteds {
         symbol {"a", global, 0},
         symbol {"b", global, 1},
-        symbol {"c", local, 0},
-        symbol {"d", local, 1},
+        symbol {"c", free, 0},
+        symbol {"d", free, 1},
         symbol {"e", local, 0},
         symbol {"f", local, 1},
     };
@@ -125,6 +125,26 @@ TEST(symboltable, defineResolveBuiltin)
             EXPECT_EQ(table->resolve(expected.name), expected);
         }
     }
+}
+
+TEST(symboltable, resolveFree)
+{
+    using enum symbol_scope;
+    auto globals = symbol_table::create();
+    globals->define("a");
+    globals->define("b");
+    auto first = symbol_table::create_enclosed(globals);
+    first->define("c");
+    first->define("d");
+    auto nested = symbol_table::create_enclosed(first);
+    nested->define("e");
+    nested->define("f");
+
+    ASSERT_EQ(nested->resolve("c")->scope, free);
+    ASSERT_EQ(nested->resolve("d")->scope, free);
+    ASSERT_EQ(nested->free().size(), 2);
+    ASSERT_EQ(nested->free().at(0).name, "c");
+    ASSERT_EQ(nested->free().at(1).name, "d");
 }
 // NOLINTEND(*-identifier-length)
 // NOLINTEND(*-magic-numbers)

@@ -51,7 +51,10 @@ auto to_string(const value_type& value) -> std::string
                     },
                     [](const bound_function& func) -> std::string { return func.first->string(); },
                     [](const compiled_function& compf) -> std::string
-                    { return fmt::format("compiled[{},{}]", compf.instrs.size(), compf.num_locals); }},
+                    { return fmt::format("compiled[{},{}]", compf.instrs.size(), compf.num_locals); },
+                    [](const closure& clsr) -> std::string
+                    { return fmt::format("closure[{},{}]", clsr.fn.instrs.size(), clsr.fn.num_locals); }},
+
         value);
 }
 }  // namespace std
@@ -72,6 +75,7 @@ auto object::type_name() const -> std::string
             [](const array&) { return "array"; },
             [](const hash&) { return "hash"; },
             [](const compiled_function&) { return "compiled_function"; },
+            [](const closure&) { return "closure"; },
         },
         value);
 }
