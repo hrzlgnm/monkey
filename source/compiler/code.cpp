@@ -76,7 +76,7 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));
 }
 
-auto make(opcodes opcode, operands&& operands) -> instructions
+auto make(opcodes opcode, const operands& operands) -> instructions
 {
     if (!definitions.contains(opcode)) {
         throw std::invalid_argument(fmt::format("definition given opcode {} is not defined", opcode));
