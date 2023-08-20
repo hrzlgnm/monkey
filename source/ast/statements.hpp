@@ -9,8 +9,8 @@ using statement_ptr = expression_ptr;
 
 struct let_statement : statement
 {
-    auto string() const -> std::string override;
-    auto eval(environment_ptr env) const -> object override;
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment_ptr env) const -> object override;
     auto compile(compiler& comp) const -> void override;
 
     identifier_ptr name {};
@@ -19,8 +19,8 @@ struct let_statement : statement
 
 struct return_statement : statement
 {
-    auto string() const -> std::string override;
-    auto eval(environment_ptr env) const -> object override;
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment_ptr env) const -> object override;
     auto compile(compiler& comp) const -> void override;
 
     expression_ptr value {};
@@ -28,8 +28,8 @@ struct return_statement : statement
 
 struct expression_statement : statement
 {
-    auto string() const -> std::string override;
-    auto eval(environment_ptr env) const -> object override;
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment_ptr env) const -> object override;
     auto compile(compiler& comp) const -> void override;
 
     expression_ptr expr {};
@@ -37,8 +37,8 @@ struct expression_statement : statement
 
 struct block_statement : statement
 {
-    auto string() const -> std::string override;
-    auto eval(environment_ptr env) const -> object override;
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment_ptr env) const -> object override;
     auto compile(compiler& comp) const -> void override;
 
     std::vector<statement_ptr> statements {};

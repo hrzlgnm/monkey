@@ -75,13 +75,13 @@ auto to_string(const value_type& value) -> std::string;
 struct object
 {
     template<typename T>
-    inline constexpr auto is() const -> bool
+    [[nodiscard]] inline constexpr auto is() const -> bool
     {
         return std::holds_alternative<T>(value);
     }
 
     template<typename T>
-    auto as() const -> const T&
+    [[nodiscard]] auto as() const -> const T&
     {
         if (!is<T>()) {
             throw std::runtime_error(
@@ -90,13 +90,16 @@ struct object
         return std::get<T>(value);
     }
 
-    inline constexpr auto is_nil() const -> bool { return is<nil_type>(); }
+    [[nodiscard]] inline constexpr auto is_nil() const -> bool { return is<nil_type>(); }
 
-    inline constexpr auto is_hashable() const -> bool { return is<integer_type>() || is<string_type>() || is<bool>(); }
+    [[nodiscard]] [[nodiscard]] inline constexpr auto is_hashable() const -> bool
+    {
+        return is<integer_type>() || is<string_type>() || is<bool>();
+    }
 
-    inline auto is_truthy() const -> bool { return !is_nil() && (!is<bool>() || as<bool>()); }
+    [[nodiscard]] inline auto is_truthy() const -> bool { return !is_nil() && (!is<bool>() || as<bool>()); }
 
-    inline auto hash_key() const -> hash_key_type
+    [[nodiscard]] inline auto hash_key() const -> hash_key_type
     {
         return std::visit(overloaded {[](const integer_type integer) -> hash_key_type { return {integer}; },
                                       [](const string_type& str) -> hash_key_type { return {str}; },
@@ -107,9 +110,10 @@ struct object
                           value);
     }
 
+    [[nodiscard]] auto type_name() const -> std::string;
+
     value_type value {};
     bool is_return_value {};
-    auto type_name() const -> std::string;
 };
 
 static const nil_type nilv {};

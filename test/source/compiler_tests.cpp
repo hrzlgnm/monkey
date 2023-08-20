@@ -15,25 +15,18 @@ TEST(compiler, compilerScopes)
 {
     using enum opcodes;
     auto cmplr = compiler::create();
-    ASSERT_EQ(cmplr.scope_index, 0);
-
     cmplr.emit(mul);
     cmplr.enter_scope();
-    ASSERT_EQ(cmplr.scope_index, 1);
-    EXPECT_FALSE(cmplr.symbols->is_global());
-
     cmplr.emit(sub);
-    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].instrs.size(), 1);
-    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].last_instr.opcode, sub);
+    ASSERT_EQ(cmplr.current_instrs().size(), 1);
+    ASSERT_TRUE(cmplr.last_instruction_is(sub));
 
     cmplr.leave_scope();
-    ASSERT_EQ(cmplr.scope_index, 0);
-    EXPECT_TRUE(cmplr.symbols->is_global());
 
+    ASSERT_TRUE(cmplr.last_instruction_is(mul));
     cmplr.emit(add);
-    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].instrs.size(), 2);
-    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].last_instr.opcode, add);
-    ASSERT_EQ(cmplr.scopes[cmplr.scope_index].previous_instr.opcode, mul);
+    ASSERT_EQ(cmplr.current_instrs().size(), 2);
+    ASSERT_TRUE(cmplr.last_instruction_is(add));
 }
 
 using expected_value = std::variant<int64_t, std::string, std::vector<instructions>>;
@@ -77,7 +70,7 @@ auto run(std::array<ctc, N>&& tests)
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
         assert_instructions(instructions, cmplr.current_instrs());
-        assert_constants(constants, *cmplr.consts);
+        assert_constants(constants, *cmplr.consts());
     }
 }
 
@@ -171,6 +164,7 @@ TEST(compiler, booleanExpressions)
     };
     run(std::move(tests));
 }
+
 TEST(compiler, conditionals)
 {
     using enum opcodes;
@@ -821,4 +815,5 @@ TEST(compiler, recursiveFunctions)
     };
     run(std::move(tests));
 }
+
 // NOLINTEND(*-magic-numbers)

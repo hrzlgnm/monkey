@@ -45,6 +45,7 @@ constexpr auto char_literal_tokens = build_char_to_token_type_map();
 constexpr auto keyword_count = 7;
 using keyword_pair = std::pair<std::string_view, token_type>;
 using keyword_lookup_table = std::array<keyword_pair, keyword_count>;
+
 constexpr auto build_keyword_to_token_type_map() -> keyword_lookup_table
 {
     return {std::pair {"fn", token_type::function},

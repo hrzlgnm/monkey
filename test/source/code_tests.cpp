@@ -76,6 +76,7 @@ TEST(code, readOperands)
         operands opers;
         int bytes_read;
     };
+
     std::array tests {
         test {
             opcodes::constant,
@@ -96,4 +97,5 @@ TEST(code, readOperands)
         }
     }
 }
+
 // NOLINTEND(*-magic-numbers)

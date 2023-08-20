@@ -143,6 +143,7 @@ RawStringFormats:
       CanonicalDelimiter: ''
       BasedOnStyle: google
 ReflowComments: true
+SeparateDefinitionBlocks: Always
 SortIncludes: true
 SortUsingDeclarations: true
 SpaceAfterCStyleCast: false

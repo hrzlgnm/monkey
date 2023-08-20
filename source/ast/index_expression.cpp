@@ -1,6 +1,6 @@
-#include <cstdint>
-
 #include "index_expression.hpp"
+
+#include <fmt/core.h>
 
 auto index_expression::string() const -> std::string
 {

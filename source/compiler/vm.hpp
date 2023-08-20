@@ -18,6 +18,7 @@ struct frame
     ssize_t ip {};
     ssize_t base_ptr {};
 };
+
 using frames = std::array<frame, max_frames>;
 
 struct vm
@@ -39,7 +40,7 @@ struct vm
 
     auto run() -> void;
     auto push(const object& obj) -> void;
-    auto last_popped() const -> object;
+    [[nodiscard]] auto last_popped() const -> object;
 
   private:
     vm(frames&& frames, constants_ptr&& consts, constants_ptr globals);
@@ -50,9 +51,8 @@ struct vm
     auto exec_minus() -> void;
     auto exec_index(object&& left, object&& index) -> void;
     auto exec_call(size_t num_args) -> void;
-    auto build_array(size_t start, size_t end) const -> object;
-    auto build_hash(size_t start, size_t end) const -> object;
-    auto stack_top() const -> object;
+    [[nodiscard]] auto build_array(size_t start, size_t end) const -> object;
+    [[nodiscard]] auto build_hash(size_t start, size_t end) const -> object;
 
     auto current_frame() -> frame&;
     auto push_frame(frame&& frm) -> void;

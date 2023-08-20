@@ -136,8 +136,8 @@ auto main(int argc, char* argv[]) -> int
                 cmplr.compile(prgrm);
                 auto machine = vm::create_with_state(cmplr.byte_code(), globals);
                 machine.run();
-                auto stack_top = machine.last_popped();
-                std::cout << std::to_string(stack_top.value) << "\n";
+                auto result = machine.last_popped();
+                std::cout << std::to_string(result.value) << "\n";
             } else {
                 auto evaluated = prgrm->eval(global_env);
                 if (!evaluated.is_nil()) {
@@ -146,7 +146,7 @@ auto main(int argc, char* argv[]) -> int
             }
             std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
             if (opts.debug_env) {
-                debug_env(global_env);
+                global_env->debug();
             }
             std::cout << prompt;
         }

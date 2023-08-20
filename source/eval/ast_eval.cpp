@@ -27,6 +27,7 @@ auto array_expression::eval(environment_ptr env) const -> object
     }
     return {result};
 }
+
 auto eval_integer_binary_expression(token_type oper, const object& left, const object& right) -> object
 {
     using enum token_type;

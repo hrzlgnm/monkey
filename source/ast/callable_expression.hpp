@@ -12,11 +12,11 @@ struct callable_expression : expression
     explicit callable_expression(std::vector<std::string>&& params);
     ~callable_expression() override = default;
 
-    auto eval(environment_ptr env) const -> object override;
-    auto string() const -> std::string override;
-    virtual auto call(environment_ptr closure_env,
-                      environment_ptr caller_env,
-                      const std::vector<expression_ptr>& arguments) const -> object = 0;
+    [[nodiscard]] auto eval(environment_ptr env) const -> object override;
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] virtual auto call(environment_ptr closure_env,
+                                    environment_ptr caller_env,
+                                    const std::vector<expression_ptr>& arguments) const -> object = 0;
 
     std::vector<std::string> parameters;
 };

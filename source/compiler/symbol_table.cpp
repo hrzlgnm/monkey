@@ -62,6 +62,7 @@ auto symbol_table::define_function_name(const std::string& name) -> symbol
                .index = 0,
            };
 }
+
 auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
 {
     using enum symbol_scope;
@@ -81,6 +82,7 @@ auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
     }
     return {};
 }
+
 auto symbol_table::free() const -> std::vector<symbol>
 {
     return m_free;
