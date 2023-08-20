@@ -146,7 +146,7 @@ auto main(int argc, char* argv[]) -> int
             }
             std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
             if (opts.debug_env) {
-                debug_env(global_env);
+                global_env->debug();
             }
             std::cout << prompt;
         }
