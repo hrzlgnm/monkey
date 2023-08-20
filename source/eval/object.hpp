@@ -48,6 +48,13 @@ struct compiled_function
     size_t num_locals {};
     size_t num_arguments {};
 };
+
+struct closure
+{
+    compiled_function fn;
+    array free;
+};
+
 using value_type = std::variant<nil_type,
                                 bool,
                                 integer_type,
@@ -57,6 +64,7 @@ using value_type = std::variant<nil_type,
                                 hash,
                                 bound_function,
                                 compiled_function,
+                                closure,
                                 const builtin_function_expression*>;
 
 namespace std

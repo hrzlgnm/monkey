@@ -111,12 +111,16 @@ auto main(int argc, char* argv[]) -> int
     auto input = std::string {};
     std::cout << prompt;
     auto global_env = std::make_shared<environment>();
-    for (const auto& builtin : builtin_function_expression::builtins) {
+    auto symbols = symbol_table::create();
+
+    for (auto idx = 0UL; const auto& builtin : builtin_function_expression::builtins) {
         global_env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
+        symbols->define_builtin(idx, builtin.name);
+        idx++;
     }
     auto consts = std::make_shared<constants>();
     auto globals = std::make_shared<constants>(globals_size);
-    auto symbols = symbol_table::create();
+
     try {
         auto cache = std::vector<statement_ptr>();
         while (getline(std::cin, input)) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <memory>
 
 #include "code.hpp"
@@ -13,7 +14,7 @@ constexpr auto max_frames = 1024UL;
 
 struct frame
 {
-    compiled_function fn {};
+    closure cl {};
     ssize_t ip {};
     ssize_t base_ptr {};
 };
@@ -28,7 +29,9 @@ struct vm
 
     inline static auto create_with_state(bytecode&& code, constants_ptr globals) -> vm
     {
-        frame main_frame {.fn = {.instrs = std::move(code.instrs)}};
+        auto main_fn = compiled_function {.instrs = std::move(code.instrs)};
+        closure main_clousre {.fn = std::move(main_fn), .free {}};
+        frame main_frame {.cl = std::move(main_clousre)};
         frames frms;
         frms[0] = main_frame;
         return vm {std::move(frms), std::move(code.consts), std::move(globals)};
@@ -54,6 +57,7 @@ struct vm
     auto current_frame() -> frame&;
     auto push_frame(frame&& frm) -> void;
     auto pop_frame() -> frame;
+    auto push_closure(uint16_t const_idx, uint8_t num_free) -> void;
 
     constants_ptr m_constans;
     constants_ptr m_globals;

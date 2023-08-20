@@ -194,9 +194,14 @@ auto function_expression::compile(compiler& comp) const -> void
     if (!comp.last_instruction_is(return_value)) {
         comp.emit(ret);
     }
+    auto free = comp.symbols->free();
     auto num_locals = comp.symbols->num_definitions();
     auto instrs = comp.leave_scope();
-    comp.emit(constant, comp.add_constant({compiled_function {instrs, num_locals, parameters.size()}}));
+    for (const auto& sym : free) {
+        comp.load_symbol(sym);
+    }
+    auto function_index = comp.add_constant({compiled_function {instrs, num_locals, parameters.size()}});
+    comp.emit(closure, {function_index, free.size()});
 }
 
 auto call_expression::compile(compiler& comp) const -> void

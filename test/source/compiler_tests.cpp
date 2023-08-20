@@ -9,100 +9,7 @@
 
 #include "testutils.hpp"
 
-template<typename T>
-auto flatten(const std::vector<std::vector<T>>& arrs) -> std::vector<T>
-{
-    std::vector<T> result;
-    for (const auto& arr : arrs) {
-        std::copy(arr.cbegin(), arr.cend(), std::back_inserter(result));
-    }
-    return result;
-}
-
 // NOLINTBEGIN(*-magic-numbers)
-TEST(compiler, make)
-{
-    struct test
-    {
-        opcodes opcode;
-        operands opers;
-        instructions expected;
-    };
-    using enum opcodes;
-    std::array tests {
-        test {
-            constant,
-            {65534},
-            {static_cast<uint8_t>(constant), 255, 254},
-        },
-        test {
-            add,
-            {},
-            {static_cast<uint8_t>(add)},
-        },
-        test {
-            pop,
-            {},
-            {static_cast<uint8_t>(pop)},
-        },
-        test {
-            get_local,
-            {255},
-            {static_cast<uint8_t>(get_local), 255},
-        },
-    };
-    for (auto&& [opcode, operands, expected] : tests) {
-        auto actual = make(opcode, std::move(operands));
-        ASSERT_EQ(actual, expected);
-    };
-}
-
-TEST(compiler, instructionsToString)
-{
-    const auto* const expected = R"(0000 OpAdd
-0001 OpGetLocal 1
-0003 OpConstant 2
-0006 OpConstant 65535
-)";
-    std::vector<instructions> instrs {
-        make(opcodes::add),
-        make(opcodes::get_local, 1),
-        make(opcodes::constant, 2),
-        make(opcodes::constant, 65535),
-    };
-    auto concatenated = flatten(instrs);
-    auto actual = to_string(concatenated);
-    ASSERT_EQ(expected, actual);
-}
-
-TEST(compiler, readOperands)
-{
-    struct test
-    {
-        opcodes opcode;
-        operands opers;
-        int bytes_read;
-    };
-    std::array tests {
-        test {
-            opcodes::constant,
-            {65534},
-            2,
-        },
-    };
-    for (auto&& [opcode, operands, bytes] : tests) {
-        const auto instr = make(opcode, std::move(operands));
-        const auto def = lookup(opcode);
-
-        ASSERT_TRUE(def.has_value());
-
-        const auto actual = read_operands(def.value(), {instr.begin() + 1, instr.end()});
-        EXPECT_EQ(actual.second, bytes);
-        for (size_t iidx = 0; iidx < operands.size(); ++iidx) {
-            EXPECT_EQ(operands[iidx], actual.first[iidx]) << "at " << iidx;
-        }
-    }
-}
 
 TEST(compiler, compilerScopes)
 {
@@ -152,8 +59,8 @@ auto assert_constants(const std::vector<expected_value>& expecteds, const consta
         const auto& actual = consts.at(idx);
         std::visit(
             overloaded {
-                [&](const int64_t val) { ASSERT_EQ(val, actual.as<integer_type>()); },
-                [&](const std::string& val) { ASSERT_EQ(val, actual.as<string_type>()); },
+                [&](const int64_t val) { EXPECT_EQ(val, actual.as<integer_type>()); },
+                [&](const std::string& val) { EXPECT_EQ(val, actual.as<string_type>()); },
                 [&](const std::vector<instructions>& instrs)
                 { assert_instructions(instrs, actual.as<compiled_function>().instrs); },
             },
@@ -518,7 +425,7 @@ TEST(compiler, functions)
                 maker({make(constant, 0), make(constant, 1), make(add), make(return_value)}),
             },
             {
-                make(constant, 2),
+                make(closure, {2, 0}),
                 make(pop),
             },
         },
@@ -530,7 +437,7 @@ TEST(compiler, functions)
                 maker({make(constant, 0), make(constant, 1), make(add), make(return_value)}),
             },
             {
-                make(constant, 2),
+                make(closure, {2, 0}),
                 make(pop),
             },
         },
@@ -542,7 +449,7 @@ TEST(compiler, functions)
                 maker({make(constant, 0), make(pop), make(constant, 1), make(return_value)}),
             },
             {
-                make(constant, 2),
+                make(closure, {2, 0}),
                 make(pop),
             },
         },
@@ -552,7 +459,7 @@ TEST(compiler, functions)
                 maker({make(ret)}),
             },
             {
-                make(constant, 0),
+                make(closure, {0, 0}),
                 make(pop),
             },
         },
@@ -571,7 +478,7 @@ TEST(compiler, functionCalls)
                 maker({make(constant, 0), make(return_value)}),
             },
             {
-                make(constant, 1),
+                make(closure, {1, 0}),
                 make(call, 0),
                 make(pop),
             },
@@ -584,7 +491,7 @@ TEST(compiler, functionCalls)
                 maker({make(constant, 0), make(return_value)}),
             },
             {
-                make(constant, 1),
+                make(closure, {1, 0}),
                 make(set_global, 0),
                 make(get_global, 0),
                 make(call, 0),
@@ -599,7 +506,7 @@ TEST(compiler, functionCalls)
                 24,
             },
             {
-                make(constant, 0),
+                make(closure, {0, 0}),
                 make(set_global, 0),
                 make(get_global, 0),
                 make(constant, 1),
@@ -617,7 +524,7 @@ TEST(compiler, functionCalls)
                 26,
             },
             {
-                make(constant, 0),
+                make(closure, {0, 0}),
                 make(set_global, 0),
                 make(get_global, 0),
                 make(constant, 1),
@@ -635,7 +542,7 @@ TEST(compiler, functionCalls)
                 24,
             },
             {
-                make(constant, 0),
+                make(closure, {0, 0}),
                 make(set_global, 0),
                 make(get_global, 0),
                 make(constant, 1),
@@ -658,7 +565,7 @@ TEST(compiler, functionCalls)
                 26,
             },
             {
-                make(constant, 0),
+                make(closure, {0, 0}),
                 make(set_global, 0),
                 make(get_global, 0),
                 make(constant, 1),
@@ -685,7 +592,7 @@ TEST(compiler, letStatementScopes)
             {
                 make(constant, 0),
                 make(set_global, 0),
-                make(constant, 1),
+                make(closure, {1, 0}),
                 make(pop),
             },
         },
@@ -699,7 +606,7 @@ TEST(compiler, letStatementScopes)
                 maker({make(constant, 0), make(set_local, 0), make(get_local, 0), make(return_value)}),
             },
             {
-                make(constant, 1),
+                make(closure, {1, 0}),
                 make(pop),
             },
         },
@@ -722,7 +629,7 @@ TEST(compiler, letStatementScopes)
                        make(return_value)}),
             },
             {
-                make(constant, 2),
+                make(closure, {2, 0}),
                 make(pop),
             },
         },
@@ -759,10 +666,95 @@ TEST(compiler, builtins)
             )",
             {maker({make(get_builtin, 0), make(array, 0), make(call, 1), make(return_value)})},
             {
-                make(constant, 0),
+                make(closure, {0, 0}),
                 make(pop),
             },
         },
+    };
+    run(std::move(tests));
+}
+TEST(compiler, closures)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(
+            fn(a) {
+                fn(b) {
+                    a + b;
+                }
+            }
+            )",
+            {maker({make(get_free, 0), make(get_local, 0), make(add), make(return_value)}),
+             maker({make(get_local, 0), make(closure, {0, 1}), make(return_value)})},
+            {
+                make(closure, {1, 0}),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(fn(a) {
+                 fn(b) {
+                    fn(c) {
+                        a + b + c
+                    }
+                }
+            };)",
+            {maker(
+                 {make(get_free, 0), make(get_free, 1), make(add), make(get_local, 0), make(add), make(return_value)}),
+             maker({make(get_free, 0), make(get_local, 0), make(closure, {0, 2}), make(return_value)}),
+             maker({make(get_local, 0), make(closure, {1, 1}), make(return_value)})},
+            {
+                make(closure, {2, 0}),
+                make(pop),
+            }},
+        ctc {
+            R"(
+            let global = 55;
+            fn() {
+                let a = 66;
+
+                fn() {
+                    let b = 77;
+
+                    fn() {
+                        let c = 88;
+
+                        global + a + b + c;
+                    }
+                }
+            })",
+            {55,
+             66,
+             77,
+             88,
+             maker({make(constant, 3),
+                    make(set_local, 0),
+                    make(get_global, 0),
+                    make(get_free, 0),
+                    make(add),
+                    make(get_free, 1),
+                    make(add),
+                    make(get_local, 0),
+                    make(add),
+                    make(return_value)}),
+             maker({make(constant, 2),
+                    make(set_local, 0),
+                    make(get_free, 0),
+                    make(get_local, 0),
+                    make(closure, {4, 2}),
+                    make(return_value)}),
+             maker({make(constant, 1),
+                    make(set_local, 0),
+                    make(get_local, 0),
+                    make(closure, {5, 1}),
+                    make(return_value)})},
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(closure, {6, 0}),
+                make(pop),
+            }},
     };
     run(std::move(tests));
 }

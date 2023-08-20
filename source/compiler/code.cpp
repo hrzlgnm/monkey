@@ -65,6 +65,10 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "set_local";
         case get_builtin:
             return ostream << "get_builtin";
+        case closure:
+            return ostream << "closure";
+        case get_free:
+            return ostream << "get_free";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));
@@ -88,7 +92,6 @@ auto make(opcodes opcode, operands&& operands) -> instructions
                 instr.push_back(static_cast<uint8_t>(operand));
                 break;
         }
-        break;
         idx++;
     }
     return instr;
@@ -140,6 +143,8 @@ auto fmt_instruction(const definition& def, const operands& operands) -> std::st
             return def.name;
         case 1:
             return fmt::format("{} {}", def.name, operands.at(0));
+        case 2:
+            return fmt::format("{} {} {}", def.name, operands.at(0), operands.at(1));
         default:
             return fmt::format("ERROR: unhandled operand count for {}", def.name);
     }

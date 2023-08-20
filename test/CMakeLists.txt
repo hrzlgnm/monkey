@@ -7,6 +7,7 @@ project(Tests LANGUAGES CXX)
 
 add_executable(
   monkey_test
+  source/code_tests.cpp
   source/compiler_tests.cpp
   source/eval_tests.cpp
   source/lexing_tests.cpp
