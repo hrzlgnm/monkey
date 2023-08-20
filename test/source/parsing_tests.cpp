@@ -451,6 +451,15 @@ TEST(parsing, testFunctionLiteral)
     assert_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
 
+TEST(parsing, functionLiteralWithName)
+{
+    const auto* input = R"(let myFunction = fn() { };)";
+    auto [prgrm, _] = assert_program(input);
+    auto* let = assert_let_statement(prgrm->statements[0].get(), "myFunction");
+    auto* fnexpr = dynamic_cast<function_expression*>(let->value.get());
+    ASSERT_EQ(fnexpr->name, "myFunction");
+}
+
 TEST(parsing, testFunctionParameters)
 {
     struct parameters_test

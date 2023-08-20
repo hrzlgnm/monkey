@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "compiler/symbol_table.hpp"
 
 #include <gtest/gtest.h>
@@ -145,6 +147,32 @@ TEST(symboltable, resolveFree)
     ASSERT_EQ(nested->free().size(), 2);
     ASSERT_EQ(nested->free().at(0).name, "c");
     ASSERT_EQ(nested->free().at(1).name, "d");
+}
+
+TEST(symboltable, defineAndResolveFunctonName)
+{
+    using enum symbol_scope;
+    auto globals = symbol_table::create();
+    globals->define_function_name("a");
+
+    auto expected = symbol {"a", function, 0};
+
+    auto actual = globals->resolve("a");
+    ASSERT_TRUE(actual.has_value());
+    ASSERT_EQ(expected, actual.value());
+}
+
+TEST(symboltable, shadowFunctionNames)
+{
+    using enum symbol_scope;
+    auto globals = symbol_table::create();
+    globals->define_function_name("a");
+    globals->define("a");
+
+    auto expected = symbol {"a", global, 0};
+    auto resolved = globals->resolve("a");
+    ASSERT_TRUE(resolved.has_value());
+    ASSERT_EQ(resolved.value(), expected);
 }
 // NOLINTEND(*-identifier-length)
 // NOLINTEND(*-magic-numbers)

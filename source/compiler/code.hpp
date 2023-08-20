@@ -42,6 +42,7 @@ enum class opcodes : uint8_t
     get_builtin,
     closure,
     get_free,
+    current_closure,
 };
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
@@ -87,6 +88,7 @@ const definition_type definitions {
     {opcodes::get_builtin, definition {"OpGetBuiltin", {1}}},
     {opcodes::closure, definition {"OpClosure", {2, 1}}},
     {opcodes::get_free, definition {"OpGetFree", {1}}},
+    {opcodes::current_closure, definition {"OpCurrentClosure"}},
 };
 
 auto make(opcodes opcode, operands&& operands = {}) -> instructions;

@@ -130,8 +130,8 @@ auto program::compile(compiler& comp) const -> void
 
 auto let_statement::compile(compiler& comp) const -> void
 {
-    value->compile(comp);
     auto symbol = comp.symbols->define(name->value);
+    value->compile(comp);
 
     if (symbol.is_local()) {
         comp.emit(opcodes::set_local, symbol.index);
@@ -182,6 +182,9 @@ auto unary_expression::compile(compiler& comp) const -> void
 auto function_expression::compile(compiler& comp) const -> void
 {
     comp.enter_scope();
+    if (!name.empty()) {
+        comp.symbols->define_function_name(name);
+    }
     for (const auto& param : parameters) {
         comp.symbols->define(param);
     }

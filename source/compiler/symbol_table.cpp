@@ -19,6 +19,8 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
             return ost << "builtin";
         case free:
             return ost << "free";
+        case function:
+            return ost << "function";
     }
     return ost;
 }
@@ -52,6 +54,14 @@ auto symbol_table::define_builtin(size_t index, const std::string& name) -> symb
            };
 }
 
+auto symbol_table::define_function_name(const std::string& name) -> symbol
+{
+    return m_store[name] = symbol {
+               .name = name,
+               .scope = symbol_scope::function,
+               .index = 0,
+           };
+}
 auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
 {
     using enum symbol_scope;

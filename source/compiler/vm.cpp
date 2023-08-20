@@ -159,6 +159,9 @@ auto vm::run() -> void
                 auto current_closure = current_frame().cl;
                 push(current_closure.free[free_index]);
             } break;
+            case opcodes::current_closure: {
+                push({current_frame().cl});
+            } break;
             default:
                 throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
         }
@@ -360,7 +363,7 @@ auto vm::exec_call(size_t num_args) -> void
                         auto result = builtin->body(std::move(args));
                         push(result);
                     },
-                    [](const auto& /*other*/) { throw std::runtime_error("calling non-function"); }},
+                    [](const auto& /*other*/) { throw std::runtime_error("calling non-closure and non-builtin"); }},
         callee.value);
 }
 
