@@ -342,8 +342,8 @@ auto test_multi_eval(std::deque<std::string>& inputs) -> object
 TEST(eval, multipleEvaluationsWithSameEnvAndDestroyedSources)
 {
     const auto* input1 {R"(let makeGreeter = fn(greeting) { fn(name) { greeting + " " + name + "!" } };)"};
-    const auto* input2 {"let hello = makeGreeter(\"hello\");"};
-    const auto* input3 {"hello(\"banana\");"};
+    const auto* input2 {R"(let hello = makeGreeter("hello");)"};
+    const auto* input3 {R"(hello("banana");)"};
     std::deque<std::string> inputs {input1, input2, input3};
     assert_string_object(test_multi_eval(inputs), "hello banana!");
 }
