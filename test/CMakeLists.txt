@@ -22,6 +22,8 @@ target_compile_features(monkey_test PRIVATE cxx_std_20)
 
 add_test(NAME monkey_test COMMAND monkey_test)
 
+add_subdirectory(benchmark)
+
 # ---- End-of-file commands ----
 
 add_folders(Test)

@@ -76,7 +76,7 @@ auto binary_expression::eval(environment_ptr env) const -> object
     if (evaluated_right.is<error>()) {
         return evaluated_right;
     }
-    if (evaluated_left.type_name() != evaluated_right.type_name()) {
+    if (evaluated_left.value.index() != evaluated_right.value.index()) {
         return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
     }
     if (evaluated_left.is<integer_type>() && evaluated_right.is<integer_type>()) {
