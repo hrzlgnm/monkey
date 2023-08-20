@@ -103,7 +103,7 @@ auto make(opcodes opcode, size_t operand) -> instructions
 {
     operands rands;
     rands.push_back(operand);
-    return make(opcode, std::move(rands));
+    return make(opcode, rands);
 }
 
 auto read_operands(const definition& def, const instructions& instr) -> std::pair<operands, operands::size_type>

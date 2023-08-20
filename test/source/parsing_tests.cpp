@@ -174,7 +174,7 @@ let 838383;
     ASSERT_FALSE(errors.empty());
 }
 
-TEST(parsing, testReturnStatement)
+TEST(parsing, returnStatement)
 {
     using enum token_type;
     auto [prgrm, _] = assert_program(
@@ -192,7 +192,7 @@ return 993322;
     }
 }
 
-TEST(parsing, testString)
+TEST(parsing, string)
 {
     using enum token_type;
     auto name = std::make_unique<identifier>("myVar");
@@ -209,7 +209,7 @@ TEST(parsing, testString)
     ASSERT_EQ(prgrm.string(), "let myVar = anotherVar;");
 }
 
-TEST(parsing, testIdentfierExpression)
+TEST(parsing, identfierExpression)
 {
     const auto* input = "foobar;";
     auto [prgrm, _] = assert_program(input);
@@ -218,7 +218,7 @@ TEST(parsing, testIdentfierExpression)
     assert_literal_expression(expr_stmt->expr, "foobar");
 }
 
-TEST(parsing, testIntegerExpression)
+TEST(parsing, integerExpression)
 {
     auto [prgrm, _] = assert_program("5;");
     auto* expr_stmt = assert_expression_statement(prgrm);
@@ -226,7 +226,7 @@ TEST(parsing, testIntegerExpression)
     assert_literal_expression(expr_stmt->expr, 5);
 }
 
-TEST(parsing, testUnaryExpressions)
+TEST(parsing, unaryExpressions)
 {
     using enum token_type;
     struct unary_test
@@ -247,7 +247,7 @@ TEST(parsing, testUnaryExpressions)
     }
 }
 
-TEST(parsing, testBinaryExpressions)
+TEST(parsing, binaryExpressions)
 {
     using enum token_type;
     struct binary_test
@@ -276,7 +276,7 @@ TEST(parsing, testBinaryExpressions)
     }
 }
 
-TEST(parsing, testOperatorPrecedenceParsing)
+TEST(parsing, operatorPrecedenceParsing)
 {
     struct oper_test
     {
@@ -399,7 +399,7 @@ TEST(parsing, testOperatorPrecedenceParsing)
     }
 }
 
-TEST(parsing, testIfExpression)
+TEST(parsing, ifExpression)
 {
     const char* input = "if (x < y) { x }";
     auto [prgrm, _] = assert_program(input);
@@ -414,7 +414,7 @@ TEST(parsing, testIfExpression)
     ASSERT_FALSE(if_expr->alternative);
 }
 
-TEST(parsing, testIfElseExpression)
+TEST(parsing, ifElseExpression)
 {
     const char* input = "if (x < y) { x } else { y }";
     auto [prgrm, _] = assert_program(input);
@@ -433,7 +433,7 @@ TEST(parsing, testIfElseExpression)
     assert_identifier(alternative->expr, "y");
 }
 
-TEST(parsing, testFunctionLiteral)
+TEST(parsing, functionLiteral)
 {
     const char* input = "fn(x, y) { x + y; }";
     auto [prgrm, _] = assert_program(input);
@@ -446,8 +446,9 @@ TEST(parsing, testFunctionLiteral)
 
     auto* block = dynamic_cast<block_statement*>(fn_expr->body.get());
     ASSERT_EQ(block->statements.size(), 1);
-    auto* body_stmt = dynamic_cast<expression_statement*>(block->statements.at(0).get());
 
+    auto* body_stmt = dynamic_cast<expression_statement*>(block->statements.at(0).get());
+    ASSERT_TRUE(body_stmt);
     assert_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
 
@@ -457,10 +458,11 @@ TEST(parsing, functionLiteralWithName)
     auto [prgrm, _] = assert_program(input);
     auto* let = assert_let_statement(prgrm->statements[0].get(), "myFunction");
     auto* fnexpr = dynamic_cast<function_expression*>(let->value.get());
+    ASSERT_TRUE(fnexpr);
     ASSERT_EQ(fnexpr->name, "myFunction");
 }
 
-TEST(parsing, testFunctionParameters)
+TEST(parsing, functionParameters)
 {
     struct parameters_test
     {
@@ -484,7 +486,7 @@ TEST(parsing, testFunctionParameters)
     }
 }
 
-TEST(parsing, testCallExpressionParsing)
+TEST(parsing, callExpressionParsing)
 {
     const auto* input = "add(1, 2 * 3, 4 + 5);";
     auto [prgrm, _] = assert_program(input);
@@ -496,7 +498,7 @@ TEST(parsing, testCallExpressionParsing)
     assert_binary_expression(call->arguments[2], 4, token_type::plus, 5);
 }
 
-TEST(parsing, testStringLiteralExpression)
+TEST(parsing, stringLiteralExpression)
 {
     const auto* input = "\"hello world\";";
     auto [prgrm, _] = assert_program(input);
@@ -504,7 +506,7 @@ TEST(parsing, testStringLiteralExpression)
     ASSERT_EQ(str->value, "hello world");
 }
 
-TEST(parsing, testArrayExpression)
+TEST(parsing, arrayExpression)
 {
     auto [prgrm, _] = assert_program("[1, 2 * 2, 3 + 3]");
     auto* array_expr = assert_expression<array_expression>(prgrm);
@@ -514,7 +516,7 @@ TEST(parsing, testArrayExpression)
     assert_binary_expression(array_expr->elements[2], 3, token_type::plus, 3);
 }
 
-TEST(parsing, testIndexEpxression)
+TEST(parsing, indexEpxression)
 {
     auto [prgrm, _] = assert_program("myArray[1+1]");
     auto* idx_expr = assert_expression<index_expression>(prgrm);
@@ -522,7 +524,7 @@ TEST(parsing, testIndexEpxression)
     assert_binary_expression(idx_expr->index, 1, token_type::plus, 1);
 }
 
-TEST(parsing, testHashLiteralStringKeys)
+TEST(parsing, hashLiteralStringKeys)
 {
     auto [prgrm, _] = assert_program(R"({"one": 1, "two": 2, "three": 3})");
     auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
@@ -535,7 +537,7 @@ TEST(parsing, testHashLiteralStringKeys)
     }
 }
 
-TEST(parsing, testHashLiteralWithExpression)
+TEST(parsing, hashLiteralWithExpression)
 {
     auto [prgrm, _] = assert_program(R"({"one": 0 + 1, "two": 10 - 8, "three": 15 / 5})");
     auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
@@ -555,7 +557,7 @@ TEST(parsing, testHashLiteralWithExpression)
     }
 }
 
-TEST(parsing, testEmptyHashLiteral)
+TEST(parsing, emptyHashLiteral)
 {
     auto [prgrm, _] = assert_program(R"({})");
     auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
