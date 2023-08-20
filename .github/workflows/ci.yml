@@ -90,3 +90,10 @@ jobs:
             - name: Test
               working-directory: build/test
               run: ctest --output-on-failure --no-tests=error -j 2
+
+            - name: Benchmark
+              working-directory: build/test/benchmark
+              run: >-
+                  ./benchmark
+
+                  ./benchmark --eval
