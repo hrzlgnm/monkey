@@ -1,6 +1,7 @@
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
+#include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
@@ -13,6 +14,7 @@
 
 #include "code.hpp"
 #include "compiler.hpp"
+#include "eval/object.hpp"
 #include "symbol_table.hpp"
 
 auto array_expression::compile(compiler& comp) const -> void
@@ -76,7 +78,7 @@ auto hash_literal_expression::compile(compiler& comp) const -> void
 
 auto identifier::compile(compiler& comp) const -> void
 {
-    auto maybe_symbol = comp.symbols->resolve(value);
+    auto maybe_symbol = comp.resolve_symbol(value);
     if (!maybe_symbol.has_value()) {
         throw std::runtime_error(fmt::format("undefined variable {}", value));
     }
@@ -130,7 +132,7 @@ auto program::compile(compiler& comp) const -> void
 
 auto let_statement::compile(compiler& comp) const -> void
 {
-    auto symbol = comp.symbols->define(name->value);
+    auto symbol = comp.define_symbol(name->value);
     value->compile(comp);
 
     if (symbol.is_local()) {
@@ -183,10 +185,10 @@ auto function_expression::compile(compiler& comp) const -> void
 {
     comp.enter_scope();
     if (!name.empty()) {
-        comp.symbols->define_function_name(name);
+        comp.define_function_name(name);
     }
     for (const auto& param : parameters) {
-        comp.symbols->define(param);
+        comp.define_symbol(param);
     }
     body->compile(comp);
 
@@ -197,8 +199,8 @@ auto function_expression::compile(compiler& comp) const -> void
     if (!comp.last_instruction_is(return_value)) {
         comp.emit(ret);
     }
-    auto free = comp.symbols->free();
-    auto num_locals = comp.symbols->num_definitions();
+    auto free = comp.free_symbols();
+    auto num_locals = comp.number_symbol_definitions();
     auto instrs = comp.leave_scope();
     for (const auto& sym : free) {
         comp.load_symbol(sym);
@@ -215,3 +217,5 @@ auto call_expression::compile(compiler& comp) const -> void
     }
     comp.emit(opcodes::call, arguments.size());
 }
+
+auto builtin_function_expression::compile(compiler& /*comp*/) const -> void {}

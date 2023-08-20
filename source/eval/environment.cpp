@@ -5,19 +5,19 @@
 #include "object.hpp"
 
 environment::environment(environment_ptr parent_env)
-    : parent(std::move(parent_env))
+    : m_parent(std::move(parent_env))
 {
 }
 
 auto environment::break_cycle() -> void
 {
-    store.clear();
+    m_store.clear();
 }
 
 auto environment::get(std::string_view name) const -> object
 {
-    for (auto ptr = shared_from_this(); ptr; ptr = ptr->parent) {
-        if (const auto itr = ptr->store.find(std::string {name}); itr != ptr->store.end()) {
+    for (auto ptr = shared_from_this(); ptr; ptr = ptr->m_parent) {
+        if (const auto itr = ptr->m_store.find(std::string {name}); itr != ptr->m_store.end()) {
             return itr->second;
         }
     }
@@ -26,20 +26,20 @@ auto environment::get(std::string_view name) const -> object
 
 auto environment::set(std::string_view name, object&& val) -> void
 {
-    if (const auto itr = store.find(std::string {name}); itr != store.end()) {
+    if (const auto itr = m_store.find(std::string {name}); itr != m_store.end()) {
         itr->second = std::move(val);
     } else {
-        store.emplace(std::string(name), val);
+        m_store.emplace(std::string(name), val);
     }
 }
 auto environment::set(std::string_view name, const object& val) -> void
 {
-    store[std::string {name}] = val;
+    m_store[std::string {name}] = val;
 }
 
-auto debug_env(const environment_ptr& env) -> void
+auto environment::debug() const -> void
 {
-    for (const auto& [k, v] : env->store) {
+    for (const auto& [k, v] : m_store) {
         fmt::print("[{}] = {}\n", k, std::to_string(v.value));
     }
 }

@@ -6,8 +6,8 @@
 
 struct unary_expression : expression
 {
-    auto string() const -> std::string override;
-    auto eval(environment_ptr env) const -> object override;
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment_ptr env) const -> object override;
     auto compile(compiler& comp) const -> void override;
 
     token_type op {};

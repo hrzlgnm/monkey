@@ -19,14 +19,6 @@ vm::vm(frames&& frames, constants_ptr&& consts, constants_ptr globals)
 {
 }
 
-auto vm::stack_top() const -> object
-{
-    if (m_sp == 0) {
-        return {};
-    }
-    return m_stack.at(m_sp - 1);
-}
-
 auto vm::run() -> void
 {
     for (; current_frame().ip < static_cast<ssize_t>(current_frame().cl.fn.instrs.size()); current_frame().ip++) {
