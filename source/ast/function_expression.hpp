@@ -17,4 +17,5 @@ struct function_expression : callable_expression
 
     environment_ptr parent_env;
     statement_ptr body;
+    std::string name;
 };

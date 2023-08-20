@@ -138,5 +138,8 @@ auto compiler::load_symbol(const symbol& sym) -> void
         case free:
             emit(get_free, sym.index);
             break;
+        case function:
+            emit(current_closure);
+            break;
     }
 }

@@ -16,6 +16,7 @@ enum class symbol_scope
     local,
     builtin,
     free,
+    function,
 };
 auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&;
 
@@ -42,6 +43,7 @@ struct symbol_table : std::enable_shared_from_this<symbol_table>
     explicit symbol_table(symbol_table_ptr outer = {});
     auto define(const std::string& name) -> symbol;
     auto define_builtin(size_t index, const std::string& name) -> symbol;
+    auto define_function_name(const std::string& name) -> symbol;
     auto resolve(const std::string& name) -> std::optional<symbol>;
     inline auto is_global() const -> bool { return !m_parent; }
     inline auto parent() const -> symbol_table_ptr { return m_parent; }

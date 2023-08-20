@@ -673,6 +673,7 @@ TEST(compiler, builtins)
     };
     run(std::move(tests));
 }
+
 TEST(compiler, closures)
 {
     using enum opcodes;
@@ -755,6 +756,68 @@ TEST(compiler, closures)
                 make(closure, {6, 0}),
                 make(pop),
             }},
+    };
+    run(std::move(tests));
+}
+
+TEST(compiler, recursiveFunctions)
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(
+        let countDown = fn(x) { countDown(x - 1); };
+        countDown(1);
+            )",
+            {1,
+             maker({make(current_closure),
+                    make(get_local, 0),
+                    make(constant, 0),
+                    make(sub),
+                    make(call, 1),
+                    make(return_value)}),
+             1},
+            {
+                make(closure, {1, 0}),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(constant, 2),
+                make(call, 1),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(
+        let wrapper = fn() {
+            let countDown = fn(x) { countDown(x - 1); };
+            countDown(1);
+        };
+        wrapper();
+            )",
+            {1,
+             maker({make(current_closure),
+                    make(get_local, 0),
+                    make(constant, 0),
+                    make(sub),
+                    make(call, 1),
+                    make(return_value)}),
+             1,
+             maker({
+                 make(closure, {1, 0}),
+                 make(set_local, 0),
+                 make(get_local, 0),
+                 make(constant, 2),
+                 make(call, 1),
+                 make(return_value),
+             })},
+            {
+                make(closure, {3, 0}),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(call, 0),
+                make(pop),
+            },
+        },
     };
     run(std::move(tests));
 }

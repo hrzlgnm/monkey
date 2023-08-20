@@ -69,6 +69,8 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "closure";
         case get_free:
             return ostream << "get_free";
+        case current_closure:
+            return ostream << "current_closure";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));

@@ -93,7 +93,8 @@ auto run(std::array<vt<Expecteds...>, N> tests)
         auto [prgrm, _] = assert_program(input);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
-        auto mchn = vm::create(cmplr.byte_code());
+        auto byte_code = cmplr.byte_code();
+        auto mchn = vm::create(std::move(byte_code));
         mchn.run();
 
         auto top = mchn.last_popped();
@@ -562,6 +563,80 @@ TEST(vm, closures)
             )",
             99,
         },
+    };
+    run(tests);
+}
+
+TEST(vm, recursiveFunction)
+{
+    using enum opcodes;
+    std::array tests {
+        vt<int64_t> {
+            R"(
+        let countDown = fn(x) {
+            if (x == 0) {
+                return 0;
+            } else {
+                countDown(x - 1);
+            }
+        };
+        countDown(1);
+            )",
+            0,
+        },
+        vt<int64_t> {
+            R"(
+        let countDown = fn(x) {
+            if (x == 0) {
+                return 0;
+            } else {
+                countDown(x - 1);
+            }
+        };
+        let wrapper = fn() {
+            countDown(1);
+        };
+        wrapper();
+            )",
+            0,
+        },
+        vt<int64_t> {
+            R"(
+        let wrapper = fn() {
+            let countDown = fn(x) {
+                if (x == 0) {
+                    return 0;
+                } else {
+                    countDown(x - 1);
+                }
+            };
+            countDown(1);
+        };
+        wrapper();
+        )",
+            0,
+        },
+    };
+    run(tests);
+}
+TEST(vm, recuriveFibonnacci)
+{
+    std::array tests {
+        vt<int64_t> {
+            R"(
+        let fibonacci = fn(x) {
+            if (x == 0) {
+                return 0;
+            } else {
+                if (x == 1) {
+                    return 1;
+                } else {
+                    fibonacci(x - 1) + fibonacci(x - 2);
+                }
+            }
+        };
+        fibonacci(15);)",
+            610},
     };
     run(tests);
 }

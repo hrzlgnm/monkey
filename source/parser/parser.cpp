@@ -141,6 +141,9 @@ auto parser::parse_let_statement() -> statement_ptr
 
     next_token();
     stmt->value = parse_expression(lowest);
+    if (auto* func_expr = dynamic_cast<function_expression*>(stmt->value.get()); func_expr != nullptr) {
+        func_expr->name = stmt->name->value;
+    }
 
     if (peek_token_is(semicolon)) {
         next_token();
