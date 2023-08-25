@@ -8,6 +8,7 @@ project(
   DESCRIPTION "The name is monkey"
   HOMEPAGE_URL "https://github.com/hrzlgnm/monkey"
   LANGUAGES CXX)
+
 find_package(fmt REQUIRED)
 
 # ---- Declare library ----
@@ -42,6 +43,7 @@ add_library(
   source/lexer/token_type.cpp
   source/parser/parser.cpp)
 
+add_library(monkey::lib ALIAS monkey_lib)
 target_precompile_headers(
   monkey_lib
   PRIVATE
@@ -55,11 +57,13 @@ target_precompile_headers(
 
 target_include_directories(
   monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
+
 target_compile_features(monkey_lib PUBLIC cxx_std_20)
-target_link_libraries(monkey_lib PUBLIC fmt)
+target_link_libraries(monkey_lib fmt::fmt doctest::doctest doctest::impl)
 
 add_executable(monkey_exe source/main.cpp)
 add_executable(monkey::exe ALIAS monkey_exe)
+target_compile_definitions(monkey_exe PRIVATE DOCTEST_CONFIG_DISABLE)
 
 set_property(TARGET monkey_exe PROPERTY OUTPUT_NAME monkey)
 

@@ -1,6 +1,4 @@
-# Parent project does not export its library target, so this CML implicitly
-# depends on being added from it, i.e. the testing is done only from the build
-# tree and is not feasible from an install location
+
 project(Tests LANGUAGES CXX)
 
 # ---- Tests ----
@@ -23,6 +21,7 @@ target_compile_features(monkey_test PRIVATE cxx_std_20)
 add_test(NAME monkey_test COMMAND monkey_test)
 
 add_subdirectory(benchmark)
+add_subdirectory(lib/doctest)
 
 # ---- End-of-file commands ----
 
