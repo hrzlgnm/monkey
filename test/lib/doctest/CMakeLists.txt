@@ -2,6 +2,8 @@ set(TARGET_NAME doctest)
 
 add_library(${TARGET_NAME} INTERFACE)
 add_library(${TARGET_NAME}::${TARGET_NAME} ALIAS ${TARGET_NAME})
+target_compile_definitions(${TARGET_NAME}
+                           INTERFACE DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 target_include_directories(${TARGET_NAME} INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_features(${TARGET_NAME} INTERFACE cxx_std_20)
 
