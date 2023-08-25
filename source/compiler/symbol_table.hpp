@@ -26,7 +26,7 @@ struct symbol
     symbol_scope scope {};
     size_t index {};
 
-    inline auto is_local() const -> bool { return scope == symbol_scope::local; }
+    [[nodiscard]] inline auto is_local() const -> bool { return scope == symbol_scope::local; }
 };
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool;
