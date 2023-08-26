@@ -54,6 +54,7 @@ target_precompile_headers(
   <array>
   <algorithm>
   <cstdint>
+  <deque>
   <fmt/core.h>
   <fmt/format.h>
   <iostream>

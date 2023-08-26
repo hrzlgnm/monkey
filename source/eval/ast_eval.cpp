@@ -455,8 +455,10 @@ auto callable_expression::eval(environment_ptr env) const -> object
 
 #include <deque>
 
-#include <doctest/doctest.h>
 #include <parser/parser.hpp>
+
+#define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
+#include <doctest/doctest.h>
 
 TEST_SUITE_BEGIN("eval");
 
