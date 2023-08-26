@@ -1,6 +1,10 @@
+#include <array>
+
 #include "symbol_table.hpp"
 
+#include <doctest/doctest.h>
 #include <fmt/ostream.h>
+#include <parser/parser.hpp>
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {
@@ -93,13 +97,6 @@ auto symbol_table::define_free(const symbol& sym) -> symbol
     m_free.push_back(sym);
     return m_store[sym.name] = symbol {.name = sym.name, .scope = symbol_scope::free, .index = m_free.size() - 1};
 }
-
-#include <array>
-
-#include <parser/parser.hpp>
-
-#define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
-#include <doctest/doctest.h>
 
 TEST_SUITE_BEGIN("symbol table");
 

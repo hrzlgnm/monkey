@@ -3,6 +3,8 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <variant>
+#include <vector>
 
 #include "parser.hpp"
 
@@ -20,6 +22,7 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <doctest/doctest.h>
 #include <fmt/core.h>
 #include <lexer/token.hpp>
 
@@ -463,11 +466,6 @@ auto parser::current_precedence() const -> int
 {
     return precedence_of_token(m_current_token.type);
 }
-
-#include <variant>
-#include <vector>
-#define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
-#include <doctest/doctest.h>
 
 using expected_value_type = std::variant<int64_t, std::string, bool>;
 

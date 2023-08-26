@@ -1,3 +1,5 @@
+#include <deque>
+
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
@@ -11,6 +13,8 @@
 #include <ast/program.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <doctest/doctest.h>
+#include <parser/parser.hpp>
 
 #include "environment.hpp"
 #include "object.hpp"
@@ -452,13 +456,6 @@ auto callable_expression::eval(environment_ptr env) const -> object
 {
     return {std::make_pair(this, env)};
 }
-
-#include <deque>
-
-#include <parser/parser.hpp>
-
-#define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
-#include <doctest/doctest.h>
 
 TEST_SUITE_BEGIN("eval");
 

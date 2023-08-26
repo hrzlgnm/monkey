@@ -1,11 +1,14 @@
+#include <array>
 #include <cstdint>
 #include <stdexcept>
 
 #include "vm.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <doctest/doctest.h>
 #include <eval/object.hpp>
 #include <fmt/core.h>
+#include <parser/parser.hpp>
 
 #include "code.hpp"
 #include "compiler.hpp"
@@ -389,13 +392,6 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
     m_sp -= num_free;
     push({closure {.fn = constant.as<compiled_function>(), .free = free}});
 }
-
-#include <array>
-
-#include <parser/parser.hpp>
-
-#define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
-#include <doctest/doctest.h>
 
 TEST_SUITE_BEGIN("vm");
 

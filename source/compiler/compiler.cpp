@@ -1,3 +1,4 @@
+#include <array>
 #include <complex>
 #include <cstddef>
 #include <iterator>
@@ -5,6 +6,8 @@
 #include "compiler.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <doctest/doctest.h>
+#include <parser/parser.hpp>
 
 #include "code.hpp"
 #include "symbol_table.hpp"
@@ -174,13 +177,6 @@ auto compiler::consts() const -> constants_ptr
 {
     return m_consts;
 }
-
-#include <array>
-
-#include <parser/parser.hpp>
-
-#define DOCTEST_CONFIG_SUPER_FAST_ASSERTS
-#include <doctest/doctest.h>
 
 TEST_SUITE_BEGIN("compiler");
 
