@@ -10,7 +10,6 @@ project(
   LANGUAGES CXX)
 
 find_package(fmt REQUIRED)
-add_subdirectory(doctest)
 
 # ---- Declare library ----
 add_library(
