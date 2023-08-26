@@ -51,13 +51,18 @@ add_library(monkey::lib ALIAS monkey_lib)
 target_precompile_headers(
   monkey_lib
   PRIVATE
+  <array>
   <algorithm>
-  <iostream>
   <cstdint>
-  <memory>
   <fmt/core.h>
+  <fmt/format.h>
+  <iostream>
+  <map>
+  <memory>
+  <optional>
   <string>
-  <string_view>)
+  <string_view>
+  <variant>)
 
 target_include_directories(
   monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")

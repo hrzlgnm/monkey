@@ -10,3 +10,5 @@ add_executable(doctest::exe ALIAS doctest_exe)
 
 set_property(TARGET doctest_exe PROPERTY OUTPUT_NAME doctest)
 target_compile_features(doctest_exe PRIVATE cxx_std_20)
+
+# doctest_discover_tests(doctest_exe)

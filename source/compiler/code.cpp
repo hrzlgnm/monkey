@@ -194,6 +194,9 @@ void write_uint16_big_endian(std::vector<uint8_t>& bytes, size_t offset, uint16_
 }
 
 // NOLINTBEGIN(*)
+
+#include <array>
+
 #include <doctest/doctest.h>
 
 template<typename T>
