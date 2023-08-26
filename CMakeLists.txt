@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.0..3.18)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(cmake/prelude.cmake)
@@ -9,7 +9,11 @@ project(
   HOMEPAGE_URL "https://github.com/hrzlgnm/monkey"
   LANGUAGES CXX)
 
+enable_testing()
+find_package(GTest REQUIRED)
 find_package(fmt REQUIRED)
+
+add_subdirectory(doctest)
 
 # ---- Declare library ----
 add_library(
@@ -70,7 +74,5 @@ set_property(TARGET monkey_exe PROPERTY OUTPUT_NAME monkey)
 target_compile_features(monkey_exe PRIVATE cxx_std_20)
 
 target_link_libraries(monkey_exe PRIVATE monkey_lib)
-
-add_subdirectory(doctest)
 
 include(cmake/dev-mode.cmake)

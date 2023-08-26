@@ -14,7 +14,8 @@ add_executable(
   source/symbol_table_tests.cpp)
 
 target_precompile_headers(monkey_test REUSE_FROM monkey_lib)
-target_link_libraries(monkey_test PRIVATE monkey_lib gtest gtest_main)
+target_link_libraries(monkey_test PRIVATE monkey::lib fmt::fmt GTest::gtest
+                                          GTest::gtest_main)
 target_compile_features(monkey_test PRIVATE cxx_std_20)
 
 add_test(NAME monkey_test COMMAND monkey_test)
