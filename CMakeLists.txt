@@ -20,6 +20,7 @@ add_library(
   source/ast/builtin_function_expression.cpp
   source/ast/callable_expression.cpp
   source/ast/call_expression.cpp
+  source/ast/character_literal.cpp
   source/ast/function_expression.cpp
   source/ast/hash_literal_expression.cpp
   source/ast/identifier.cpp

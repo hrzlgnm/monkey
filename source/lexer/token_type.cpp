@@ -61,6 +61,8 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "/";
         case token_type::tilde:
             return ostream << "~";
+        case token_type::character:
+            return ostream << "character";
         case token_type::illegal:
             return ostream << "illegal";
         case token_type::eof:

@@ -12,6 +12,7 @@
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
 #include <ast/call_expression.hpp>
+#include <ast/character_literal.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
 #include <ast/identifier.hpp>
@@ -79,6 +80,7 @@ parser::parser(lexer lxr)
     register_unary(eef, [this] { return parse_if_expression(); });
     register_unary(function, [this] { return parse_function_expression(); });
     register_unary(string, [this] { return parse_string_literal(); });
+    register_unary(character, [this] { return parse_character_literal(); });
     register_unary(lbracket, [this] { return parse_array_expression(); });
     register_unary(lsquirly, [this] { return parse_hash_literal(); });
     register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
@@ -347,6 +349,11 @@ auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
 auto parser::parse_string_literal() const -> expression_ptr
 {
     return std::make_unique<string_literal>(std::string {m_current_token.literal});
+}
+
+auto parser::parse_character_literal() const -> expression_ptr
+{
+    return std::make_unique<character_literal>(m_current_token.literal[0]);
 }
 
 auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr>
@@ -976,6 +983,14 @@ TEST_CASE("stringLiteralExpression")
     auto [prgrm, _] = check_program(input);
     auto* str = require_expression<string_literal>(prgrm);
     REQUIRE_EQ(str->value, "hello world");
+}
+
+TEST_CASE("characterLiteralExpression")
+{
+    const auto* input = R"('a')";
+    auto [prgrm, _] = check_program(input);
+    auto* str = require_expression<character_literal>(prgrm);
+    REQUIRE_EQ(str->value, 'a');
 }
 
 TEST_CASE("arrayExpression")
