@@ -248,6 +248,5 @@ TEST_CASE("shadowFunctionNames")
 }
 
 TEST_SUITE_END();
-}  // namespace
-
 // NOLINTEND(*)
+}  // namespace
