@@ -23,6 +23,7 @@
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 #include <doctest/doctest.h>
+#include <eval/object.hpp>
 #include <fmt/core.h>
 #include <lexer/token.hpp>
 
@@ -217,12 +218,12 @@ auto parser::parse_integer_literal() -> expression_ptr
 
 auto parser::parse_unary_expression() -> expression_ptr
 {
-    auto pfx_expr = std::make_unique<unary_expression>();
-    pfx_expr->op = m_current_token.type;
+    auto unary = std::make_unique<unary_expression>();
+    unary->op = m_current_token.type;
 
     next_token();
-    pfx_expr->right = parse_expression(prefix);
-    return pfx_expr;
+    unary->right = parse_expression(prefix);
+    return unary;
 }
 
 auto parser::parse_boolean() -> expression_ptr
@@ -472,35 +473,25 @@ namespace
 // NOLINTBEGIN(*)
 using expected_value_type = std::variant<int64_t, std::string, bool>;
 
-// helper type for std::visit
-template<typename... T>
-struct overloaded : T...
-{
-    using T::operator()...;
-};
-template<class... T>
-overloaded(T...) -> overloaded<T...>;
-
-auto assert_no_parse_errors(const parser& prsr) -> bool
+auto check_no_parse_errors(const parser& prsr) -> bool
 {
     INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
     CHECK(prsr.errors().empty());
-    return !prsr.errors().empty();
+    return prsr.errors().empty();
 }
 
 using parsed_program = std::pair<program_ptr, parser>;
 
-auto assert_program(std::string_view input) -> parsed_program
+auto check_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
-    if (assert_no_parse_errors(prsr)) {
-        INFO("while parsing: `", input, "`");
-    };
+    INFO("while parsing: `", input, "`");
+    CHECK(check_no_parse_errors(prsr));
     return {std::move(prgrm), std::move(prsr)};
 }
 
-auto assert_boolean_literal(const expression_ptr& expr, bool value) -> void
+auto require_boolean_literal(const expression_ptr& expr, bool value) -> void
 {
     auto* bool_expr = dynamic_cast<boolean*>(expr.get());
     INFO("expected boolean, got:", expr.get()->string());
@@ -508,7 +499,7 @@ auto assert_boolean_literal(const expression_ptr& expr, bool value) -> void
     REQUIRE_EQ(bool_expr->value, value);
 }
 
-auto assert_identifier(const expression_ptr& expr, const std::string& value) -> void
+auto require_identifier(const expression_ptr& expr, const std::string& value) -> void
 {
     auto* ident = dynamic_cast<identifier*>(expr.get());
     INFO("expected identifier, got:", expr.get()->string());
@@ -516,7 +507,7 @@ auto assert_identifier(const expression_ptr& expr, const std::string& value) -> 
     REQUIRE_EQ(ident->value, value);
 }
 
-auto assert_string_literal(const expression_ptr& expr, const std::string& value) -> void
+auto require_string_literal(const expression_ptr& expr, const std::string& value) -> void
 {
     auto* string_lit = dynamic_cast<string_literal*>(expr.get());
     INFO("expected string_literal, got:", expr.get()->string());
@@ -524,7 +515,7 @@ auto assert_string_literal(const expression_ptr& expr, const std::string& value)
     REQUIRE_EQ(string_lit->value, value);
 }
 
-auto assert_integer_literal(const expression_ptr& expr, int64_t value) -> void
+auto require_integer_literal(const expression_ptr& expr, int64_t value) -> void
 {
     auto* integer_lit = dynamic_cast<integer_literal*>(expr.get());
     INFO("expected integer_literal, got:", expr.get()->string());
@@ -534,66 +525,59 @@ auto assert_integer_literal(const expression_ptr& expr, int64_t value) -> void
     REQUIRE_EQ(integer_lit->string(), std::to_string(value));
 }
 
-auto assert_literal_expression(const expression_ptr& expr, const expected_value_type& expected) -> void
+auto require_literal_expression(const expression_ptr& expr, const expected_value_type& expected) -> void
 {
     std::visit(
         overloaded {
-            [&](int64_t val) { assert_integer_literal(expr, val); },
-            [&](const std::string& val) { assert_identifier(expr, val); },
-            [&](bool val) { assert_boolean_literal(expr, val); },
+            [&](int64_t val) { require_integer_literal(expr, val); },
+            [&](const std::string& val) { require_identifier(expr, val); },
+            [&](bool val) { require_boolean_literal(expr, val); },
         },
         expected);
 }
 
-auto assert_binary_expression(const expression_ptr& expr,
-                              const expected_value_type& left,
-                              const token_type oprtr,
-                              const expected_value_type& right) -> void
+auto require_binary_expression(const expression_ptr& expr,
+                               const expected_value_type& left,
+                               const token_type oprtr,
+                               const expected_value_type& right) -> void
 {
     auto* binary = dynamic_cast<binary_expression*>(expr.get());
+    INFO("expected binary expression, got: ", expr->string());
     REQUIRE(binary);
-    assert_literal_expression(binary->left, left);
+    require_literal_expression(binary->left, left);
     REQUIRE_EQ(binary->op, oprtr);
-    assert_literal_expression(binary->right, right);
+    require_literal_expression(binary->right, right);
 }
 
-auto assert_expression_statement(const program_ptr& prgrm) -> expression_statement*
+auto require_expression_statement(const program_ptr& prgrm) -> expression_statement*
 {
-    if (prgrm->statements.size() != 1) {
-        throw std::invalid_argument("expected one statement, got " + std::to_string(prgrm->statements.size()));
-    }
+    INFO("expected one statement, got: ", prgrm->statements.size());
+    REQUIRE_EQ(prgrm->statements.size(), 1);
     auto* stmt = prgrm->statements[0].get();
     auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
-    if (expr_stmt == nullptr) {
-        throw std::invalid_argument("expected expression_statement, got " + stmt->string());
-    }
-    if (!expr_stmt->expr) {
-        std::cout << "WARNING: expression_statement without expression found" << expr_stmt->string();
-    }
+    INFO("expected expression statement, got: ", stmt->string());
+    REQUIRE(expr_stmt);
+    INFO("expected an expression statement with an expression");
+    WARN(expr_stmt->expr);
     return expr_stmt;
 }
 
 template<typename E>
-auto assert_expression(const program_ptr& prgrm) -> E*
+auto require_expression(const program_ptr& prgrm) -> E*
 {
-    auto* expr_stmt = assert_expression_statement(prgrm);
+    auto* expr_stmt = require_expression_statement(prgrm);
     auto expr = dynamic_cast<E*>(expr_stmt->expr.get());
-    if (!expr) {
-        throw std::invalid_argument(
-            fmt::format("expected {}, got {}", typeid(E).name(), prgrm->statements[0]->string()));
-    }
+    INFO("expected expression");
+    REQUIRE(expr);
     return expr;
 }
 
-auto assert_let_statement(statement* stmt, const std::string& expected_identifier) -> let_statement*
+auto require_let_statement(statement* stmt, const std::string& expected_identifier) -> let_statement*
 {
     auto* let_stmt = dynamic_cast<let_statement*>(stmt);
-    if (let_stmt == nullptr) {
-        throw std::invalid_argument("expected let_statement, got " + stmt->string());
-    }
-    if (let_stmt->name->string() != expected_identifier) {
-        throw std::invalid_argument("expected identifier " + expected_identifier + ", got " + let_stmt->name->string());
-    }
+    INFO("expected let statement, got: ", stmt->string());
+    REQUIRE(let_stmt);
+    REQUIRE_EQ(let_stmt->name->value, expected_identifier);
     return let_stmt;
 }
 
@@ -602,21 +586,22 @@ TEST_SUITE_BEGIN("parsing");
 TEST_CASE("letStatement")
 {
     using enum token_type;
-    auto [program, prsr] = assert_program(
-        R"r(let x = 5;
+    auto [program, prsr] = check_program(
+        R"(
+let x = 5;
 let y = 10;
 let foobar = 838383;
-)r");
+        )");
     REQUIRE_EQ(program->statements.size(), 3);
     auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar"};
     for (size_t i = 0; i < 3; ++i) {
-        assert_let_statement(program->statements[i].get(), expected_identifiers[i]);
+        require_let_statement(program->statements[i].get(), expected_identifiers[i]);
     }
 }
 
 TEST_CASE("letStatements")
 {
-    struct let_test
+    struct lt
     {
         std::string_view input;
         std::string expected_identifier;
@@ -624,15 +609,15 @@ TEST_CASE("letStatements")
     };
 
     std::array let_tests {
-        let_test {"let x = 5;", "x", 5},
-        let_test {"let y = true;", "y", true},
-        let_test {"let foobar = y;", "foobar", "y"},
+        lt {"let x = 5;", "x", 5},
+        lt {"let y = true;", "y", true},
+        lt {"let foobar = y;", "foobar", "y"},
     };
 
-    for (const auto& let : let_tests) {
-        auto [prgrm, _] = assert_program(let.input);
-        auto* let_stmt = assert_let_statement(prgrm->statements[0].get(), let.expected_identifier);
-        assert_literal_expression(let_stmt->value, let.expected_value);
+    for (const auto& [input, expected_identifier, expected_value] : let_tests) {
+        auto [prgrm, _] = check_program(input);
+        auto* let_stmt = require_let_statement(prgrm->statements[0].get(), expected_identifier);
+        require_literal_expression(let_stmt->value, expected_value);
     }
 }
 
@@ -640,10 +625,11 @@ TEST_CASE("parseError")
 {
     using enum token_type;
     auto prsr = parser {lexer {
-        R"r(let x = 5;
+        R"(
+let x = 5;
 let y = 10;
 let 838383;
-)r"}};
+        )"}};
     prsr.parse_program();
     auto errors = prsr.errors();
     CHECK_FALSE(errors.empty());
@@ -652,18 +638,19 @@ let 838383;
 TEST_CASE("returnStatement")
 {
     using enum token_type;
-    auto [prgrm, _] = assert_program(
-        R"r(return 5;
+    auto [prgrm, _] = check_program(
+        R"(
+return 5;
 return 10;
 return 993322;
-)r");
+        )");
     REQUIRE_EQ(prgrm->statements.size(), 3);
     std::array expected_return_values {5, 10, 993322};
     for (size_t i = 0; i < 3; ++i) {
         auto* stmt = prgrm->statements[i].get();
         auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
         REQUIRE(ret_stmt);
-        assert_literal_expression(ret_stmt->value, expected_return_values.at(i));
+        require_literal_expression(ret_stmt->value, expected_return_values.at(i));
     }
 }
 
@@ -671,7 +658,6 @@ TEST_CASE("string")
 {
     using enum token_type;
     auto name = std::make_unique<identifier>("myVar");
-
     auto value = std::make_unique<identifier>("anotherVar");
 
     program prgrm;
@@ -687,25 +673,25 @@ TEST_CASE("string")
 TEST_CASE("identfierExpression")
 {
     const auto* input = "foobar;";
-    auto [prgrm, _] = assert_program(input);
-    auto* expr_stmt = assert_expression_statement(prgrm);
+    auto [prgrm, _] = check_program(input);
+    auto* expr_stmt = require_expression_statement(prgrm);
 
-    assert_literal_expression(expr_stmt->expr, "foobar");
+    require_literal_expression(expr_stmt->expr, "foobar");
 }
 
 TEST_CASE("integerExpression")
 {
-    auto [prgrm, _] = assert_program("5;");
-    auto* expr_stmt = assert_expression_statement(prgrm);
+    auto [prgrm, _] = check_program("5;");
+    auto* expr_stmt = require_expression_statement(prgrm);
 
-    assert_literal_expression(expr_stmt->expr, 5);
+    require_literal_expression(expr_stmt->expr, 5);
 }
 
 TEST_CASE("unaryExpressions")
 {
     using enum token_type;
 
-    struct unary_test
+    struct ut
     {
         std::string_view input;
         token_type op;
@@ -713,17 +699,17 @@ TEST_CASE("unaryExpressions")
     };
 
     std::array unary_tests {
-        unary_test {"!5;", exclamation, 5},
-        unary_test {"-15;", minus, 15},
+        ut {"!5;", exclamation, 5},
+        ut {"-15;", minus, 15},
     };
 
-    for (const auto& unary_test : unary_tests) {
-        auto [prgrm, _] = assert_program(unary_test.input);
-        auto* unary = assert_expression<unary_expression>(prgrm);
+    for (const auto& [input, op, val] : unary_tests) {
+        auto [prgrm, _] = check_program(input);
+        auto* unary = require_expression<unary_expression>(prgrm);
         REQUIRE(unary);
-        REQUIRE_EQ(unary_test.op, unary->op);
+        REQUIRE_EQ(op, unary->op);
 
-        assert_literal_expression(unary->right, unary_test.integer_value);
+        require_literal_expression(unary->right, val);
     }
 }
 
@@ -731,7 +717,7 @@ TEST_CASE("binaryExpressions")
 {
     using enum token_type;
 
-    struct binary_test
+    struct bt
     {
         std::string_view input;
         int64_t left_value;
@@ -740,144 +726,145 @@ TEST_CASE("binaryExpressions")
     };
 
     std::array binary_tests {
-        binary_test {"5 + 5;", 5, plus, 5},
-        binary_test {"5 - 5;", 5, minus, 5},
-        binary_test {"5 * 5;", 5, asterisk, 5},
-        binary_test {"5 / 5;", 5, slash, 5},
-        binary_test {"5 > 5;", 5, greater_than, 5},
-        binary_test {"5 < 5;", 5, less_than, 5},
-        binary_test {"5 == 5;", 5, equals, 5},
-        binary_test {"5 != 5;", 5, not_equals, 5},
+        bt {"5 + 5;", 5, plus, 5},
+        bt {"5 - 5;", 5, minus, 5},
+        bt {"5 * 5;", 5, asterisk, 5},
+        bt {"5 / 5;", 5, slash, 5},
+        bt {"5 > 5;", 5, greater_than, 5},
+        bt {"5 < 5;", 5, less_than, 5},
+        bt {"5 == 5;", 5, equals, 5},
+        bt {"5 != 5;", 5, not_equals, 5},
     };
 
-    for (const auto& binary_test : binary_tests) {
-        auto [prgrm, _] = assert_program(binary_test.input);
-        auto* expr_stmt = assert_expression_statement(prgrm);
+    for (const auto& [input, left, op, right] : binary_tests) {
+        auto [prgrm, _] = check_program(input);
+        auto* expr_stmt = require_expression_statement(prgrm);
 
-        assert_binary_expression(expr_stmt->expr, binary_test.left_value, binary_test.op, binary_test.right_value);
+        require_binary_expression(expr_stmt->expr, left, op, right);
     }
 }
 
 TEST_CASE("operatorPrecedence")
 {
-    struct oper_test
+    struct op
     {
         std::string_view input;
         std::string expected;
     };
 
     std::array operator_precedence_tests {
-        oper_test {
+        op {
             "-a * b",
             "((-a) * b)",
         },
-        oper_test {
+        op {
             "!-a",
             "(!(-a))",
         },
-        oper_test {
+        op {
             "a + b + c",
             "((a + b) + c)",
         },
-        oper_test {
+        op {
             "a + b - c",
             "((a + b) - c)",
         },
-        oper_test {
+        op {
             "a * b * c",
             "((a * b) * c)",
         },
-        oper_test {
+        op {
             "a * b / c",
             "((a * b) / c)",
         },
-        oper_test {
+        op {
             "a + b / c",
             "(a + (b / c))",
         },
-        oper_test {
+        op {
             "a + b * c + d / e - f",
             "(((a + (b * c)) + (d / e)) - f)",
         },
-        oper_test {
+        op {
             "3 + 4; -5 * 5",
             "(3 + 4)((-5) * 5)",
         },
-        oper_test {
+        op {
             "5 > 4 == 3 < 4",
             "((5 > 4) == (3 < 4))",
         },
-        oper_test {
+        op {
             "5 < 4 != 3 > 4",
             "((5 < 4) != (3 > 4))",
         },
-        oper_test {
+        op {
             "3 + 4 * 5 == 3 * 1 + 4 * 5",
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
         },
-        oper_test {
+        op {
             "true",
             "true",
         },
-        oper_test {
+        op {
             "false",
             "false",
         },
-        oper_test {
+        op {
             "3 > 5 == false",
             "((3 > 5) == false)",
         },
-        oper_test {
+        op {
             "3 < 5 == true",
             "((3 < 5) == true)",
         },
-        oper_test {
+        op {
             "1 + (2 + 3) + 4",
             "((1 + (2 + 3)) + 4)",
         },
-        oper_test {
+        op {
             "(5 + 5) * 2",
             "((5 + 5) * 2)",
         },
-        oper_test {
+        op {
             "2 / (5 + 5)",
             "(2 / (5 + 5))",
         },
-        oper_test {
+        op {
             "(5 + 5) * 2 * (5 + 5)",
             "(((5 + 5) * 2) * (5 + 5))",
         },
-        oper_test {
+        op {
             "-(5 + 5)",
             "(-(5 + 5))",
         },
-        oper_test {
+        op {
             "!(true == true)",
             "(!(true == true))",
         },
-        oper_test {
+        op {
             "a + add(b * c) + d",
             "((a + add((b * c))) + d)",
         },
-        oper_test {
+        op {
             "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
             "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
         },
-        oper_test {
+        op {
             "add(a + b + c * d / f + g)",
             "add((((a + b) + ((c * d) / f)) + g))",
         },
-        oper_test {
+        op {
             "a * [1, 2, 3, 4][b * c] * d",
             "((a * ([1, 2, 3, 4][(b * c)])) * d)",
         },
-        oper_test {
+        op {
             "add(a * b[2], b[1], 2 * [1, 2][1])",
             "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
         },
     };
+
     for (const auto& [input, expected] : operator_precedence_tests) {
-        auto [prgrm, _] = assert_program(input);
+        auto [prgrm, _] = check_program(input);
         CHECK_EQ(expected, prgrm->string());
     }
 }
@@ -885,42 +872,42 @@ TEST_CASE("operatorPrecedence")
 TEST_CASE("ifExpression")
 {
     const char* input = "if (x < y) { x }";
-    auto [prgrm, _] = assert_program(input);
-    auto* if_expr = assert_expression<if_expression>(prgrm);
-    assert_binary_expression(if_expr->condition, "x", token_type::less_than, "y");
+    auto [prgrm, _] = check_program(input);
+    auto* if_expr = require_expression<if_expression>(prgrm);
+    require_binary_expression(if_expr->condition, "x", token_type::less_than, "y");
     REQUIRE(if_expr->consequence);
     REQUIRE_EQ(if_expr->consequence->statements.size(), 1);
 
     auto* consequence = dynamic_cast<expression_statement*>(if_expr->consequence->statements[0].get());
     REQUIRE(consequence);
-    assert_identifier(consequence->expr, "x");
+    require_identifier(consequence->expr, "x");
     CHECK_FALSE(if_expr->alternative);
 }
 
 TEST_CASE("ifElseExpression")
 {
     const char* input = "if (x < y) { x } else { y }";
-    auto [prgrm, _] = assert_program(input);
-    auto* if_expr = assert_expression<if_expression>(prgrm);
+    auto [prgrm, _] = check_program(input);
+    auto* if_expr = require_expression<if_expression>(prgrm);
 
-    assert_binary_expression(if_expr->condition, "x", token_type::less_than, "y");
+    require_binary_expression(if_expr->condition, "x", token_type::less_than, "y");
     REQUIRE(if_expr->consequence);
     REQUIRE_EQ(if_expr->consequence->statements.size(), 1);
 
     auto* consequence = dynamic_cast<expression_statement*>(if_expr->consequence->statements[0].get());
     REQUIRE(consequence);
-    assert_identifier(consequence->expr, "x");
+    require_identifier(consequence->expr, "x");
 
     auto* alternative = dynamic_cast<expression_statement*>(if_expr->alternative->statements[0].get());
     REQUIRE(alternative);
-    assert_identifier(alternative->expr, "y");
+    require_identifier(alternative->expr, "y");
 }
 
 TEST_CASE("functionLiteral")
 {
     const char* input = "fn(x, y) { x + y; }";
-    auto [prgrm, _] = assert_program(input);
-    auto* fn_expr = assert_expression<function_expression>(prgrm);
+    auto [prgrm, _] = check_program(input);
+    auto* fn_expr = require_expression<function_expression>(prgrm);
 
     REQUIRE_EQ(fn_expr->parameters.size(), 2);
 
@@ -932,14 +919,14 @@ TEST_CASE("functionLiteral")
 
     auto* body_stmt = dynamic_cast<expression_statement*>(block->statements.at(0).get());
     REQUIRE(body_stmt);
-    assert_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
+    require_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
 
 TEST_CASE("functionLiteralWithName")
 {
     const auto* input = R"(let myFunction = fn() { };)";
-    auto [prgrm, _] = assert_program(input);
-    auto* let = assert_let_statement(prgrm->statements[0].get(), "myFunction");
+    auto [prgrm, _] = check_program(input);
+    auto* let = require_let_statement(prgrm->statements[0].get(), "myFunction");
     auto* fnexpr = dynamic_cast<function_expression*>(let->value.get());
     REQUIRE(fnexpr);
     REQUIRE_EQ(fnexpr->name, "myFunction");
@@ -947,20 +934,20 @@ TEST_CASE("functionLiteralWithName")
 
 TEST_CASE("functionParameters")
 {
-    struct parameters_test
+    struct pt
     {
         std::string_view input;
         std::vector<std::string> expected;
     };
 
     std::array parameter_tests {
-        parameters_test {"fn() {};", {}},
-        parameters_test {"fn(x) {};", {"x"}},
-        parameters_test {"fn(x, y, z) {};", {"x", "y", "z"}},
+        pt {"fn() {};", {}},
+        pt {"fn(x) {};", {"x"}},
+        pt {"fn(x, y, z) {};", {"x", "y", "z"}},
     };
     for (const auto& [input, expected] : parameter_tests) {
-        auto [prgrm, _] = assert_program(input);
-        auto* fn_expr = assert_expression<function_expression>(prgrm);
+        auto [prgrm, _] = check_program(input);
+        auto* fn_expr = require_expression<function_expression>(prgrm);
 
         REQUIRE_EQ(fn_expr->parameters.size(), expected.size());
         for (size_t index = 0; const auto& val : expected) {
@@ -973,58 +960,58 @@ TEST_CASE("functionParameters")
 TEST_CASE("callExpressionParsing")
 {
     const auto* input = "add(1, 2 * 3, 4 + 5);";
-    auto [prgrm, _] = assert_program(input);
-    auto* call = assert_expression<call_expression>(prgrm);
-    assert_identifier(call->function, "add");
+    auto [prgrm, _] = check_program(input);
+    auto* call = require_expression<call_expression>(prgrm);
+    require_identifier(call->function, "add");
     REQUIRE_EQ(call->arguments.size(), 3);
-    assert_literal_expression(call->arguments[0], 1);
-    assert_binary_expression(call->arguments[1], 2, token_type::asterisk, 3);
-    assert_binary_expression(call->arguments[2], 4, token_type::plus, 5);
+    require_literal_expression(call->arguments[0], 1);
+    require_binary_expression(call->arguments[1], 2, token_type::asterisk, 3);
+    require_binary_expression(call->arguments[2], 4, token_type::plus, 5);
 }
 
 TEST_CASE("stringLiteralExpression")
 {
-    const auto* input = "\"hello world\";";
-    auto [prgrm, _] = assert_program(input);
-    auto* str = assert_expression<string_literal>(prgrm);
+    const auto* input = R"("hello world";)";
+    auto [prgrm, _] = check_program(input);
+    auto* str = require_expression<string_literal>(prgrm);
     REQUIRE_EQ(str->value, "hello world");
 }
 
 TEST_CASE("arrayExpression")
 {
-    auto [prgrm, _] = assert_program("[1, 2 * 2, 3 + 3]");
-    auto* array_expr = assert_expression<array_expression>(prgrm);
+    auto [prgrm, _] = check_program("[1, 2 * 2, 3 + 3]");
+    auto* array_expr = require_expression<array_expression>(prgrm);
     REQUIRE_EQ(array_expr->elements.size(), 3);
-    assert_integer_literal(array_expr->elements[0], 1);
-    assert_binary_expression(array_expr->elements[1], 2, token_type::asterisk, 2);
-    assert_binary_expression(array_expr->elements[2], 3, token_type::plus, 3);
+    require_integer_literal(array_expr->elements[0], 1);
+    require_binary_expression(array_expr->elements[1], 2, token_type::asterisk, 2);
+    require_binary_expression(array_expr->elements[2], 3, token_type::plus, 3);
 }
 
 TEST_CASE("indexEpxression")
 {
-    auto [prgrm, _] = assert_program("myArray[1+1]");
-    auto* idx_expr = assert_expression<index_expression>(prgrm);
-    assert_identifier(idx_expr->left, "myArray");
-    assert_binary_expression(idx_expr->index, 1, token_type::plus, 1);
+    auto [prgrm, _] = check_program("myArray[1+1]");
+    auto* idx_expr = require_expression<index_expression>(prgrm);
+    require_identifier(idx_expr->left, "myArray");
+    require_binary_expression(idx_expr->index, 1, token_type::plus, 1);
 }
 
 TEST_CASE("hashLiteralStringKeys")
 {
-    auto [prgrm, _] = assert_program(R"({"one": 1, "two": 2, "three": 3})");
-    auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
+    auto [prgrm, _] = check_program(R"({"one": 1, "two": 2, "three": 3})");
+    auto* hash_lit = require_expression<hash_literal_expression>(prgrm);
     std::array keys {"one", "two", "three"};
     std::array values {1, 2, 3};
     for (auto idx = 0UL; const auto& [k, v] : hash_lit->pairs) {
-        assert_string_literal(k, keys.at(idx));
-        assert_integer_literal(v, values.at(idx));
+        require_string_literal(k, keys.at(idx));
+        require_integer_literal(v, values.at(idx));
         idx++;
     }
 }
 
 TEST_CASE("hashLiteralWithExpression")
 {
-    auto [prgrm, _] = assert_program(R"({"one": 0 + 1, "two": 10 - 8, "three": 15 / 5})");
-    auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
+    auto [prgrm, _] = check_program(R"({"one": 0 + 1, "two": 10 - 8, "three": 15 / 5})");
+    auto* hash_lit = require_expression<hash_literal_expression>(prgrm);
     std::array keys {"one", "two", "three"};
 
     struct test
@@ -1037,20 +1024,19 @@ TEST_CASE("hashLiteralWithExpression")
     std::array expected {
         test {0, token_type::plus, 1}, test {10, token_type::minus, 8}, test {15, token_type::slash, 5}};
     for (size_t idx = 0; const auto& [k, v] : hash_lit->pairs) {
-        assert_string_literal(k, keys.at(idx));
-        assert_binary_expression(v, expected.at(idx).left, expected.at(idx).oper, expected.at(idx).right);
+        require_string_literal(k, keys.at(idx));
+        require_binary_expression(v, expected.at(idx).left, expected.at(idx).oper, expected.at(idx).right);
         idx++;
     }
 }
 
 TEST_CASE("emptyHashLiteral")
 {
-    auto [prgrm, _] = assert_program(R"({})");
-    auto* hash_lit = assert_expression<hash_literal_expression>(prgrm);
+    auto [prgrm, _] = check_program(R"({})");
+    auto* hash_lit = require_expression<hash_literal_expression>(prgrm);
     REQUIRE(hash_lit->pairs.empty());
 }
 
 TEST_SUITE_END();
-
 // NOLINTEND(*)
 }  // namespace

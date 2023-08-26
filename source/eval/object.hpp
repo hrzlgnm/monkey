@@ -13,6 +13,7 @@
 #include <code/code.hpp>
 #include <fmt/core.h>
 
+#include "compiler/symbol_table.hpp"
 #include "environment_fwd.hpp"
 
 // helper type for std::visit
@@ -30,6 +31,8 @@ struct error
 {
     std::string message;
 };
+
+auto operator==(const error& lhs, const error& rhs) -> bool;
 
 using integer_type = std::int64_t;
 using string_type = std::string;
