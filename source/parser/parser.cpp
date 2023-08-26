@@ -608,13 +608,13 @@ TEST_CASE("letStatements")
         expected_value_type expected_value;
     };
 
-    std::array let_tests {
+    std::array tests {
         lt {"let x = 5;", "x", 5},
         lt {"let y = true;", "y", true},
         lt {"let foobar = y;", "foobar", "y"},
     };
 
-    for (const auto& [input, expected_identifier, expected_value] : let_tests) {
+    for (const auto& [input, expected_identifier, expected_value] : tests) {
         auto [prgrm, _] = check_program(input);
         auto* let_stmt = require_let_statement(prgrm->statements[0].get(), expected_identifier);
         require_literal_expression(let_stmt->value, expected_value);
@@ -698,12 +698,12 @@ TEST_CASE("unaryExpressions")
         int64_t integer_value;
     };
 
-    std::array unary_tests {
+    std::array tests {
         ut {"!5;", exclamation, 5},
         ut {"-15;", minus, 15},
     };
 
-    for (const auto& [input, op, val] : unary_tests) {
+    for (const auto& [input, op, val] : tests) {
         auto [prgrm, _] = check_program(input);
         auto* unary = require_expression<unary_expression>(prgrm);
         REQUIRE(unary);
@@ -725,7 +725,7 @@ TEST_CASE("binaryExpressions")
         int64_t right_value;
     };
 
-    std::array binary_tests {
+    std::array tests {
         bt {"5 + 5;", 5, plus, 5},
         bt {"5 - 5;", 5, minus, 5},
         bt {"5 * 5;", 5, asterisk, 5},
@@ -736,7 +736,7 @@ TEST_CASE("binaryExpressions")
         bt {"5 != 5;", 5, not_equals, 5},
     };
 
-    for (const auto& [input, left, op, right] : binary_tests) {
+    for (const auto& [input, left, op, right] : tests) {
         auto [prgrm, _] = check_program(input);
         auto* expr_stmt = require_expression_statement(prgrm);
 
@@ -752,7 +752,7 @@ TEST_CASE("operatorPrecedence")
         std::string expected;
     };
 
-    std::array operator_precedence_tests {
+    std::array tests {
         op {
             "-a * b",
             "((-a) * b)",
@@ -863,9 +863,10 @@ TEST_CASE("operatorPrecedence")
         },
     };
 
-    for (const auto& [input, expected] : operator_precedence_tests) {
-        auto [prgrm, _] = check_program(input);
-        CHECK_EQ(expected, prgrm->string());
+    for (const auto& test : tests) {
+        auto [prgrm, _] = check_program(test.input);
+        INFO("with input: ", test.input);
+        CHECK(test.expected == prgrm->string());
     }
 }
 
