@@ -48,7 +48,7 @@ jobs:
             - name: Build
               run: cmake --build build/sanitize -j 2
 
-            - name: Test Doctest
+            - name: Test
               env:
                   ASAN_OPTIONS: "strict_string_checks=1:\
                       detect_stack_use_after_return=1:\
@@ -56,8 +56,8 @@ jobs:
                       strict_init_order=1:\
                       detect_leaks=1"
                   UBSAN_OPTIONS: print_stacktrace=1
-              working-directory: build/sanitize/test/doctest
-              run: ./doctest
+              working-directory: build/sanitize
+              run: ctest --output-on-failure --no-tests=error
     test:
         needs: [lint]
 
@@ -86,13 +86,6 @@ jobs:
             - name: Build
               run: cmake --build build --config Release -j 2
 
-            - name: Test Doctest
-              working-directory: build/test/doctest
-              run: ./doctest
-
-            - name: Benchmark
-              working-directory: build/test/benchmark
-              run: >-
-                  ./benchmark
-
-                  ./benchmark --eval
+            - name: Test
+              working-directory: build
+              run: ctest --output-on-failure --no-tests=error -j 2
