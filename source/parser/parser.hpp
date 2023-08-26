@@ -41,6 +41,7 @@ class parser final
     auto parse_block_statement() -> block_statement_ptr;
     auto parse_call_expression(expression_ptr function) -> expression_ptr;
     auto parse_string_literal() const -> expression_ptr;
+    auto parse_character_literal() const -> expression_ptr;
     auto parse_array_expression() -> expression_ptr;
     auto parse_index_expression(expression_ptr left) -> expression_ptr;
     auto parse_hash_literal() -> expression_ptr;

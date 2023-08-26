@@ -35,6 +35,7 @@ enum class token_type
     semicolon,
     slash,
     tilde,
+    character,
 
     // two character tokens
     equals,

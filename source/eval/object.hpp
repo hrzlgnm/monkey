@@ -38,7 +38,7 @@ using integer_type = std::int64_t;
 using string_type = std::string;
 struct object;
 using array = std::vector<object>;
-using hash_key_type = std::variant<integer_type, string_type, bool>;
+using hash_key_type = std::variant<integer_type, char, string_type, bool>;
 using hash = std::unordered_map<hash_key_type, std::any>;
 
 struct callable_expression;
@@ -61,6 +61,7 @@ struct closure
 using value_type = std::variant<nil_type,
                                 bool,
                                 integer_type,
+                                char,
                                 string_type,
                                 error,
                                 array,
@@ -97,7 +98,7 @@ struct object
 
     [[nodiscard]] [[nodiscard]] inline constexpr auto is_hashable() const -> bool
     {
-        return is<integer_type>() || is<string_type>() || is<bool>();
+        return is<integer_type>() || is<char>() || is<string_type>() || is<bool>();
     }
 
     [[nodiscard]] inline auto is_truthy() const -> bool { return !is_nil() && (!is<bool>() || as<bool>()); }
@@ -105,6 +106,7 @@ struct object
     [[nodiscard]] inline auto hash_key() const -> hash_key_type
     {
         return std::visit(overloaded {[](const integer_type integer) -> hash_key_type { return {integer}; },
+                                      [](const char chr) -> hash_key_type { return {chr}; },
                                       [](const string_type& str) -> hash_key_type { return {str}; },
                                       [](const bool val) -> hash_key_type { return {val}; },
                                       [](const auto& other) -> hash_key_type {
@@ -134,6 +136,7 @@ inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
     return std::visit(
         overloaded {[](const nil_type, const nil_type) { return true; },
                     [](const bool val1, const bool val2) { return val1 == val2; },
+                    [](const char val1, const char val2) { return val1 == val2; },
                     [](const integer_type val1, const integer_type val2) { return val1 == val2; },
                     [](const string_type& val1, const string_type& val2) { return val1 == val2; },
                     [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
