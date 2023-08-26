@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.0..3.18)
+cmake_minimum_required(VERSION 3.14)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(cmake/prelude.cmake)
 project(
   monkey
   VERSION 0.1.0
-  DESCRIPTION "The name is monkey"
+  DESCRIPTION "Monkey programming language"
   HOMEPAGE_URL "https://github.com/hrzlgnm/monkey"
   LANGUAGES CXX)
 
