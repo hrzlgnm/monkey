@@ -481,6 +481,7 @@ overloaded(T...) -> overloaded<T...>;
 
 auto dt_assert_no_parse_errors(const parser& prsr) -> bool
 {
+    INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
     CHECK(prsr.errors().empty());
     return !prsr.errors().empty();
 }
@@ -492,7 +493,7 @@ auto dt_assert_program(std::string_view input) -> parsed_program
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
     if (dt_assert_no_parse_errors(prsr)) {
-        std::cerr << "while parsing: `" << input << "`";
+        INFO("while parsing: `", input, "`");
     };
     return {std::move(prgrm), std::move(prsr)};
 }
@@ -500,6 +501,7 @@ auto dt_assert_program(std::string_view input) -> parsed_program
 auto dt_assert_boolean_literal(const expression_ptr& expr, bool value) -> void
 {
     auto* bool_expr = dynamic_cast<boolean*>(expr.get());
+    INFO("expected boolean, got:", expr.get()->string());
     REQUIRE(bool_expr);
     REQUIRE_EQ(bool_expr->value, value);
 }
@@ -507,6 +509,7 @@ auto dt_assert_boolean_literal(const expression_ptr& expr, bool value) -> void
 auto dt_assert_identifier(const expression_ptr& expr, const std::string& value) -> void
 {
     auto* ident = dynamic_cast<identifier*>(expr.get());
+    INFO("expected identifier, got:", expr.get()->string());
     REQUIRE(ident);
     REQUIRE_EQ(ident->value, value);
 }
@@ -514,6 +517,7 @@ auto dt_assert_identifier(const expression_ptr& expr, const std::string& value) 
 auto dt_assert_string_literal(const expression_ptr& expr, const std::string& value) -> void
 {
     auto* string_lit = dynamic_cast<string_literal*>(expr.get());
+    INFO("expected string_literal, got:", expr.get()->string());
     REQUIRE(string_lit);
     REQUIRE_EQ(string_lit->value, value);
 }
@@ -521,6 +525,7 @@ auto dt_assert_string_literal(const expression_ptr& expr, const std::string& val
 auto dt_assert_integer_literal(const expression_ptr& expr, int64_t value) -> void
 {
     auto* integer_lit = dynamic_cast<integer_literal*>(expr.get());
+    INFO("expected integer_literal, got:", expr.get()->string());
     REQUIRE(integer_lit);
 
     REQUIRE_EQ(integer_lit->value, value);

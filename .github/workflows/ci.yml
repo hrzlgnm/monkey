@@ -71,7 +71,7 @@ jobs:
                       strict_init_order=1:\
                       detect_leaks=1"
                   UBSAN_OPTIONS: print_stacktrace=1
-              working-directory: build/sanitize/test/lib/doctest
+              working-directory: build/sanitize/test/doctest
               run: ./doctest
     test:
         needs: [lint]
@@ -108,7 +108,7 @@ jobs:
               run: ctest --output-on-failure --no-tests=error -j 2
 
             - name: Test Doctest
-              working-directory: build/test/lib/doctest
+              working-directory: build/test/doctest
               run: ./doctest
 
             - name: Benchmark
