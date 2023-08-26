@@ -1,9 +1,11 @@
+#include <array>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
 
 #include "code.hpp"
 
+#include <doctest/doctest.h>
 #include <fmt/core.h>
 #include <fmt/format.h>
 
@@ -193,11 +195,9 @@ void write_uint16_big_endian(std::vector<uint8_t>& bytes, size_t offset, uint16_
     bytes[offset + 1] = static_cast<uint8_t>(value & byte_mask);
 }
 
+namespace
+{
 // NOLINTBEGIN(*)
-
-#include <array>
-
-#include <doctest/doctest.h>
 
 template<typename T>
 auto flatten(const std::vector<std::vector<T>>& arrs) -> std::vector<T>
@@ -306,3 +306,4 @@ TEST_SUITE("code")
 }
 
 // NOLINTEND(*)
+}  // namespace

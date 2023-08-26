@@ -98,9 +98,11 @@ auto symbol_table::define_free(const symbol& sym) -> symbol
     return m_store[sym.name] = symbol {.name = sym.name, .scope = symbol_scope::free, .index = m_free.size() - 1};
 }
 
+namespace
+{
+// NOLINTBEGIN(*)
 TEST_SUITE_BEGIN("symbol table");
 
-// NOLINTBEGIN(*)
 TEST_CASE("define")
 {
     using enum symbol_scope;
@@ -246,4 +248,6 @@ TEST_CASE("shadowFunctionNames")
 }
 
 TEST_SUITE_END();
+}  // namespace
+
 // NOLINTEND(*)

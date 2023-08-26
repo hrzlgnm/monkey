@@ -393,6 +393,10 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
     push({closure {.fn = constant.as<compiled_function>(), .free = free}});
 }
 
+namespace
+{
+// NOLINTBEGIN(*)
+
 TEST_SUITE_BEGIN("vm");
 
 template<typename T>
@@ -401,7 +405,7 @@ auto maker(std::initializer_list<T> list) -> std::vector<T>
     return std::vector<T> {list};
 }
 
-static auto assert_no_parse_errors(const parser& prsr) -> bool
+auto assert_no_parse_errors(const parser& prsr) -> bool
 {
     INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
     CHECK(prsr.errors().empty());
@@ -410,7 +414,7 @@ static auto assert_no_parse_errors(const parser& prsr) -> bool
 
 using parsed_program = std::pair<program_ptr, parser>;
 
-static auto assert_program(std::string_view input) -> parsed_program
+auto assert_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
@@ -511,7 +515,6 @@ auto run(std::array<vt<Expecteds...>, N> tests)
     }
 }
 
-// NOLINTBEGIN(*-magic-numbers)
 TEST_CASE("integerArithmetics")
 {
     std::array tests {
@@ -1046,4 +1049,6 @@ TEST_CASE("recuriveFibonnacci")
 }
 
 TEST_SUITE_END();
-// NOLINTEND(*-magic-numbers)
+}  // namespace
+
+// NOLINTEND(*)

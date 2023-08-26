@@ -457,9 +457,19 @@ auto callable_expression::eval(environment_ptr env) const -> object
     return {std::make_pair(this, env)};
 }
 
+namespace
+{
+// NOLINTBEGIN(*)
 TEST_SUITE_BEGIN("eval");
 
-static auto assert_integer_object(const object& obj, int64_t expected) -> void
+auto assert_no_parse_errors(const parser& prsr) -> bool
+{
+    INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
+    CHECK(prsr.errors().empty());
+    return !prsr.errors().empty();
+}
+
+auto assert_integer_object(const object& obj, int64_t expected) -> void
 {
     INFO("got", obj.type_name());
     REQUIRE(obj.is<integer_type>());
@@ -467,7 +477,7 @@ static auto assert_integer_object(const object& obj, int64_t expected) -> void
     REQUIRE_EQ(actual, expected);
 }
 
-static auto assert_boolean_object(const object& obj, bool expected) -> void
+auto assert_boolean_object(const object& obj, bool expected) -> void
 {
     INFO("got", obj.type_name());
     REQUIRE(obj.is<bool>());
@@ -475,13 +485,13 @@ static auto assert_boolean_object(const object& obj, bool expected) -> void
     REQUIRE_EQ(actual, expected);
 }
 
-static auto assert_nil_object(const object& obj) -> void
+auto assert_nil_object(const object& obj) -> void
 {
     INFO("got", obj.type_name());
     REQUIRE(obj.is_nil());
 }
 
-static auto assert_string_object(const object& obj, const std::string& expected) -> void
+auto assert_string_object(const object& obj, const std::string& expected) -> void
 {
     INFO("got", obj.type_name());
     REQUIRE(obj.is<string_type>());
@@ -489,7 +499,7 @@ static auto assert_string_object(const object& obj, const std::string& expected)
     REQUIRE_EQ(actual, expected);
 }
 
-static auto assert_error_object(const object& obj, const std::string& expected_error_message) -> void
+auto assert_error_object(const object& obj, const std::string& expected_error_message) -> void
 {
     INFO("got", obj.type_name());
     REQUIRE(obj.is<error>());
@@ -497,7 +507,7 @@ static auto assert_error_object(const object& obj, const std::string& expected_e
     CHECK_EQ(actual.message, expected_error_message);
 }
 
-static auto test_eval(std::string_view input) -> object
+auto test_eval(std::string_view input) -> object
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
@@ -505,15 +515,14 @@ static auto test_eval(std::string_view input) -> object
     for (const auto& builtin : builtin_function_expression::builtins) {
         env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
     }
-    // FIXME:
 
-    // assert_no_parse_errors(prsr);
+    assert_no_parse_errors(prsr);
     auto result = prgrm->eval(env);
     env->break_cycle();
     return result;
 }
 
-static auto test_multi_eval(std::deque<std::string>& inputs) -> object
+auto test_multi_eval(std::deque<std::string>& inputs) -> object
 {
     auto locals = std::make_shared<environment>();
     auto statements = std::vector<statement_ptr>();
@@ -521,8 +530,7 @@ static auto test_multi_eval(std::deque<std::string>& inputs) -> object
     while (!inputs.empty()) {
         auto prsr = parser {lexer {inputs.front()}};
         auto prgrm = prsr.parse_program();
-        // FIXME:
-        // assert_no_parse_errors(prsr);
+        assert_no_parse_errors(prsr);
         result = prgrm->eval(locals);
         for (auto& stmt : prgrm->statements) {
             statements.push_back(std::move(stmt));
@@ -924,7 +932,8 @@ TEST_CASE("indexOperatorExpressions")
 
     for (const auto& [input, expected] : tests) {
         auto evaluated = test_eval(input);
-        INFO("expected ", std::to_string(expected), ", got: ", evaluated.type_name());
+        INFO("expected: ", std::to_string(expected));
+        INFO("got: ", evaluated.type_name());
         CHECK_EQ(object {evaluated.value}, object {expected});
     }
 }
@@ -1012,4 +1021,5 @@ TEST_CASE("hashIndexExpression")
 
 TEST_SUITE_END();
 
-// NOLINTEND(*-magic-numbers)
+// NOLINTEND(*)
+}  // namespace

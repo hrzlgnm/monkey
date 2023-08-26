@@ -4,6 +4,8 @@
 
 #include "lexer.hpp"
 
+#include <doctest/doctest.h>
+
 #include "token.hpp"
 #include "token_type.hpp"
 
@@ -189,9 +191,8 @@ auto lexer::read_string() -> token
     return read_char(), token {token_type::string, m_input.substr(position, count)};
 }
 
-#include <array>
-
-#include <doctest/doctest.h>
+namespace
+{
 
 TEST_CASE("lexing")
 {
@@ -247,3 +248,4 @@ return false;
         CHECK_EQ(token, expected_token);
     }
 }
+}  // namespace

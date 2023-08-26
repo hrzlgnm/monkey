@@ -178,6 +178,9 @@ auto compiler::consts() const -> constants_ptr
     return m_consts;
 }
 
+namespace
+{
+// NOLINTBEGIN(*)
 TEST_SUITE_BEGIN("compiler");
 
 template<typename T>
@@ -215,7 +218,6 @@ static auto assert_program(std::string_view input) -> parsed_program
     return {std::move(prgrm), std::move(prsr)};
 }
 
-// NOLINTBEGIN(*-magic-numbers)
 TEST_CASE("compilerScopes")
 {
     using enum opcodes;
@@ -1023,4 +1025,5 @@ TEST_CASE("recursiveFunctions")
 }
 
 TEST_SUITE_END();
-// NOLINTEND(*-magic-numbers)
+// NOLINTEND(*)
+}  // namespace
