@@ -10,7 +10,7 @@
 #include <variant>
 #include <vector>
 
-#include <compiler/code.hpp>
+#include <code/code.hpp>
 #include <fmt/core.h>
 
 #include "environment_fwd.hpp"

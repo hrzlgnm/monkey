@@ -11,10 +11,10 @@
 
 #include <ast/builtin_function_expression.hpp>
 #include <compiler/compiler.hpp>
-#include <compiler/vm.hpp>
 #include <eval/environment.hpp>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
+#include <vm/vm.hpp>
 
 constexpr auto prompt = ">> ";
 

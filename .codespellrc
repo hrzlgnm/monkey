@@ -3,5 +3,5 @@ builtin = clear,rare,en-GB_to_en-US,names,informal,code
 check-filenames =
 ignore-words = .codespellignore
 check-hidden =
-skip = */.git,*/build,*/prefix
+skip = */.git,*/build,*/prefix,*/doctest
 quiet-level = 2 

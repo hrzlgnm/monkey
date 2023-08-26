@@ -15,6 +15,8 @@ jobs:
 
         steps:
             - uses: actions/checkout@v3
+              with:
+                  submodules: true
 
             - uses: actions/setup-python@v4
               with: { python-version: '3.8' }
@@ -37,10 +39,12 @@ jobs:
 
         steps:
             - uses: actions/checkout@v3
+              with:
+                  submodules: true
 
             - name: Install Deps
               run: sudo apt-get update -q
-                  && sudo apt-get install ninja-build libgtest-dev libfmt-dev -q -y
+                  && sudo apt-get install ninja-build libfmt-dev -q -y
 
             - name: Configure
               run: cmake --preset=ci-sanitize -GNinja
@@ -48,8 +52,7 @@ jobs:
             - name: Build
               run: cmake --build build/sanitize -j 2
 
-            - name: Test
-              working-directory: build/sanitize
+            - name: Test Doctest
               env:
                   ASAN_OPTIONS: "strict_string_checks=1:\
                       detect_stack_use_after_return=1:\
@@ -57,8 +60,8 @@ jobs:
                       strict_init_order=1:\
                       detect_leaks=1"
                   UBSAN_OPTIONS: print_stacktrace=1
-              run: ctest --output-on-failure --no-tests=error -j 2
-
+              working-directory: build/sanitize/test/doctest
+              run: ./doctest
     test:
         needs: [lint]
 
@@ -70,13 +73,15 @@ jobs:
 
         steps:
             - uses: actions/checkout@v3
+              with:
+                  submodules: true
 
             - name: Install static analyzers and dependencies
               if: matrix.os == 'ubuntu-22.04'
               run: >-
                   sudo apt-get update -q
 
-                  sudo apt-get install clang-tidy-14 cppcheck ninja-build libgtest-dev libfmt-dev -y -q
+                  sudo apt-get install clang-tidy-14 cppcheck ninja-build libfmt-dev -y -q
 
                   sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
 
@@ -87,9 +92,9 @@ jobs:
             - name: Build
               run: cmake --build build --config Release -j 2
 
-            - name: Test
-              working-directory: build/test
-              run: ctest --output-on-failure --no-tests=error -j 2
+            - name: Test Doctest
+              working-directory: build/test/doctest
+              run: ./doctest
 
             - name: Benchmark
               working-directory: build/test/benchmark
