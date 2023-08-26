@@ -865,7 +865,7 @@ TEST_CASE("operatorPrecedence")
 
     for (const auto& [input, expected] : operator_precedence_tests) {
         auto [prgrm, _] = check_program(input);
-        INFO("with input: ", input);
+        INFO("with input: ", std::cref(input));
         CHECK_EQ(expected, prgrm->string());
     }
 }
