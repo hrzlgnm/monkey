@@ -516,6 +516,26 @@ static auto test_eval(std::string_view input) -> object
     return result;
 }
 
+static auto test_multi_eval(std::deque<std::string>& inputs) -> object
+{
+    auto locals = std::make_shared<environment>();
+    auto statements = std::vector<statement_ptr>();
+    object result;
+    while (!inputs.empty()) {
+        auto prsr = parser {lexer {inputs.front()}};
+        auto prgrm = prsr.parse_program();
+        // FIXME:
+        // assert_no_parse_errors(prsr);
+        result = prgrm->eval(locals);
+        for (auto& stmt : prgrm->statements) {
+            statements.push_back(std::move(stmt));
+        }
+        inputs.pop_front();
+    }
+    locals->break_cycle();
+    return result;
+}
+
 TEST_CASE("integerExpresssion")
 {
     struct expression_test
@@ -780,26 +800,6 @@ TEST_CASE("functionApplication")
     for (const auto test : func_tests) {
         assert_integer_object(test_eval(test.input), test.expected);
     }
-}
-
-static auto test_multi_eval(std::deque<std::string>& inputs) -> object
-{
-    auto locals = std::make_shared<environment>();
-    auto statements = std::vector<statement_ptr>();
-    object result;
-    while (!inputs.empty()) {
-        auto prsr = parser {lexer {inputs.front()}};
-        auto prgrm = prsr.parse_program();
-        // FIXME:
-        // assert_no_parse_errors(prsr);
-        result = prgrm->eval(locals);
-        for (auto& stmt : prgrm->statements) {
-            statements.push_back(std::move(stmt));
-        }
-        inputs.pop_front();
-    }
-    locals->break_cycle();
-    return result;
 }
 
 TEST_CASE("multipleEvaluationsWithSameEnvAndDestroyedSources")
