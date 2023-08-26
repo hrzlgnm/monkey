@@ -5,13 +5,12 @@
 #include "vm.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <code/code.hpp>
+#include <compiler/compiler.hpp>
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
 #include <fmt/core.h>
 #include <parser/parser.hpp>
-
-#include "code.hpp"
-#include "compiler.hpp"
 
 static const object tru {true};
 static const object fals {false};

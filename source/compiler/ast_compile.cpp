@@ -11,10 +11,10 @@
 #include <ast/program.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <code/code.hpp>
+#include <eval/object.hpp>
 
-#include "code.hpp"
 #include "compiler.hpp"
-#include "eval/object.hpp"
 #include "symbol_table.hpp"
 
 auto array_expression::compile(compiler& comp) const -> void

@@ -3,9 +3,9 @@
 #include <cstddef>
 
 #include <ast/program.hpp>
+#include <code/code.hpp>
 #include <eval/object.hpp>
 
-#include "code.hpp"
 #include "symbol_table.hpp"
 
 using constants = std::vector<object>;

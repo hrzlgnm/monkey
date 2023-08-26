@@ -31,18 +31,18 @@ add_library(
   source/ast/statements.cpp
   source/ast/string_literal.cpp
   source/ast/unary_expression.cpp
+  source/code/code.cpp
   source/compiler/ast_compile.cpp
-  source/compiler/code.cpp
   source/compiler/compiler.cpp
   source/compiler/symbol_table.cpp
-  source/compiler/vm.cpp
   source/eval/ast_eval.cpp
   source/eval/environment.cpp
   source/eval/object.cpp
   source/lexer/lexer.cpp
   source/lexer/token.cpp
   source/lexer/token_type.cpp
-  source/parser/parser.cpp)
+  source/parser/parser.cpp
+  source/vm/vm.cpp)
 
 add_library(monkey::lib ALIAS monkey_lib)
 target_precompile_headers(

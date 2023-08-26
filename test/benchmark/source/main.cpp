@@ -5,12 +5,12 @@
 #include <string_view>
 
 #include <compiler/compiler.hpp>
-#include <compiler/vm.hpp>
 #include <eval/environment.hpp>
 #include <eval/object.hpp>
 #include <fmt/ostream.h>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
+#include <vm/vm.hpp>
 
 using namespace std::chrono_literals;
 

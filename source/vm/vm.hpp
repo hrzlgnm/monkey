@@ -4,9 +4,9 @@
 #include <cstdint>
 #include <memory>
 
-#include "code.hpp"
-#include "compiler.hpp"
-#include "symbol_table.hpp"
+#include <code/code.hpp>
+#include <compiler/compiler.hpp>
+#include <compiler/symbol_table.hpp>
 
 constexpr auto stack_size = 2048UL;
 constexpr auto globals_size = 65536UL;

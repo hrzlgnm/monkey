@@ -6,10 +6,10 @@
 #include "compiler.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <code/code.hpp>
 #include <doctest/doctest.h>
 #include <parser/parser.hpp>
 
-#include "code.hpp"
 #include "symbol_table.hpp"
 
 auto compiler::create() -> compiler
