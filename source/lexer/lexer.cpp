@@ -193,7 +193,6 @@ auto lexer::read_string() -> token
 
 namespace
 {
-
 TEST_CASE("lexing")
 {
     using enum token_type;

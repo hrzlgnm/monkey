@@ -181,8 +181,6 @@ auto compiler::consts() const -> constants_ptr
 namespace
 {
 // NOLINTBEGIN(*)
-TEST_SUITE_BEGIN("compiler");
-
 template<typename T>
 auto maker(std::initializer_list<T> list) -> std::vector<T>
 {
@@ -199,24 +197,71 @@ auto flatten(const std::vector<std::vector<T>>& arrs) -> std::vector<T>
     return result;
 }
 
-static auto assert_no_parse_errors(const parser& prsr) -> bool
+auto check_no_parse_errors(const parser& prsr) -> bool
 {
     INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
     CHECK(prsr.errors().empty());
-    return !prsr.errors().empty();
+    return prsr.errors().empty();
 }
 
 using parsed_program = std::pair<program_ptr, parser>;
 
-static auto assert_program(std::string_view input) -> parsed_program
+auto check_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
-    if (assert_no_parse_errors(prsr)) {
-        INFO("while parsing: `", input, "`");
-    };
+    INFO("while parsing: `", input, "`");
+    CHECK(check_no_parse_errors(prsr));
     return {std::move(prgrm), std::move(prsr)};
 }
+
+using expected_value = std::variant<int64_t, std::string, std::vector<instructions>>;
+
+struct ctc
+{
+    std::string_view input;
+    std::vector<expected_value> expected_constants;
+    std::vector<instructions> expected_instructions;
+};
+
+auto check_instructions(const std::vector<instructions>& instructions, const ::instructions& code)
+{
+    auto flattened = flatten(instructions);
+    CHECK_EQ(flattened.size(), code.size());
+    INFO("expected: \n", to_string(flattened), "got: \n", to_string(code));
+    CHECK_EQ(flattened, code);
+}
+
+auto check_constants(const std::vector<expected_value>& expecteds, const constants& consts)
+{
+    CHECK_EQ(expecteds.size(), consts.size());
+    for (size_t idx = 0; const auto& expected : expecteds) {
+        const auto& actual = consts.at(idx);
+        std::visit(
+            overloaded {
+                [&](const int64_t val) { CHECK_EQ(val, actual.as<integer_type>()); },
+                [&](const std::string& val) { CHECK_EQ(val, actual.as<string_type>()); },
+                [&](const std::vector<instructions>& instrs)
+                { check_instructions(instrs, actual.as<compiled_function>().instrs); },
+            },
+            expected);
+        idx++;
+    }
+}
+
+template<size_t N>
+auto run(std::array<ctc, N>&& tests)
+{
+    for (const auto& [input, constants, instructions] : tests) {
+        auto [prgrm, _] = check_program(input);
+        auto cmplr = compiler::create();
+        cmplr.compile(prgrm);
+        check_instructions(instructions, cmplr.current_instrs());
+        check_constants(constants, *cmplr.consts());
+    }
+}
+
+TEST_SUITE_BEGIN("compiler");
 
 TEST_CASE("compilerScopes")
 {
@@ -234,52 +279,6 @@ TEST_CASE("compilerScopes")
     cmplr.emit(add);
     REQUIRE_EQ(cmplr.current_instrs().size(), 2);
     REQUIRE(cmplr.last_instruction_is(add));
-}
-
-using expected_value = std::variant<int64_t, std::string, std::vector<instructions>>;
-
-struct ctc
-{
-    std::string_view input;
-    std::vector<expected_value> expected_constants;
-    std::vector<instructions> expected_instructions;
-};
-
-static auto assert_instructions(const std::vector<instructions>& instructions, const ::instructions& code)
-{
-    auto flattened = flatten(instructions);
-    CHECK_EQ(flattened.size(), code.size());
-    INFO("expected: \n", to_string(flattened), "got: \n", to_string(code));
-    CHECK_EQ(flattened, code);
-}
-
-static auto assert_constants(const std::vector<expected_value>& expecteds, const constants& consts)
-{
-    CHECK_EQ(expecteds.size(), consts.size());
-    for (size_t idx = 0; const auto& expected : expecteds) {
-        const auto& actual = consts.at(idx);
-        std::visit(
-            overloaded {
-                [&](const int64_t val) { CHECK_EQ(val, actual.as<integer_type>()); },
-                [&](const std::string& val) { CHECK_EQ(val, actual.as<string_type>()); },
-                [&](const std::vector<instructions>& instrs)
-                { assert_instructions(instrs, actual.as<compiled_function>().instrs); },
-            },
-            expected);
-        idx++;
-    }
-}
-
-template<size_t N>
-auto run(std::array<ctc, N>&& tests)
-{
-    for (const auto& [input, constants, instructions] : tests) {
-        auto [prgrm, _] = assert_program(input);
-        auto cmplr = compiler::create();
-        cmplr.compile(prgrm);
-        assert_instructions(instructions, cmplr.current_instrs());
-        assert_constants(constants, *cmplr.consts());
-    }
 }
 
 TEST_CASE("integerArithmetics")

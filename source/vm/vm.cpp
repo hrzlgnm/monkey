@@ -1,6 +1,7 @@
 #include <array>
 #include <cstdint>
 #include <stdexcept>
+#include <string_view>
 
 #include "vm.hpp"
 
@@ -395,7 +396,6 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 namespace
 {
 // NOLINTBEGIN(*)
-
 TEST_SUITE_BEGIN("vm");
 
 template<typename T>
@@ -404,50 +404,41 @@ auto maker(std::initializer_list<T> list) -> std::vector<T>
     return std::vector<T> {list};
 }
 
-auto assert_no_parse_errors(const parser& prsr) -> bool
+auto check_no_parse_errors(const parser& prsr) -> bool
 {
     INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
     CHECK(prsr.errors().empty());
-    return !prsr.errors().empty();
+    return prsr.errors().empty();
 }
 
 using parsed_program = std::pair<program_ptr, parser>;
 
-auto assert_program(std::string_view input) -> parsed_program
+auto check_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
-    if (assert_no_parse_errors(prsr)) {
-        INFO("while parsing: `", input, "`");
-    };
+    INFO("while parsing: `", input, "`");
+    CHECK(check_no_parse_errors(prsr));
     return {std::move(prgrm), std::move(prsr)};
 }
 
-auto assert_bool_object(bool expected, const object& actual, std::string_view input) -> void
+template<typename Expected>
+auto require_is(const Expected& exp, const object& actual_obj, std::string_view input) -> void
 {
-    INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
-    REQUIRE(actual.is<bool>());
-    auto actual_bool = actual.as<bool>();
-    REQUIRE_EQ(actual_bool, expected);
+    INFO(input,
+         " expected: ",
+         object {exp}.type_name(),
+         " got: ",
+         actual_obj.type_name(),
+         " with: ",
+         std::to_string(actual_obj.value),
+         " instead");
+    REQUIRE(actual_obj.is<Expected>());
+    auto actual = actual_obj.as<Expected>();
+    REQUIRE_EQ(actual, exp);
 }
 
-auto assert_integer_object(int64_t expected, const object& actual, std::string_view input) -> void
-{
-    INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
-    REQUIRE(actual.is<integer_type>());
-    auto actual_int = actual.as<integer_type>();
-    REQUIRE_EQ(actual_int, expected);
-}
-
-auto assert_string_object(const std::string& expected, const object& actual, std::string_view input) -> void
-{
-    INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
-    REQUIRE(actual.is<string_type>());
-    auto actual_str = actual.as<string_type>();
-    REQUIRE_EQ(actual_str, expected);
-}
-
-auto assert_array_object(const std::vector<int>& expected, const object& actual, std::string_view input) -> void
+auto require_array_object(const std::vector<int>& expected, const object& actual, std::string_view input) -> void
 {
     INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
     REQUIRE(actual.is<array>());
@@ -459,20 +450,12 @@ auto assert_array_object(const std::vector<int>& expected, const object& actual,
     }
 }
 
-auto assert_hash_object(const hash& expected, const object& actual, std::string_view input) -> void
+auto require_hash_object(const hash& expected, const object& actual, std::string_view input) -> void
 {
     INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
     REQUIRE(actual.is<hash>());
     auto actual_hash = actual.as<hash>();
     REQUIRE_EQ(actual_hash.size(), expected.size());
-}
-
-auto assert_error_object(const error& expected, const object& actual, std::string_view input) -> void
-{
-    INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
-    REQUIRE(actual.is<error>());
-    auto actual_error = actual.as<error>();
-    REQUIRE_EQ(actual_error.message, expected.message);
 }
 
 template<typename... T>
@@ -483,26 +466,26 @@ struct vt
 };
 
 template<typename... T>
-auto assert_expected_object(const std::variant<T...>& expected, const object& actual, std::string_view input) -> void
+auto require_eq(const std::variant<T...>& expected, const object& actual, std::string_view input) -> void
 {
     std::visit(
         overloaded {
-            [&](const int64_t exp) { assert_integer_object(exp, actual, input); },
-            [&](const bool exp) { assert_bool_object(exp, actual, input); },
+            [&](const int64_t exp) { require_is(exp, actual, input); },
+            [&](const bool exp) { require_is(exp, actual, input); },
             [&](const nil_type) { REQUIRE(actual.is_nil()); },
-            [&](const std::string& exp) { assert_string_object(exp, actual, input); },
-            [&](const error& exp) { assert_error_object(exp, actual, input); },
-            [&](const std::vector<int>& exp) { assert_array_object(exp, actual, input); },
-            [&](const hash& exp) { assert_hash_object(exp, actual, input); },
+            [&](const std::string& exp) { require_is(exp, actual, input); },
+            [&](const error& exp) { require_is(exp, actual, input); },
+            [&](const std::vector<int>& exp) { require_array_object(exp, actual, input); },
+            [&](const hash& exp) { require_hash_object(exp, actual, input); },
         },
         expected);
 }
 
 template<size_t N, typename... Expecteds>
-auto run(std::array<vt<Expecteds...>, N> tests)
+auto run(std::array<vt<Expecteds...>, N>&& tests)
 {
     for (const auto& [input, expected] : tests) {
-        auto [prgrm, _] = assert_program(input);
+        auto [prgrm, _] = check_program(input);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
         auto byte_code = cmplr.byte_code();
@@ -510,9 +493,11 @@ auto run(std::array<vt<Expecteds...>, N> tests)
         mchn.run();
 
         auto top = mchn.last_popped();
-        assert_expected_object(expected, top, input);
+        require_eq(expected, top, input);
     }
 }
+
+TEST_SUITE_BEGIN("vm");
 
 TEST_CASE("integerArithmetics")
 {
@@ -535,7 +520,7 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("booleanExpressions")
@@ -568,7 +553,7 @@ TEST_CASE("booleanExpressions")
         vt<bool> {"!!5", true},
         vt<bool> {"!(if (false) { 5; })", true},
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("conditionals")
@@ -585,7 +570,7 @@ TEST_CASE("conditionals")
         vt<int64_t, nil_type> {"if (false) { 10 }", nil_type {}},
         vt<int64_t, nil_type> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("globalLetStatemets")
@@ -595,7 +580,7 @@ TEST_CASE("globalLetStatemets")
         vt<int64_t> {"let one = 1; let two = 2; one + two", 3},
         vt<int64_t> {"let one = 1; let two = one + one; one + two", 3},
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("stringExpression")
@@ -606,7 +591,7 @@ TEST_CASE("stringExpression")
         vt<std::string> {R"("mon" + "key" + "banana")", "monkeybanana"},
 
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("arrayLiterals")
@@ -625,7 +610,7 @@ TEST_CASE("arrayLiterals")
             {std::vector<int> {3, 12, 11}},
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("hashLiterals")
@@ -645,7 +630,7 @@ TEST_CASE("hashLiterals")
 
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("indexExpressions")
@@ -662,7 +647,7 @@ TEST_CASE("indexExpressions")
         vt<int64_t, nil_type> {"{1: 1}[0]", nil_type {}},
         vt<int64_t, nil_type> {"{}[0]", nil_type {}},
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("callFunctionsWithoutArgs")
@@ -687,7 +672,7 @@ TEST_CASE("callFunctionsWithoutArgs")
             3,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("callFunctionsWithReturnStatements")
@@ -704,7 +689,7 @@ TEST_CASE("callFunctionsWithReturnStatements")
             99,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("callFunctionsWithNoReturnValue")
@@ -723,7 +708,7 @@ TEST_CASE("callFunctionsWithNoReturnValue")
             nilv,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("callFirstClassFunctions")
@@ -750,7 +735,7 @@ TEST_CASE("callFirstClassFunctions")
             98,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("callFunctionsWithBindings")
@@ -802,7 +787,7 @@ TEST_CASE("callFunctionsWithBindings")
             97,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("callFunctionsWithArgumentsAndBindings")
@@ -873,7 +858,7 @@ TEST_CASE("callFunctionsWithArgumentsAndBindings")
             50,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("callFunctionsWithWrongArgument")
@@ -894,7 +879,7 @@ TEST_CASE("callFunctionsWithWrongArgument")
         },
     };
     for (const auto& [input, expected] : tests) {
-        auto [prgrm, _] = assert_program(input);
+        auto [prgrm, _] = check_program(input);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
         auto mchn = vm::create(cmplr.byte_code());
@@ -951,8 +936,8 @@ TEST_CASE("callBuiltins")
             },
         },
     };
-    run(tests);
-    run(errortests);
+    run(std::move(tests));
+    run(std::move(errortests));
 }
 
 TEST_CASE("closures")
@@ -969,7 +954,7 @@ TEST_CASE("closures")
             99,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("recursiveFunction")
@@ -1022,7 +1007,7 @@ TEST_CASE("recursiveFunction")
             0,
         },
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_CASE("recuriveFibonnacci")
@@ -1044,7 +1029,7 @@ TEST_CASE("recuriveFibonnacci")
         fibonacci(15);)",
             610},
     };
-    run(tests);
+    run(std::move(tests));
 }
 
 TEST_SUITE_END();

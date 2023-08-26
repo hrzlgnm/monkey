@@ -15,6 +15,11 @@ auto to_string(const hash_key_type& hash_key)
                       hash_key);
 }
 
+auto operator==(const error& lhs, const error& rhs) -> bool
+{
+    return lhs.message == rhs.message;
+}
+
 namespace std
 {
 auto to_string(const value_type& value) -> std::string

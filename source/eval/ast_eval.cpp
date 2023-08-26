@@ -460,272 +460,248 @@ auto callable_expression::eval(environment_ptr env) const -> object
 namespace
 {
 // NOLINTBEGIN(*)
-TEST_SUITE_BEGIN("eval");
+template<typename Expected>
+auto require_eq(const object& obj, const Expected& expected) -> void
+{
+    INFO("expected: ", object {expected}.type_name(), " got: ", obj.type_name());
+    REQUIRE(obj.is<Expected>());
+    const auto& actual = obj.as<Expected>();
+    REQUIRE_EQ(actual, expected);
+}
 
-auto assert_no_parse_errors(const parser& prsr) -> bool
+auto check_no_parse_errors(const parser& prsr) -> bool
 {
     INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
     CHECK(prsr.errors().empty());
-    return !prsr.errors().empty();
+    return prsr.errors().empty();
 }
 
-auto assert_integer_object(const object& obj, int64_t expected) -> void
-{
-    INFO("got", obj.type_name());
-    REQUIRE(obj.is<integer_type>());
-    auto actual = obj.as<integer_type>();
-    REQUIRE_EQ(actual, expected);
-}
+using parsed_program = std::pair<program_ptr, parser>;
 
-auto assert_boolean_object(const object& obj, bool expected) -> void
-{
-    INFO("got", obj.type_name());
-    REQUIRE(obj.is<bool>());
-    auto actual = obj.as<bool>();
-    REQUIRE_EQ(actual, expected);
-}
-
-auto assert_nil_object(const object& obj) -> void
-{
-    INFO("got", obj.type_name());
-    REQUIRE(obj.is_nil());
-}
-
-auto assert_string_object(const object& obj, const std::string& expected) -> void
-{
-    INFO("got", obj.type_name());
-    REQUIRE(obj.is<string_type>());
-    const auto& actual = obj.as<string_type>();
-    REQUIRE_EQ(actual, expected);
-}
-
-auto assert_error_object(const object& obj, const std::string& expected_error_message) -> void
-{
-    INFO("got", obj.type_name());
-    REQUIRE(obj.is<error>());
-    auto actual = obj.as<error>();
-    CHECK_EQ(actual.message, expected_error_message);
-}
-
-auto test_eval(std::string_view input) -> object
+auto check_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
     auto prgrm = prsr.parse_program();
+    INFO("while parsing: `", input, "`");
+    CHECK(check_no_parse_errors(prsr));
+    return {std::move(prgrm), std::move(prsr)};
+}
+
+auto run(std::string_view input) -> object
+{
+    auto [prgrm, _] = check_program(input);
     auto env = std::make_shared<environment>();
     for (const auto& builtin : builtin_function_expression::builtins) {
         env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
     }
 
-    assert_no_parse_errors(prsr);
     auto result = prgrm->eval(env);
     env->break_cycle();
     return result;
 }
 
-auto test_multi_eval(std::deque<std::string>& inputs) -> object
+auto run_multi(std::deque<std::string>& inputs) -> object
 {
-    auto locals = std::make_shared<environment>();
+    auto globals = std::make_shared<environment>();
     auto statements = std::vector<statement_ptr>();
     object result;
     while (!inputs.empty()) {
-        auto prsr = parser {lexer {inputs.front()}};
-        auto prgrm = prsr.parse_program();
-        assert_no_parse_errors(prsr);
-        result = prgrm->eval(locals);
+        auto [prgrm, _] = check_program(inputs.front());
+        result = prgrm->eval(globals);
         for (auto& stmt : prgrm->statements) {
             statements.push_back(std::move(stmt));
         }
         inputs.pop_front();
     }
-    locals->break_cycle();
+    globals->break_cycle();
     return result;
 }
 
+TEST_SUITE_BEGIN("eval");
+
 TEST_CASE("integerExpresssion")
 {
-    struct expression_test
+    struct et
     {
         std::string_view input;
         int64_t expected;
     };
 
-    std::array expression_tests {
-        expression_test {"5", 5},
-        expression_test {"10", 10},
-        expression_test {"-5", -5},
-        expression_test {"-10", -10},
-        expression_test {"5 + 5 + 5 + 5 - 10", 10},
-        expression_test {"2 * 2 * 2 * 2 * 2", 32},
-        expression_test {"-50 + 100 + -50", 0},
-        expression_test {"5 * 2 + 10", 20},
-        expression_test {"5 + 2 * 10", 25},
-        expression_test {"20 + 2 * -10", 0},
-        expression_test {"50 / 2 * 2 + 10", 60},
-        expression_test {"2 * (5 + 10)", 30},
-        expression_test {"3 * 3 * 3 + 10", 37},
-        expression_test {"3 * (3 * 3) + 10", 37},
-        expression_test {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+    std::array tests {
+        et {"5", 5},
+        et {"10", 10},
+        et {"-5", -5},
+        et {"-10", -10},
+        et {"5 + 5 + 5 + 5 - 10", 10},
+        et {"2 * 2 * 2 * 2 * 2", 32},
+        et {"-50 + 100 + -50", 0},
+        et {"5 * 2 + 10", 20},
+        et {"5 + 2 * 10", 25},
+        et {"20 + 2 * -10", 0},
+        et {"50 / 2 * 2 + 10", 60},
+        et {"2 * (5 + 10)", 30},
+        et {"3 * 3 * 3 + 10", 37},
+        et {"3 * (3 * 3) + 10", 37},
+        et {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
-    for (const auto& test : expression_tests) {
-        const auto evaluated = test_eval(test.input);
-        assert_integer_object(evaluated, test.expected);
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        require_eq(evaluated, expected);
     }
 }
 
 TEST_CASE("booleanExpresssion")
 {
-    struct expression_test
+    struct et
     {
         std::string_view input;
         bool expected;
     };
 
-    std::array expression_tests {
-        expression_test {"true", true},
-        expression_test {"false", false},
-        expression_test {"1 < 2", true},
-        expression_test {"1 > 2", false},
-        expression_test {"1 < 1", false},
-        expression_test {"1 > 1", false},
-        expression_test {"1 == 1", true},
-        expression_test {"1 != 1", false},
-        expression_test {"1 == 2", false},
-        expression_test {"1 != 2", true},
+    std::array tests {
+        et {"true", true},
+        et {"false", false},
+        et {"1 < 2", true},
+        et {"1 > 2", false},
+        et {"1 < 1", false},
+        et {"1 > 1", false},
+        et {"1 == 1", true},
+        et {"1 != 1", false},
+        et {"1 == 2", false},
+        et {"1 != 2", true},
 
     };
-    for (const auto& test : expression_tests) {
-        const auto evaluated = test_eval(test.input);
-        assert_boolean_object(evaluated, test.expected);
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        require_eq(evaluated, expected);
     }
 }
 
 TEST_CASE("stringExpression")
 {
-    auto evaluated = test_eval(R"("Hello World!")");
-    REQUIRE(evaluated.is<string_type>());
-    REQUIRE_EQ(evaluated.as<string_type>(), "Hello World!");
+    auto evaluated = run(R"("Hello World!")");
+    require_eq<string_type>(evaluated, "Hello World!");
 }
 
 TEST_CASE("stringConcatenation")
 {
-    auto evaluated = test_eval(R"("Hello" + " " + "World!")");
+    auto evaluated = run(R"("Hello" + " " + "World!")");
     INFO("expected a string, got: ", evaluated.type_name());
-    REQUIRE(evaluated.is<string_type>());
-
-    REQUIRE_EQ(evaluated.as<string_type>(), "Hello World!");
+    require_eq<string_type>(evaluated, "Hello World!");
 }
 
 TEST_CASE("bangOperator")
 {
-    struct expression_test
+    struct et
     {
         std::string_view input;
         bool expected;
     };
 
-    std::array expression_tests {
-        expression_test {"!true", false},
-        expression_test {"!false", true},
-        expression_test {"!false", true},
-        expression_test {"!5", false},
-        expression_test {"!!true", true},
-        expression_test {"!!false", false},
-        expression_test {"!!5", true},
+    std::array tests {
+        et {"!true", false},
+        et {"!false", true},
+        et {"!false", true},
+        et {"!5", false},
+        et {"!!true", true},
+        et {"!!false", false},
+        et {"!!5", true},
     };
-    for (const auto& test : expression_tests) {
-        const auto evaluated = test_eval(test.input);
-        assert_boolean_object(evaluated, test.expected);
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        require_eq(evaluated, expected);
     }
 }
 
 TEST_CASE("ifElseExpressions")
 {
-    struct expression_test
+    struct et
     {
         std::string_view input;
         object expected;
     };
 
-    std::array expression_tests {
-        expression_test {"if (true) { 10 }", {10}},
-        expression_test {"if (false) { 10 }", {}},
-        expression_test {"if (1) { 10 }", {10}},
-        expression_test {"if (1 < 2) { 10 }", {10}},
-        expression_test {"if (1 > 2) { 10 }", {}},
-        expression_test {"if (1 > 2) { 10 } else { 20 }", {20}},
-        expression_test {"if (1 < 2) { 10 } else { 20 }", {10}},
+    std::array tests {
+        et {"if (true) { 10 }", {10}},
+        et {"if (false) { 10 }", {}},
+        et {"if (1) { 10 }", {10}},
+        et {"if (1 < 2) { 10 }", {10}},
+        et {"if (1 > 2) { 10 }", {}},
+        et {"if (1 > 2) { 10 } else { 20 }", {20}},
+        et {"if (1 < 2) { 10 } else { 20 }", {10}},
     };
-    for (const auto& test : expression_tests) {
-        const auto evaluated = test_eval(test.input);
-        if (test.expected.is<integer_type>()) {
-            assert_integer_object(evaluated, test.expected.as<integer_type>());
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        if (expected.is<integer_type>()) {
+            require_eq(evaluated, expected.as<integer_type>());
         } else {
-            assert_nil_object(evaluated);
+            require_eq(evaluated, nilv);
         }
     }
 }
 
 TEST_CASE("returnStatemets")
 {
-    struct return_test
+    struct rt
     {
         std::string_view input;
         integer_type expected;
     };
 
-    std::array return_tests {return_test {"return 10;", 10},
-                             return_test {"return 10; 9;", 10},
-                             return_test {"return 2 * 5; 9;", 10},
-                             return_test {"9; return 2 * 5; 9;", 10},
-                             return_test {R"r(
+    std::array tests {
+        rt {"return 10;", 10},
+        rt {"return 10; 9;", 10},
+        rt {"return 2 * 5; 9;", 10},
+        rt {"9; return 2 * 5; 9;", 10},
+        rt {R"r(
 if (10 > 1) {
     if (10 > 1) {
         return 10;
     }
     return 1;
 })r",
-                                          10}};
-    for (const auto& test : return_tests) {
-        const auto evaluated = test_eval(test.input);
-        assert_integer_object(evaluated, test.expected);
+            10},
+    };
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        require_eq(evaluated, expected);
     }
 }
 
 TEST_CASE("errorHandling")
 {
-    struct error_test
+    struct et
     {
         std::string_view input;
         std::string expected_message;
     };
 
-    std::array error_tests {
-
-        error_test {
+    std::array tests {
+        et {
             "5 + true;",
             "type mismatch: integer + bool",
         },
-        error_test {
+        et {
             "5 + true; 5;",
             "type mismatch: integer + bool",
         },
-        error_test {
+        et {
             "-true",
             "unknown operator: -bool",
         },
-        error_test {
+        et {
             "true + false;",
             "unknown operator: bool + bool",
         },
-        error_test {
+        et {
             "5; true + false; 5",
             "unknown operator: bool + bool",
         },
-        error_test {
+        et {
             "if (10 > 1) { true + false; }",
             "unknown operator: bool + bool",
         },
-        error_test {
+        et {
             R"r(
 if (10 > 1) {
 if (10 > 1) {
@@ -736,74 +712,74 @@ return 1;
    )r",
             "unknown operator: bool + bool",
         },
-        error_test {
+        et {
             "foobar",
             "identifier not found: foobar",
         },
-        error_test {
+        et {
             R"("Hello" - "World")",
             "unknown operator: string - string",
         },
-        error_test {
+        et {
             R"({"name": "Monkey"}[fn(x) { x }];)",
             "unusable as hash key: function",
-        }};
+        },
+    };
 
-    for (const auto& test : error_tests) {
-        const auto evaluated = test_eval(test.input);
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
         INFO("expected an error, got ", evaluated.type_name());
-        CHECK(evaluated.is<error>());
-        CHECK_EQ(evaluated.as<error>().message, test.expected_message);
+        require_eq(evaluated, error {expected});
     }
 }
 
 TEST_CASE("integerLetStatements")
 {
-    struct let_test
+    struct lt
     {
         std::string_view input;
         integer_type expected;
     };
 
-    std::array let_tests {
-        let_test {"let a = 5; a;", 5},
-        let_test {"let a = 5 * 5; a;", 25},
-        let_test {"let a = 5; let b = a; b;", 5},
-        let_test {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+    std::array tests {
+        lt {"let a = 5; a;", 5},
+        lt {"let a = 5 * 5; a;", 25},
+        lt {"let a = 5; let b = a; b;", 5},
+        lt {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
     };
 
-    for (const auto& test : let_tests) {
-        assert_integer_object(test_eval(test.input), test.expected);
+    for (const auto& [input, expected] : tests) {
+        require_eq(run(input), expected);
     }
 }
 
-TEST_CASE("functionObject")
+TEST_CASE("boundFunction")
 {
     const auto* input = "fn(x) {x + 2; };";
-    auto evaluated = test_eval(input);
+    auto evaluated = run(input);
     INFO("expected a function object, got ", std::to_string(evaluated.value));
     REQUIRE(evaluated.is<bound_function>());
 }
 
 TEST_CASE("functionApplication")
 {
-    struct func_test
+    struct ft
     {
         std::string_view input;
         int64_t expected;
     };
 
-    std::array func_tests {
-        func_test {"let identity = fn(x) { x; }; identity(5);", 5},
-        func_test {"let identity = fn(x) { return x; }; identity(5);", 5},
-        func_test {"let double = fn(x) { x * 2; }; double(5);", 10},
-        func_test {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
-        func_test {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
-        func_test {"fn(x) { x; }(5)", 5},
-        func_test {"let c = fn(x) { x + 2; }; c(2 + c(4))", 10},
+    std::array tests {
+        ft {"let identity = fn(x) { x; }; identity(5);", 5},
+        ft {"let identity = fn(x) { return x; }; identity(5);", 5},
+        ft {"let double = fn(x) { x * 2; }; double(5);", 10},
+        ft {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+        ft {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+        ft {"fn(x) { x; }(5)", 5},
+        ft {"let c = fn(x) { x + 2; }; c(2 + c(4))", 10},
     };
-    for (const auto test : func_tests) {
-        assert_integer_object(test_eval(test.input), test.expected);
+    for (const auto& [input, expected] : tests) {
+        require_eq(run(input), expected);
     }
 }
 
@@ -813,7 +789,7 @@ TEST_CASE("multipleEvaluationsWithSameEnvAndDestroyedSources")
     const auto* input2 {R"(let hello = makeGreeter("hello");)"};
     const auto* input3 {R"(hello("banana");)"};
     std::deque<std::string> inputs {input1, input2, input3};
-    assert_string_object(test_multi_eval(inputs), "hello banana!");
+    require_eq<string_type>(run_multi(inputs), "hello banana!");
 }
 
 TEST_CASE("builtinFunctions")
@@ -855,14 +831,14 @@ TEST_CASE("builtinFunctions")
     };
 
     for (auto test : tests) {
-        auto evaluated = test_eval(test.input);
+        auto evaluated = run(test.input);
         std::visit(
             overloaded {
-                [&evaluated](const integer_type val) { assert_integer_object(evaluated, val); },
-                [&evaluated](const error& val) { assert_error_object(evaluated, val.message); },
-                [&evaluated](const std::string& val) { assert_string_object(evaluated, val); },
+                [&evaluated](const integer_type val) { require_eq(evaluated, val); },
+                [&evaluated](const error& val) { require_eq(evaluated, val); },
+                [&evaluated](const std::string& val) { require_eq(evaluated, val); },
                 [&evaluated](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
-                [&evaluated](const nil_type& /*val*/) { assert_nil_object(evaluated); },
+                [&evaluated](const nil_type& /*val*/) { require_eq(evaluated, nilv); },
             },
             test.expected);
     }
@@ -870,68 +846,68 @@ TEST_CASE("builtinFunctions")
 
 TEST_CASE("arrayExpression")
 {
-    auto evaluated = test_eval("[1, 2 * 2, 3 + 3]");
+    auto evaluated = run("[1, 2 * 2, 3 + 3]");
     INFO("got: " << evaluated.type_name());
     REQUIRE(evaluated.is<array>());
     auto as_arr = evaluated.as<array>();
-    assert_integer_object(as_arr[0], 1);
-    assert_integer_object(as_arr[1], 4);
-    assert_integer_object(as_arr[2], 6);
+    require_eq<integer_type>(as_arr[0], 1);
+    require_eq<integer_type>(as_arr[1], 4);
+    require_eq<integer_type>(as_arr[2], 6);
 }
 
 TEST_CASE("indexOperatorExpressions")
 {
-    struct test
+    struct it
     {
         std::string_view input;
         value_type expected;
     };
 
     std::array tests {
-        test {
+        it {
             "[1, 2, 3][0]",
             1,
         },
-        test {
+        it {
             "[1, 2, 3][1]",
             2,
         },
-        test {
+        it {
             "[1, 2, 3][2]",
             3,
         },
-        test {
+        it {
             "let i = 0; [1][i];",
             1,
         },
-        test {
+        it {
             "[1, 2, 3][1 + 1];",
             3,
         },
-        test {
+        it {
             "let myArray = [1, 2, 3]; myArray[2];",
             3,
         },
-        test {
+        it {
             "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
             6,
         },
-        test {
+        it {
             "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
             2,
         },
-        test {
+        it {
             "[1, 2, 3][3]",
             nil_type {},
         },
-        test {
+        it {
             "[1, 2, 3][-1]",
             nil_type {},
         },
     };
 
     for (const auto& [input, expected] : tests) {
-        auto evaluated = test_eval(input);
+        auto evaluated = run(input);
         INFO("got: ", evaluated.type_name());
         CHECK_EQ(object {evaluated.value}, object {expected});
     }
@@ -939,7 +915,7 @@ TEST_CASE("indexOperatorExpressions")
 
 TEST_CASE("hashLiterals")
 {
-    auto evaluated = test_eval(R"(let two = "two";
+    auto evaluated = run(R"(let two = "two";
     {
         "one": 10 - 9,
         two: 1 + 1,
@@ -975,44 +951,44 @@ TEST_CASE("hashLiterals")
 
 TEST_CASE("hashIndexExpression")
 {
-    struct hash_test
+    struct ht
     {
         std::string_view input;
         value_type expected;
     };
 
-    std::array inputs {
-        hash_test {
+    std::array tests {
+        ht {
             R"({"foo": 5}["foo"])",
             5,
         },
-        hash_test {
+        ht {
             R"({"foo": 5}["bar"])",
             nilv,
         },
-        hash_test {
+        ht {
             R"(let key = "foo"; {"foo": 5}[key])",
             5,
         },
-        hash_test {
+        ht {
             R"({}["foo"])",
             nilv,
         },
-        hash_test {
+        ht {
             R"({5: 5}[5])",
             5,
         },
-        hash_test {
+        ht {
             R"({true: 5}[true])",
             5,
         },
-        hash_test {
+        ht {
             R"({false: 5}[false])",
             5,
         },
     };
-    for (const auto& [input, expected] : inputs) {
-        auto evaluated = test_eval(input);
+    for (const auto& [input, expected] : tests) {
+        auto evaluated = run(input);
         CHECK_FALSE(evaluated.is<error>());
         CHECK_EQ(evaluated, object {expected});
     }
