@@ -1,4 +1,3 @@
-
 project(Tests LANGUAGES CXX)
 
 # ---- Tests ----
@@ -21,7 +20,7 @@ target_compile_features(monkey_test PRIVATE cxx_std_20)
 add_test(NAME monkey_test COMMAND monkey_test)
 
 add_subdirectory(benchmark)
-add_subdirectory(lib/doctest)
+add_subdirectory(doctest)
 
 # ---- End-of-file commands ----
 

@@ -1,4 +1,4 @@
-#include "doctest/doctest.h"
+#include <doctest/doctest.h>
 
 auto main(int argc, char** argv) -> int
 {

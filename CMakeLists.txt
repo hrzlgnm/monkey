@@ -59,7 +59,7 @@ target_include_directories(
   monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
 
 target_compile_features(monkey_lib PUBLIC cxx_std_20)
-target_link_libraries(monkey_lib fmt::fmt doctest::doctest doctest::impl)
+target_link_libraries(monkey_lib PRIVATE fmt::fmt doctest::doctest doctest::dll)
 
 add_executable(monkey_exe source/main.cpp)
 add_executable(monkey::exe ALIAS monkey_exe)
@@ -70,5 +70,7 @@ set_property(TARGET monkey_exe PROPERTY OUTPUT_NAME monkey)
 target_compile_features(monkey_exe PRIVATE cxx_std_20)
 
 target_link_libraries(monkey_exe PRIVATE monkey_lib)
+
+add_subdirectory(doctest)
 
 include(cmake/dev-mode.cmake)
