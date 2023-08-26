@@ -932,7 +932,6 @@ TEST_CASE("indexOperatorExpressions")
 
     for (const auto& [input, expected] : tests) {
         auto evaluated = test_eval(input);
-        INFO("expected: ", std::to_string(expected));
         INFO("got: ", evaluated.type_name());
         CHECK_EQ(object {evaluated.value}, object {expected});
     }
