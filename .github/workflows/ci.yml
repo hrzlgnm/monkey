@@ -44,24 +44,13 @@ jobs:
 
             - name: Install Deps
               run: sudo apt-get update -q
-                  && sudo apt-get install ninja-build libgtest-dev libfmt-dev -q -y
+                  && sudo apt-get install ninja-build libfmt-dev -q -y
 
             - name: Configure
               run: cmake --preset=ci-sanitize -GNinja
 
             - name: Build
               run: cmake --build build/sanitize -j 2
-
-            - name: Test GTest
-              working-directory: build/sanitize
-              env:
-                  ASAN_OPTIONS: "strict_string_checks=1:\
-                      detect_stack_use_after_return=1:\
-                      check_initialization_order=1:\
-                      strict_init_order=1:\
-                      detect_leaks=1"
-                  UBSAN_OPTIONS: print_stacktrace=1
-              run: ctest --output-on-failure --no-tests=error -j 2
 
             - name: Test Doctest
               env:
@@ -92,7 +81,7 @@ jobs:
               run: >-
                   sudo apt-get update -q
 
-                  sudo apt-get install clang-tidy-14 cppcheck ninja-build libgtest-dev libfmt-dev -y -q
+                  sudo apt-get install clang-tidy-14 cppcheck ninja-build libfmt-dev -y -q
 
                   sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
 
@@ -102,10 +91,6 @@ jobs:
 
             - name: Build
               run: cmake --build build --config Release -j 2
-
-            - name: Test GTest
-              working-directory: build/test
-              run: ctest --output-on-failure --no-tests=error -j 2
 
             - name: Test Doctest
               working-directory: build/test/doctest

@@ -9,10 +9,7 @@ project(
   HOMEPAGE_URL "https://github.com/hrzlgnm/monkey"
   LANGUAGES CXX)
 
-enable_testing()
-find_package(GTest REQUIRED)
 find_package(fmt REQUIRED)
-
 add_subdirectory(doctest)
 
 # ---- Declare library ----
