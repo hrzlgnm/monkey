@@ -16,3 +16,5 @@ add_executable(doctest::exe ALIAS doctest_exe)
 
 set_property(TARGET doctest_exe PROPERTY OUTPUT_NAME doctest)
 target_compile_features(doctest_exe PRIVATE cxx_std_20)
+
+add_test(NAME doctest COMMAND $<TARGET_FILE:doctest_exe> --no-version)
