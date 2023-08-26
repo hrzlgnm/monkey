@@ -1,7 +1,7 @@
 add_library(doctest INTERFACE)
 add_library(doctest::doctest ALIAS doctest)
 
-# note SYSTEM is only used to exclude the doctest signle header from clang-tidy
+# note SYSTEM is only used to exclude the doctest single header from clang-tidy
 target_include_directories(doctest SYSTEM INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(doctest_dll dll.cpp)
