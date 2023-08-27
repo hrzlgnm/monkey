@@ -76,7 +76,7 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;
 
 struct hashable_object : object
 {
-    using hash_key_type = std::variant<char, int64_t, std::string, bool>;
+    using hash_key_type = std::variant<int64_t, std::string, bool>;
 
     [[nodiscard]] inline auto is_hashable() const -> bool override { return true; }
 
