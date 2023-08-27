@@ -3,7 +3,6 @@
 #include <ast/boolean.hpp>
 #include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
-#include <ast/character_literal.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
 #include <ast/if_expression.hpp>
@@ -220,8 +219,3 @@ auto call_expression::compile(compiler& comp) const -> void
 }
 
 auto builtin_function_expression::compile(compiler& /*comp*/) const -> void {}
-
-auto character_literal::compile(compiler& comp) const -> void
-{
-    comp.emit(opcodes::constant, comp.add_constant({value}));
-}

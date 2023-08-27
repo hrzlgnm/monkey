@@ -5,7 +5,6 @@
 #include <ast/boolean.hpp>
 #include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
-#include <ast/character_literal.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
 #include <ast/if_expression.hpp>
@@ -15,6 +14,7 @@
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 #include <doctest/doctest.h>
+#include <lexer/token_type.hpp>
 #include <parser/parser.hpp>
 
 #include "environment.hpp"
@@ -33,18 +33,13 @@ auto array_expression::eval(environment_ptr env) const -> object
     return {result};
 }
 
-auto eval_integer_binary_expression(token_type oper, const int64_t left, const int64_t right) -> object
+template<typename ValueType>
+auto eval_common_value_binary_operator(token_type oper, const ValueType& left, const ValueType& right) -> object
 {
     using enum token_type;
     switch (oper) {
         case plus:
             return {left + right};
-        case minus:
-            return {left - right};
-        case asterisk:
-            return {left * right};
-        case slash:
-            return {left / right};
         case less_than:
             return {left < right};
         case greater_than:
@@ -58,33 +53,25 @@ auto eval_integer_binary_expression(token_type oper, const int64_t left, const i
     }
 }
 
-auto eval_character_binary_expression(token_type oper, const char left, const char right) -> object
+template<typename ValueType>
+auto eval_integral_value_binary_operator(token_type oper, const ValueType& left, const ValueType& right) -> object
 {
     using enum token_type;
     switch (oper) {
-        case plus: {
-            return {string_type(1, left).append(1, right)};
-        }
-        case less_than:
-            return {left < right};
-        case greater_than:
-            return {left > right};
-        case equals:
-            return {left == right};
-        case not_equals:
-            return {left != right};
+        case asterisk:
+            return {left * right};
+        case minus:
+            return {left - right};
+        case slash:
+            return {left / right};
         default:
-            return make_error("unknown operator: character {} character", oper);
+            return {};
     }
 }
 
-auto eval_string_binary_expression(token_type oper, const string_type& left, const string_type& right) -> object
+auto eval_string_binary_operator(token_type oper, const string_type& left, const string_type& right) -> object
 {
-    using enum token_type;
-    if (oper != plus) {
-        return make_error("unknown operator: string {} string", oper);
-    }
-    return {left + right};
+    return eval_common_value_binary_operator(oper, left, right);
 }
 
 auto binary_expression::eval(environment_ptr env) const -> object
@@ -99,23 +86,23 @@ auto binary_expression::eval(environment_ptr env) const -> object
         return evaluated_right;
     }
 
-    if (evaluated_left.is<char>() && evaluated_right.is<char>()) {
-        return eval_character_binary_expression(op, evaluated_left.as<char>(), evaluated_right.as<char>());
-    }
-    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
-        return eval_string_binary_expression(op, evaluated_left.as<string_type>(), evaluated_right.as<string_type>());
-    }
-    if ((evaluated_left.is<char>() || evaluated_left.is<string_type>())
-        && (evaluated_right.is<string_type>() || evaluated_right.is<char>()))
-    {
-        return eval_string_binary_expression(op, evaluated_left.to<string_type>(), evaluated_right.to<string_type>());
-    }
-    if (evaluated_left.is<integer_type>() && evaluated_right.is<integer_type>()) {
-        return eval_integer_binary_expression(
-            op, evaluated_left.as<integer_type>(), evaluated_right.as<integer_type>());
-    }
     if (evaluated_left.value.index() != evaluated_right.value.index()) {
         return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
+    }
+    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
+        auto res = eval_string_binary_operator(op, evaluated_left.as<string_type>(), evaluated_right.as<string_type>());
+        if (!res.is_nil()) {
+            return res;
+        }
+    }
+    if (evaluated_left.is<integer_type>() && evaluated_right.is<integer_type>()) {
+        auto res = eval_common_value_binary_operator(
+            op, evaluated_left.as<integer_type>(), evaluated_right.as<integer_type>());
+        if (res.is_nil()) {
+            res = eval_integral_value_binary_operator(
+                op, evaluated_left.as<integer_type>(), evaluated_right.as<integer_type>());
+        }
+        return res;
     }
     return make_error("unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
 }
@@ -207,7 +194,7 @@ auto index_expression::eval(environment_ptr env) const -> object
         return evaluated_index;
     }
     if (evaluated_left.is<array>() && evaluated_index.is<integer_type>()) {
-        auto arr = evaluated_left.as<array>();
+        const auto& arr = evaluated_left.as<array>();
         auto index = evaluated_index.as<integer_type>();
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
@@ -217,13 +204,13 @@ auto index_expression::eval(environment_ptr env) const -> object
     }
 
     if (evaluated_left.is<string_type>() && evaluated_index.is<integer_type>()) {
-        auto str = evaluated_left.as<string_type>();
+        const auto& str = evaluated_left.as<string_type>();
         auto index = evaluated_index.as<integer_type>();
         auto max = static_cast<int64_t>(str.size() - 1);
         if (index < 0 || index > max) {
             return {};
         }
-        return {str.at(static_cast<size_t>(index))};
+        return {str.substr(static_cast<size_t>(index), 1)};
     }
 
     if (evaluated_left.is<hash>()) {
@@ -232,7 +219,7 @@ auto index_expression::eval(environment_ptr env) const -> object
             return make_error("unusable as hash key: {}", evaluated_index.type_name());
         }
         if (!hsh.contains(evaluated_index.hash_key())) {
-            return {nil};
+            return {null};
         }
         return unwrap(hsh.at(evaluated_index.hash_key()));
     }
@@ -266,7 +253,7 @@ auto let_statement::eval(environment_ptr env) const -> object
         return val;
     }
     env->set(name->value, std::move(val));
-    return nil;
+    return null;
 }
 
 auto return_statement::eval(environment_ptr env) const -> object
@@ -279,7 +266,7 @@ auto return_statement::eval(environment_ptr env) const -> object
         evaluated.is_return_value = true;
         return evaluated;
     }
-    return nil;
+    return null;
 }
 
 auto expression_statement::eval(environment_ptr env) const -> object
@@ -287,7 +274,7 @@ auto expression_statement::eval(environment_ptr env) const -> object
     if (expr) {
         return expr->eval(env);
     }
-    return nil;
+    return null;
 }
 
 auto block_statement::eval(environment_ptr env) const -> object
@@ -375,7 +362,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
              first = false;
          }
          fmt::print("\n");
-         return {nil};
+         return {null};
      }},
     {"first",
      {"arr"},
@@ -389,7 +376,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const string_type& str) -> object
                  {
                      if (str.length() > 0) {
-                         return {str.at(0)};
+                         return {str.substr(0, 1)};
                      }
                      return {};
                  },
@@ -417,7 +404,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                  [](const string_type& str) -> object
                  {
                      if (str.length() > 0) {
-                         return {str.at(str.length() - 1)};
+                         return {str.substr(str.length() - 1, 1)};
                      }
                      return {};
                  },
@@ -478,10 +465,10 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
                      copy.push_back({obj});
                      return {copy};
                  },
-                 [](const string_type& str, const char obj) -> object
+                 [](const string_type& str, const std::string& to_push) -> object
                  {
                      auto copy = str;
-                     copy.push_back(obj);
+                     copy.append(to_push);
                      return {copy};
                  },
                  [](const auto& other1, const auto& other2) -> object
@@ -499,11 +486,6 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
 auto callable_expression::eval(environment_ptr env) const -> object
 {
     return {std::make_pair(this, env)};
-}
-
-auto character_literal::eval(environment_ptr /*env*/) const -> object
-{
-    return {value};
 }
 
 namespace
@@ -607,24 +589,6 @@ TEST_CASE("integerExpresssion")
     }
 }
 
-TEST_CASE("characterExpresssion")
-{
-    struct ct
-    {
-        std::string_view input;
-        char expected;
-    };
-
-    std::array tests {
-        ct {"'5'", '5'},
-        ct {"'a'", 'a'},
-    };
-    for (const auto& [input, expected] : tests) {
-        const auto evaluated = run(input);
-        require_eq(evaluated, expected, input);
-    }
-}
-
 TEST_CASE("booleanExpresssion")
 {
     struct et
@@ -644,15 +608,14 @@ TEST_CASE("booleanExpresssion")
         et {"1 != 1", false},
         et {"1 == 2", false},
         et {"1 != 2", true},
-        et {"'a' < 'b'", true},
-        et {"'a' > 'b'", false},
-        et {"'a' < 'a'", false},
-        et {"'a' > 'a'", false},
-        et {"'a' == 'a'", true},
-        et {"'a' != 'a'", false},
-        et {"'a' == 'b'", false},
-        et {"'a' != 'b'", true},
-
+        et {R"("a" < "b")", true},
+        et {R"("a" > "b")", false},
+        et {R"("a" < "a")", false},
+        et {R"("a" > "a")", false},
+        et {R"("a" == "a")", true},
+        et {R"("a" != "a")", false},
+        et {R"("a" == "b")", false},
+        et {R"("a" != "b")", true},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
@@ -674,41 +637,6 @@ TEST_CASE("stringConcatenation")
     require_eq<string_type>(evaluated, "Hello World!", input);
 }
 
-TEST_CASE("characterExpression")
-{
-    auto input = R"('H')";
-    auto evaluated = run(input);
-    require_eq<char>(evaluated, 'H', input);
-}
-
-TEST_CASE("stringCharacterConcatenation")
-{
-    struct et
-    {
-        std::string_view input;
-        string_type expected;
-    };
-
-    std::array tests {
-        et {
-            R"("Hell" + 'o')",
-            "Hello",
-        },
-        et {
-            R"('H' + "ell" + 'o')",
-            "Hello",
-        },
-        et {
-            R"('H' + 'e' + 'l' + 'l' + 'o')",
-            "Hello",
-        },
-    };
-    for (const auto& [input, expected] : tests) {
-        const auto evaluated = run(input);
-        require_eq(evaluated, expected, input);
-    }
-}
-
 TEST_CASE("bangOperator")
 {
     struct et
@@ -722,11 +650,11 @@ TEST_CASE("bangOperator")
         et {"!false", true},
         et {"!false", true},
         et {"!5", false},
-        et {"!'a'", false},
+        et {R"(!"a")", false},
         et {"!!true", true},
         et {"!!false", false},
         et {"!!5", true},
-        et {"!!'a'", true},
+        et {R"(!!"a")", true},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
@@ -756,7 +684,7 @@ TEST_CASE("ifElseExpressions")
         if (expected.is<integer_type>()) {
             require_eq(evaluated, expected.as<integer_type>(), input);
         } else {
-            require_eq(evaluated, nilv, input);
+            require_eq(evaluated, null_value, input);
         }
     }
 }
@@ -917,7 +845,7 @@ TEST_CASE("builtinFunctions")
     struct bt
     {
         std::string_view input;
-        std::variant<char, std::int64_t, std::string, error, nil_type, array> expected;
+        std::variant<std::int64_t, std::string, error, null_type, array> expected;
     };
 
     const std::array tests {
@@ -927,43 +855,42 @@ TEST_CASE("builtinFunctions")
         bt {R"(len(1))", error {"argument of type integer to len() is not supported"}},
         bt {R"(len("one", "two"))", error {"wrong number of arguments to len(): expected=1, got=2"}},
         bt {R"(len([1,2]))", 2},
-        bt {R"(first("abc"))", 'a'},
+        bt {R"(first("abc"))", "a"},
         bt {R"(first())", error {"wrong number of arguments to first(): expected=1, got=0"}},
         bt {R"(first(1))", error {"argument of type integer to first() is not supported"}},
         bt {R"(first([1,2]))", 1},
-        bt {R"(first([]))", nilv},
-        bt {R"(last("abc"))", 'c'},
+        bt {R"(first([]))", null_value},
+        bt {R"(last("abc"))", "c"},
         bt {R"(last())", error {"wrong number of arguments to last(): expected=1, got=0"}},
         bt {R"(last(1))", error {"argument of type integer to last() is not supported"}},
         bt {R"(last([1,2]))", 2},
-        bt {R"(last([]))", nilv},
+        bt {R"(last([]))", null_value},
         bt {R"(rest("abc"))", "bc"},
         bt {R"(rest("bc"))", "c"},
-        bt {R"(rest("c"))", nilv},
+        bt {R"(rest("c"))", null_value},
         bt {R"(rest())", error {"wrong number of arguments to rest(): expected=1, got=0"}},
         bt {R"(rest(1))", error {"argument of type integer to rest() is not supported"}},
         bt {R"(rest([1,2]))", array {{2}}},
-        bt {R"(rest([1]))", nilv},
-        bt {R"(rest([]))", nilv},
+        bt {R"(rest([1]))", null_value},
+        bt {R"(rest([]))", null_value},
         bt {R"(push())", error {"wrong number of arguments to push(): expected=2, got=0"}},
         bt {R"(push(1))", error {"wrong number of arguments to push(): expected=2, got=1"}},
         bt {R"(push(1, 2))", error {"argument of type integer and integer to push() are not supported"}},
         bt {R"(push([1,2], 3))", array {{1}, {2}, {3}}},
         bt {R"(push([], "abc"))", array {{"abc"}}},
-        bt {R"(push("", 'a'))", "a"},
-        bt {R"(push("c", 'a'))", "ca"},
+        bt {R"(push("", "a"))", "a"},
+        bt {R"(push("c", "abc"))", "cabc"},
     };
 
     for (const auto& test : tests) {
         auto evaluated = run(test.input);
         std::visit(
             overloaded {
-                [&](const char val) { require_eq(evaluated, val, test.input); },
                 [&](const integer_type val) { require_eq(evaluated, val, test.input); },
                 [&](const error& val) { require_eq(evaluated, val, test.input); },
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
                 [&](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
-                [&](const nil_type& /*val*/) { require_eq(evaluated, nilv, test.input); },
+                [&](const null_type& /*val*/) { require_eq(evaluated, null_value, test.input); },
             },
             test.expected);
     }
@@ -1023,19 +950,19 @@ TEST_CASE("indexOperatorExpressions")
         },
         it {
             "[1, 2, 3][3]",
-            nilv,
+            null_value,
         },
         it {
             "[1, 2, 3][-1]",
-            nilv,
+            null_value,
         },
         it {
             R"("2"[0])",
-            '2',
+            "2",
         },
         it {
             R"(""[0])",
-            nilv,
+            null_value,
         },
     };
 
@@ -1097,7 +1024,7 @@ TEST_CASE("hashIndexExpression")
         },
         ht {
             R"({"foo": 5}["bar"])",
-            nilv,
+            null_value,
         },
         ht {
             R"(let key = "foo"; {"foo": 5}[key])",
@@ -1105,11 +1032,7 @@ TEST_CASE("hashIndexExpression")
         },
         ht {
             R"({}["foo"])",
-            nilv,
-        },
-        ht {
-            R"({}['5'])",
-            nilv,
+            null_value,
         },
         ht {
             R"({5: 5}[5])",
@@ -1121,10 +1044,6 @@ TEST_CASE("hashIndexExpression")
         },
         ht {
             R"({false: 5}[false])",
-            5,
-        },
-        ht {
-            R"({'a': 5}['a'])",
             5,
         },
     };

@@ -215,7 +215,7 @@ auto check_program(std::string_view input) -> parsed_program
     return {std::move(prgrm), std::move(prsr)};
 }
 
-using expected_value = std::variant<int64_t, char, std::string, std::vector<instructions>>;
+using expected_value = std::variant<int64_t, std::string, std::vector<instructions>>;
 
 struct ctc
 {
@@ -240,7 +240,6 @@ auto check_constants(const std::vector<expected_value>& expecteds, const constan
         std::visit(
             overloaded {
                 [&](const int64_t val) { CHECK_EQ(val, actual.as<integer_type>()); },
-                [&](const char val) { CHECK_EQ(val, actual.as<char>()); },
                 [&](const std::string& val) { CHECK_EQ(val, actual.as<string_type>()); },
                 [&](const std::vector<instructions>& instrs)
                 { check_instructions(instrs, actual.as<compiled_function>().instrs); },
@@ -482,22 +481,6 @@ TEST_CASE("stringExpression")
                 make(constant, 0),
                 make(constant, 1),
                 make(add),
-                make(pop),
-            },
-        },
-    };
-    run(std::move(tests));
-}
-
-TEST_CASE("characterExpression")
-{
-    using enum opcodes;
-    std::array tests {
-        ctc {
-            R"('m')",
-            {{'m'}},
-            {
-                make(constant, 0),
                 make(pop),
             },
         },

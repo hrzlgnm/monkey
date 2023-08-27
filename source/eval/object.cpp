@@ -9,7 +9,6 @@
 auto to_string(const hash_key_type& hash_key)
 {
     return std::visit(overloaded {[](const integer_type val) -> std::string { return std::to_string(val); },
-                                  [](const char val) -> std::string { return "'" + std::string(1, val) + "'"; },
                                   [](const string_type& val) -> std::string { return "\"" + val + "\""; },
                                   [](const bool val) -> std::string { return val ? "true" : "false"; },
                                   [](const auto&) -> std::string { return "unknown"; }},
@@ -26,9 +25,8 @@ namespace std
 auto to_string(const value_type& value) -> std::string
 {
     return std::visit(
-        overloaded {[](const nil_type&) -> std::string { return "nil"; },
+        overloaded {[](const null_type&) -> std::string { return "nil"; },
                     [](const integer_type val) -> std::string { return to_string(val); },
-                    [](const char val) -> std::string { return "'" + std::string(1, val) + "'"; },
                     [](const string_type& val) -> std::string { return "\"" + val + "\""; },
                     [](const bool val) -> std::string { return val ? "true" : "false"; },
                     [](const error& val) -> std::string { return "ERROR: " + val.message; },
@@ -71,10 +69,9 @@ auto object::type_name() const -> std::string
     }
     return std::visit(
         overloaded {
-            [](const nil_type&) { return "nil"; },
+            [](const null_type&) { return "nil"; },
             [](const bool) { return "bool"; },
             [](const integer_type) { return "integer"; },
-            [](const char) { return "character"; },
             [](const string_type&) { return "string"; },
             [](const error&) { return "error"; },
             [](const bound_function&) { return "function"; },

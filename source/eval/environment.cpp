@@ -21,7 +21,7 @@ auto environment::get(const std::string& name) const -> object
             return itr->second;
         }
     }
-    return nil;
+    return null;
 }
 
 auto environment::set(const std::string& name, object&& val) -> void
