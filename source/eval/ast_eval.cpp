@@ -920,7 +920,7 @@ TEST_CASE("builtinFunctions")
         std::variant<char, std::int64_t, std::string, error, nil_type, array> expected;
     };
 
-    std::array tests {
+    const std::array tests {
         bt {R"(len(""))", 0},
         bt {R"(len("four"))", 4},
         bt {R"(len("hello world"))", 11},
@@ -954,18 +954,18 @@ TEST_CASE("builtinFunctions")
         bt {R"(push("c", 'a'))", "ca"},
     };
 
-    for (const auto& [input, expected] : tests) {
-        auto evaluated = run(input);
+    for (const auto& test : tests) {
+        auto evaluated = run(test.input);
         std::visit(
             overloaded {
-                [=](const char val) { require_eq(evaluated, val, input); },
-                [=](const integer_type val) { require_eq(evaluated, val, input); },
-                [=](const error& val) { require_eq(evaluated, val, input); },
-                [=](const std::string& val) { require_eq(evaluated, val, input); },
-                [=](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
-                [=](const nil_type& /*val*/) { require_eq(evaluated, nilv, input); },
+                [&](const char val) { require_eq(evaluated, val, test.input); },
+                [&](const integer_type val) { require_eq(evaluated, val, test.input); },
+                [&](const error& val) { require_eq(evaluated, val, test.input); },
+                [&](const std::string& val) { require_eq(evaluated, val, test.input); },
+                [&](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
+                [&](const nil_type& /*val*/) { require_eq(evaluated, nilv, test.input); },
             },
-            expected);
+            test.expected);
     }
 }
 

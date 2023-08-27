@@ -242,7 +242,7 @@ return false;
 'c'
 'cd'
         )"};
-    std::array expected_tokens {
+    const std::array expected_tokens {
         token {let, "let"},       token {ident, "five"},     token {assign, "="},       token {integer, "5"},
         token {semicolon, ";"},   token {let, "let"},        token {ident, "ten"},      token {assign, "="},
         token {integer, "10"},    token {semicolon, ";"},    token {let, "let"},        token {ident, "add"},
