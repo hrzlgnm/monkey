@@ -14,7 +14,7 @@ auto environment::break_cycle() -> void
     m_store.clear();
 }
 
-auto environment::get(const std::string& name) const -> object
+auto environment::get(const std::string& name) const -> object_ptr
 {
     for (auto ptr = shared_from_this(); ptr; ptr = ptr->m_parent) {
         if (const auto itr = ptr->m_store.find(name); itr != ptr->m_store.end()) {
@@ -24,16 +24,7 @@ auto environment::get(const std::string& name) const -> object
     return null;
 }
 
-auto environment::set(const std::string& name, object&& val) -> void
-{
-    if (const auto itr = m_store.find(name); itr != m_store.end()) {
-        itr->second = std::move(val);
-    } else {
-        m_store.emplace(name, val);
-    }
-}
-
-auto environment::set(const std::string& name, const object& val) -> void
+auto environment::set(const std::string& name, const object_ptr& val) -> void
 {
     m_store[name] = val;
 }
@@ -41,6 +32,6 @@ auto environment::set(const std::string& name, const object& val) -> void
 auto environment::debug() const -> void
 {
     for (const auto& [k, v] : m_store) {
-        fmt::print("[{}] = {}\n", k, std::to_string(v.value));
+        fmt::print("[{}] = {}\n", k, v->inspect());
     }
 }

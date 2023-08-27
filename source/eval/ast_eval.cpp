@@ -1,4 +1,8 @@
+#include <cstdint>
 #include <deque>
+#include <memory>
+#include <stdexcept>
+#include <variant>
 
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
@@ -17,104 +21,108 @@
 #include <lexer/token_type.hpp>
 #include <parser/parser.hpp>
 
+#include "code/code.hpp"
 #include "environment.hpp"
 #include "object.hpp"
 
-auto array_expression::eval(environment_ptr env) const -> object
+auto array_expression::eval(environment_ptr env) const -> object_ptr
 {
-    array result;
+    array_object::array arr;
     for (const auto& element : elements) {
         auto evaluated = element->eval(env);
-        if (evaluated.is<error>()) {
+        if (evaluated->is_error()) {
             return evaluated;
         }
-        result.push_back(std::move(evaluated));
+        arr.push_back(std::move(evaluated));
     }
-    return {result};
+    return std::make_shared<array_object>(std::move(arr));
 }
 
-template<typename ValueType>
-auto eval_common_value_binary_operator(token_type oper, const ValueType& left, const ValueType& right) -> object
+auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> object_ptr
 {
     using enum token_type;
     switch (oper) {
         case plus:
-            return {left + right};
+            return std::make_shared<integer_object>(left + right);
+        case asterisk:
+            return std::make_shared<integer_object>(left * right);
+        case minus:
+            return std::make_shared<integer_object>(left - right);
+        case slash:
+            return std::make_shared<integer_object>(left / right);
         case less_than:
-            return {left < right};
+            return native_bool_to_object(left < right);
         case greater_than:
-            return {left > right};
+            return native_bool_to_object(left > right);
         case equals:
-            return {left == right};
+            return native_bool_to_object(left == right);
         case not_equals:
-            return {left != right};
+            return native_bool_to_object(left != right);
         default:
             return {};
     }
 }
 
-template<typename ValueType>
-auto eval_integral_value_binary_operator(token_type oper, const ValueType& left, const ValueType& right) -> object
+auto apply_string_binary_operator(token_type oper, const std::string& left, const std::string& right) -> object_ptr
 {
     using enum token_type;
     switch (oper) {
-        case asterisk:
-            return {left * right};
-        case minus:
-            return {left - right};
-        case slash:
-            return {left / right};
+        case plus:
+            return std::make_shared<string_object>(left + right);
+        case less_than:
+            return native_bool_to_object(left < right);
+        case greater_than:
+            return native_bool_to_object(left > right);
+        case equals:
+            return native_bool_to_object(left == right);
+        case not_equals:
+            return native_bool_to_object(left != right);
         default:
             return {};
     }
 }
 
-auto eval_string_binary_operator(token_type oper, const string_type& left, const string_type& right) -> object
-{
-    return eval_common_value_binary_operator(oper, left, right);
-}
-
-auto binary_expression::eval(environment_ptr env) const -> object
+auto binary_expression::eval(environment_ptr env) const -> object_ptr
 {
     auto evaluated_left = left->eval(env);
-    if (evaluated_left.is<error>()) {
+    if (evaluated_left->is_error()) {
         return evaluated_left;
     }
 
     auto evaluated_right = right->eval(env);
-    if (evaluated_right.is<error>()) {
+    if (evaluated_right->is_error()) {
         return evaluated_right;
     }
-
-    if (evaluated_left.value.index() != evaluated_right.value.index()) {
-        return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
+    if (evaluated_left->type() != evaluated_right->type()) {
+        return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
     }
-    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
-        auto res = eval_string_binary_operator(op, evaluated_left.as<string_type>(), evaluated_right.as<string_type>());
-        if (!res.is_nil()) {
+
+    using enum object::object_type;
+    if (evaluated_left->is(string) && evaluated_right->is(string)) {
+        auto res = apply_string_binary_operator(
+            op, evaluated_left->as<string_object>()->value, evaluated_right->as<string_object>()->value);
+        if (res) {
             return res;
         }
     }
-    if (evaluated_left.is<integer_type>() && evaluated_right.is<integer_type>()) {
-        auto res = eval_common_value_binary_operator(
-            op, evaluated_left.as<integer_type>(), evaluated_right.as<integer_type>());
-        if (res.is_nil()) {
-            res = eval_integral_value_binary_operator(
-                op, evaluated_left.as<integer_type>(), evaluated_right.as<integer_type>());
+    if (evaluated_left->is(integer) && evaluated_right->is(integer)) {
+        auto res = apply_integer_binary_operator(
+            op, evaluated_left->as<integer_object>()->value, evaluated_right->as<integer_object>()->value);
+        if (res) {
+            return res;
         }
-        return res;
     }
-    return make_error("unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
+    return make_error("unknown operator: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
 }
 
-auto boolean::eval(environment_ptr /*env*/) const -> object
+auto boolean::eval(environment_ptr /*env*/) const -> object_ptr
 {
-    return object {value};
+    return std::make_shared<boolean_object>(value);
 }
 
 auto function_expression::call(environment_ptr closure_env,
                                environment_ptr caller_env,
-                               const std::vector<expression_ptr>& arguments) const -> object
+                               const std::vector<expression_ptr>& arguments) const -> object_ptr
 {
     auto locals = std::make_shared<environment>(closure_env);
     for (auto arg_itr = arguments.begin(); const auto& parameter : parameters) {
@@ -128,148 +136,150 @@ auto function_expression::call(environment_ptr closure_env,
     return body->eval(locals);
 }
 
-auto call_expression::eval(environment_ptr env) const -> object
+auto call_expression::eval(environment_ptr env) const -> object_ptr
 {
     auto evaluated = function->eval(env);
-    if (evaluated.is<error>()) {
+    if (evaluated->is_error()) {
         return evaluated;
     }
-    auto [fn, closure_env] = evaluated.as<bound_function>();
-    return fn->call(closure_env, env, arguments);
+    auto fn = evaluated->as<function_object>();
+    return fn->callable->call(fn->closure_env, env, arguments);
 }
 
-auto hash_literal_expression::eval(environment_ptr env) const -> object
+auto hash_literal_expression::eval(environment_ptr env) const -> object_ptr
 {
-    hash result;
+    hash_object::hash result;
 
     for (const auto& [key, value] : pairs) {
         auto eval_key = key->eval(env);
-        if (eval_key.is<error>()) {
+        if (eval_key->is_error()) {
             return eval_key;
         }
-        if (!eval_key.is_hashable()) {
-            return make_error("unusable as hash key {}", eval_key.type_name());
+        if (!eval_key->is_hashable()) {
+            return make_error("unusable as hash key {}", eval_key->type());
         }
         auto eval_val = value->eval(env);
-        if (eval_val.is<error>()) {
+        if (eval_val->is_error()) {
             return eval_val;
         }
-        result.insert({eval_key.hash_key(), std::make_any<object>(eval_val)});
+        result.insert({eval_key->as<hashable_object>()->hash_key(), eval_val});
     }
-    return {result};
+    return std::make_shared<hash_object>(std::move(result));
 }
 
-auto identifier::eval(environment_ptr env) const -> object
+auto identifier::eval(environment_ptr env) const -> object_ptr
 {
     auto val = env->get(value);
-    if (val.is_nil()) {
+    if (val->is(object::object_type::null)) {
         return make_error("identifier not found: {}", value);
     }
     return val;
 }
 
-auto if_expression::eval(environment_ptr env) const -> object
+auto if_expression::eval(environment_ptr env) const -> object_ptr
 {
     auto evaluated_condition = condition->eval(env);
-    if (evaluated_condition.is<error>()) {
+    if (evaluated_condition->is_error()) {
         return evaluated_condition;
     }
-    if (evaluated_condition.is_truthy()) {
+    if (evaluated_condition->is_truthy()) {
         return consequence->eval(env);
     }
     if (alternative) {
         return alternative->eval(env);
     }
-    return {};
+    return null;
 }
 
-auto index_expression::eval(environment_ptr env) const -> object
+auto index_expression::eval(environment_ptr env) const -> object_ptr
 {
     auto evaluated_left = left->eval(env);
-    if (evaluated_left.is<error>()) {
+    if (evaluated_left->is_error()) {
         return evaluated_left;
     }
     auto evaluated_index = index->eval(env);
-    if (evaluated_index.is<error>()) {
+    if (evaluated_index->is_error()) {
         return evaluated_index;
     }
-    if (evaluated_left.is<array>() && evaluated_index.is<integer_type>()) {
-        const auto& arr = evaluated_left.as<array>();
-        auto index = evaluated_index.as<integer_type>();
+    using enum object::object_type;
+    if (evaluated_left->is(array) && evaluated_index->is(integer)) {
+        const auto& arr = evaluated_left->as<array_object>()->elements;
+        auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
-            return {};
+            return ::null;
         }
         return arr.at(static_cast<size_t>(index));
     }
 
-    if (evaluated_left.is<string_type>() && evaluated_index.is<integer_type>()) {
-        const auto& str = evaluated_left.as<string_type>();
-        auto index = evaluated_index.as<integer_type>();
+    if (evaluated_left->is(string) && evaluated_index->is(integer)) {
+        const auto& str = evaluated_left->as<string_object>()->value;
+        auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(str.size() - 1);
         if (index < 0 || index > max) {
-            return {};
+            return ::null;
         }
-        return {str.substr(static_cast<size_t>(index), 1)};
+        return std::make_shared<string_object>(str.substr(static_cast<size_t>(index), 1));
     }
 
-    if (evaluated_left.is<hash>()) {
-        auto hsh = evaluated_left.as<hash>();
-        if (!evaluated_index.is_hashable()) {
-            return make_error("unusable as hash key: {}", evaluated_index.type_name());
+    if (evaluated_left->is(hash)) {
+        const auto& hsh = evaluated_left->as<hash_object>()->pairs;
+        if (!evaluated_index->is_hashable()) {
+            return make_error("unusable as hash key: {}", evaluated_index->type());
         }
-        if (!hsh.contains(evaluated_index.hash_key())) {
-            return {null};
+        const auto hash_key = evaluated_index->as<hashable_object>()->hash_key();
+        if (!hsh.contains(hash_key)) {
+            return ::null;
         }
-        return unwrap(hsh.at(evaluated_index.hash_key()));
+        return hsh.at(hash_key);
     }
-    return make_error("index operator not supported: {}", evaluated_left.type_name());
+    return make_error("index operator not supported: {}", evaluated_left->type());
 }
 
-auto integer_literal::eval(environment_ptr /*env*/) const -> object
+auto integer_literal::eval(environment_ptr /*env*/) const -> object_ptr
 {
-    return {value};
+    return std::make_shared<integer_object>(value);
 }
 
-auto program::eval(environment_ptr env) const -> object
+auto program::eval(environment_ptr env) const -> object_ptr
 {
-    object result;
+    object_ptr result;
     for (const auto& statement : statements) {
         result = statement->eval(env);
-        if (result.is_return_value) {
+        if (result->is_return_value) {
             return result;
         }
-        if (result.is<error>()) {
+        if (result->is_error()) {
             return result;
         }
     }
     return result;
 }
 
-auto let_statement::eval(environment_ptr env) const -> object
+auto let_statement::eval(environment_ptr env) const -> object_ptr
 {
     auto val = value->eval(env);
-    if (val.is<error>()) {
+    if (val->is_error()) {
         return val;
     }
-    env->set(name->value, std::move(val));
+    env->set(name->value, val);
     return null;
 }
 
-auto return_statement::eval(environment_ptr env) const -> object
+auto return_statement::eval(environment_ptr env) const -> object_ptr
 {
     if (value) {
         auto evaluated = value->eval(env);
-        if (evaluated.is<error>()) {
+        if (evaluated->is_error()) {
             return evaluated;
         }
-        evaluated.is_return_value = true;
+        evaluated->is_return_value = true;
         return evaluated;
     }
     return null;
 }
 
-auto expression_statement::eval(environment_ptr env) const -> object
+auto expression_statement::eval(environment_ptr env) const -> object_ptr
 {
     if (expr) {
         return expr->eval(env);
@@ -277,51 +287,51 @@ auto expression_statement::eval(environment_ptr env) const -> object
     return null;
 }
 
-auto block_statement::eval(environment_ptr env) const -> object
+auto block_statement::eval(environment_ptr env) const -> object_ptr
 {
-    object result;
+    object_ptr result;
     for (const auto& stmt : statements) {
         result = stmt->eval(env);
-        if (result.is_return_value || result.is<error>()) {
+        if (result->is_return_value || result->is_error()) {
             return result;
         }
     }
     return result;
 }
 
-auto string_literal::eval(environment_ptr /*env*/) const -> object
+auto string_literal::eval(environment_ptr /*env*/) const -> object_ptr
 {
-    return object {value};
+    return std::make_shared<string_object>(value);
 }
 
-auto unary_expression::eval(environment_ptr env) const -> object
+auto unary_expression::eval(environment_ptr env) const -> object_ptr
 {
     using enum token_type;
     auto evaluated_value = right->eval(env);
-    if (evaluated_value.is<error>()) {
+    if (evaluated_value->is_error()) {
         return evaluated_value;
     }
     switch (op) {
         case minus:
-            if (!evaluated_value.is<integer_type>()) {
-                return make_error("unknown operator: -{}", evaluated_value.type_name());
+            if (!evaluated_value->is(object::object_type::integer)) {
+                return make_error("unknown operator: -{}", evaluated_value->type());
             }
-            return {-evaluated_value.as<integer_type>()};
+            return std::make_shared<integer_object>(-evaluated_value->as<integer_object>()->value);
         case exclamation:
-            if (!evaluated_value.is<bool>()) {
-                return {false};
+            if (!evaluated_value->is(object::object_type::boolean)) {
+                return false_object;
             }
-            return {!evaluated_value.as<bool>()};
+            return native_bool_to_object(!evaluated_value->as<boolean_object>()->value);
         default:
-            return make_error("unknown operator: {}{}", op, evaluated_value.type_name());
+            return make_error("unknown operator: {}{}", op, evaluated_value->type());
     }
 }
 
 auto builtin_function_expression::call(environment_ptr /*closure_env*/,
                                        environment_ptr caller_env,
-                                       const std::vector<expression_ptr>& arguments) const -> object
+                                       const std::vector<expression_ptr>& arguments) const -> object_ptr
 {
-    array args;
+    array_object::array args;
     std::transform(arguments.cbegin(),
                    arguments.cend(),
                    std::back_inserter(args),
@@ -332,179 +342,208 @@ auto builtin_function_expression::call(environment_ptr /*closure_env*/,
 const std::vector<builtin_function_expression> builtin_function_expression::builtins {
     {"len",
      {"val"},
-     [](const array& arguments) -> object
+     [](const array_object::array& arguments) -> object_ptr
      {
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
          }
-         return {std::visit(
-             overloaded {
-                 [](const string_type& str) -> object { return {static_cast<integer_type>(str.length())}; },
-                 [](const array& arr) -> object { return {static_cast<integer_type>(arr.size())}; },
-                 [](const auto& other) -> object
-                 { return make_error("argument of type {} to len() is not supported", object {other}.type_name()); },
-             },
-             arguments[0].value)};
+         const auto& maybe_string_or_array = arguments.at(0);
+         using enum object::object_type;
+         if (maybe_string_or_array->is(string)) {
+             const auto& str = maybe_string_or_array->as<string_object>()->value;
+             return std::make_shared<integer_object>(str.size());
+         }
+         if (maybe_string_or_array->is(array)) {
+             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+
+             return std::make_shared<integer_object>(arr.size());
+         }
+         return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
      }},
     {"puts",
      {"str"},
-     [](const array& arguments) -> object
+     [](const array_object::array& arguments) -> object_ptr
      {
+         using enum object::object_type;
          for (bool first = true; const auto& arg : arguments) {
              if (!first) {
                  fmt::print(" ");
              }
-             if (arg.is<string_type>()) {
-                 fmt::print("{}", arg.as<string_type>());
+             if (arg->is(string)) {
+                 fmt::print("{}", arg->as<string_object>()->value);
              } else {
-                 fmt::print("{}", std::to_string(arg.value));
+                 fmt::print("{}", arg->inspect());
              }
              first = false;
          }
          fmt::print("\n");
-         return {null};
+         return ::null;
      }},
     {"first",
      {"arr"},
-     [](const array& arguments) -> object
+     [](const array_object::array& arguments) -> object_ptr
      {
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to first(): expected=1, got={}", arguments.size());
          }
-         return {std::visit(
-             overloaded {
-                 [](const string_type& str) -> object
-                 {
-                     if (str.length() > 0) {
-                         return {str.substr(0, 1)};
-                     }
-                     return {};
-                 },
-                 [](const array& arr) -> object
-                 {
-                     if (!arr.empty()) {
-                         return arr.front();
-                     }
-                     return {};
-                 },
-                 [](const auto& other) -> object
-                 { return make_error("argument of type {} to first() is not supported", object {other}.type_name()); },
-             },
-             arguments[0].value)};
+         const auto& maybe_string_or_array = arguments.at(0);
+         using enum object::object_type;
+         if (maybe_string_or_array->is(string)) {
+             const auto& str = maybe_string_or_array->as<string_object>()->value;
+             if (!str.empty()) {
+                 return std::make_shared<string_object>(str.substr(0, 1));
+             }
+             return ::null;
+         }
+         if (maybe_string_or_array->is(array)) {
+             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+             if (!arr.empty()) {
+                 return arr.front();
+             }
+             return ::null;
+         }
+         return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
      }},
     {"last",
      {"arr"},
-     [](const array& arguments) -> object
+     [](const array_object::array& arguments) -> object_ptr
      {
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to last(): expected=1, got={}", arguments.size());
          }
-         return {std::visit(
-             overloaded {
-                 [](const string_type& str) -> object
-                 {
-                     if (str.length() > 0) {
-                         return {str.substr(str.length() - 1, 1)};
-                     }
-                     return {};
-                 },
-                 [](const array& arr) -> object
-                 {
-                     if (!arr.empty()) {
-                         return arr.back();
-                     }
-                     return {};
-                 },
-                 [](const auto& other) -> object
-                 { return make_error("argument of type {} to last() is not supported", object {other}.type_name()); },
-             },
-             arguments[0].value)};
+         const auto& maybe_string_or_array = arguments.at(0);
+         using enum object::object_type;
+         if (maybe_string_or_array->is(string)) {
+             const auto& str = maybe_string_or_array->as<string_object>()->value;
+             if (!str.empty()) {
+                 return std::make_shared<string_object>(str.substr(str.length() - 1, 1));
+             }
+             return ::null;
+         }
+         if (maybe_string_or_array->is(array)) {
+             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+             if (!arr.empty()) {
+                 return arr.back();
+             }
+             return ::null;
+         }
+         return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
      }},
     {"rest",
      {"arr"},
-     [](const array& arguments) -> object
+     [](const array_object::array& arguments) -> object_ptr
      {
          if (arguments.size() != 1) {
              return make_error("wrong number of arguments to rest(): expected=1, got={}", arguments.size());
          }
-         return {std::visit(
-             overloaded {
-                 [](const string_type& str) -> object
-                 {
-                     if (str.size() > 1) {
-                         return {str.substr(1)};
-                     }
-                     return {};
-                 },
-                 [](const array& arr) -> object
-                 {
-                     if (arr.size() > 1) {
-                         array rest;
-                         std::copy(arr.begin() + 1, arr.end(), std::back_inserter(rest));
-                         return {rest};
-                     }
-                     return {};
-                 },
-                 [](const auto& other) -> object
-                 { return make_error("argument of type {} to rest() is not supported", object {other}.type_name()); },
-             },
-             arguments[0].value)};
+         const auto& maybe_string_or_array = arguments.at(0);
+         using enum object::object_type;
+         if (maybe_string_or_array->is(string)) {
+             const auto& str = maybe_string_or_array->as<string_object>()->value;
+             if (str.size() > 1) {
+                 return std::make_shared<string_object>(str.substr(1));
+             }
+             return ::null;
+         }
+         if (maybe_string_or_array->is(array)) {
+             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+             if (arr.size() > 1) {
+                 array_object::array rest;
+                 std::copy(arr.cbegin() + 1, arr.cend(), std::back_inserter(rest));
+                 return std::make_shared<array_object>(std::move(rest));
+             }
+             return ::null;
+         }
+         return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
      }},
     {"push",
      {"arr", "val"},
-     [](const array& arguments) -> object
+     [](const array_object::array& arguments) -> object_ptr
      {
          if (arguments.size() != 2) {
              return make_error("wrong number of arguments to push(): expected=2, got={}", arguments.size());
          }
-         return std::visit(
-             overloaded {
-                 [](const array& arr, const auto& obj) -> object
-                 {
-                     auto copy = arr;
-                     copy.push_back({obj});
-                     return {copy};
-                 },
-                 [](const string_type& str, const std::string& to_push) -> object
-                 {
-                     auto copy = str;
-                     copy.append(to_push);
-                     return {copy};
-                 },
-                 [](const auto& other1, const auto& other2) -> object
-                 {
-                     return make_error("argument of type {} and {} to push() are not supported",
-                                       object {other1}.type_name(),
-                                       object {other2}.type_name());
-                 },
-             },
-             arguments[0].value,
-             arguments[1].value);
+         const auto& lhs = arguments[0];
+         const auto& rhs = arguments[1];
+         using enum object::object_type;
+         if (lhs->is(array)) {
+             auto copy = lhs->as<array_object>()->elements;
+             copy.push_back(rhs);
+             return std::make_shared<array_object>(std::move(copy));
+         }
+         if (lhs->is(string) && rhs->is(string)) {
+             auto copy = lhs->as<string_object>()->value;
+             copy.append(rhs->as<string_object>()->value);
+             return std::make_shared<string_object>(std::move(copy));
+         }
+         return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
      }},
 };
 
-auto callable_expression::eval(environment_ptr env) const -> object
+auto callable_expression::eval(environment_ptr env) const -> object_ptr
 {
-    return {std::make_pair(this, env)};
+    return std::make_shared<function_object>(this, env);
 }
 
 namespace
 {
-// NOLINTBEGIN(*)
-template<typename Expected>
-auto require_eq(const object& obj, const Expected& expected, std::string_view input) -> void
+
+struct error
 {
-    INFO(input,
-         " expected: ",
-         object {expected}.type_name(),
-         " with: ",
-         std::to_string(expected),
-         " got: ",
-         obj.type_name(),
-         " with: ",
-         std::to_string(obj.value));
-    REQUIRE(obj.is<Expected>());
-    const auto& actual = obj.as<Expected>();
+    std::string message;
+};
+
+using array = std::vector<std::variant<std::string, int64_t>>;
+using null_type = std::monostate;
+const null_type null_value {};
+
+// NOLINTBEGIN(*)
+auto require_eq(const object_ptr& obj, const int64_t expected, std::string_view input) -> void
+{
+    INFO(input, " expected: integer ", " with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::integer));
+    const auto& actual = obj->as<integer_object>()->value;
+    REQUIRE(actual == expected);
+}
+
+auto require_eq(const object_ptr& obj, const bool expected, std::string_view input) -> void
+{
+    INFO(input, " expected: boolean ", " with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::boolean));
+    const auto& actual = obj->as<boolean_object>()->value;
+    REQUIRE(actual == expected);
+}
+
+auto require_eq(const object_ptr& obj, const std::string& expected, std::string_view input) -> void
+{
+    INFO(input, " expected: string with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::string));
+    const auto& actual = obj->as<string_object>()->value;
+    REQUIRE(actual == expected);
+}
+
+auto require_array_eq(const object_ptr& obj, const array& expected, std::string_view input) -> void
+{
+    INFO(input, " expected: array with: ", expected.size(), "elements got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::array));
+    const auto& actual = obj->as<array_object>()->elements;
+    REQUIRE(actual.size() == expected.size());
+    for (auto idx = 0UL; const auto& expected_elem : expected) {
+        std::visit(
+            overloaded {
+                [&](const int64_t exp) { REQUIRE_EQ(exp, actual.at(idx)->as<integer_object>()->value); },
+                [&](const std::string& exp) { REQUIRE_EQ(exp, actual.at(idx)->as<string_object>()->value); },
+            },
+            expected_elem);
+        ++idx;
+    }
+}
+
+auto require_error_eq(const object_ptr& obj, const std::string& expected, std::string_view input) -> void
+{
+    INFO(input, " expected: error with message: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::error));
+    const auto& actual = obj->as<error_object>()->message;
     REQUIRE(actual == expected);
 }
 
@@ -526,24 +565,23 @@ auto check_program(std::string_view input) -> parsed_program
     return {std::move(prgrm), std::move(prsr)};
 }
 
-auto run(std::string_view input) -> object
+auto run(std::string_view input) -> object_ptr
 {
     auto [prgrm, _] = check_program(input);
     auto env = std::make_shared<environment>();
     for (const auto& builtin : builtin_function_expression::builtins) {
-        env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
+        env->set(builtin.name, std::make_shared<function_object>(&builtin, environment_ptr {}));
     }
-
     auto result = prgrm->eval(env);
     env->break_cycle();
     return result;
 }
 
-auto run_multi(std::deque<std::string>& inputs) -> object
+auto run_multi(std::deque<std::string>& inputs) -> object_ptr
 {
     auto globals = std::make_shared<environment>();
     auto statements = std::vector<statement_ptr>();
-    object result;
+    object_ptr result;
     while (!inputs.empty()) {
         auto [prgrm, _] = check_program(inputs.front());
         result = prgrm->eval(globals);
@@ -625,16 +663,16 @@ TEST_CASE("booleanExpresssion")
 
 TEST_CASE("stringExpression")
 {
-    auto input = R"("Hello World!")";
+    const auto* input = R"("Hello World!")";
     auto evaluated = run(input);
-    require_eq<string_type>(evaluated, "Hello World!", input);
+    require_eq(evaluated, std::string("Hello World!"), input);
 }
 
 TEST_CASE("stringConcatenation")
 {
     auto input = R"("Hello" + " " + "World!")";
     auto evaluated = run(input);
-    require_eq<string_type>(evaluated, "Hello World!", input);
+    require_eq(evaluated, std::string("Hello World!"), input);
 }
 
 TEST_CASE("bangOperator")
@@ -667,25 +705,26 @@ TEST_CASE("ifElseExpressions")
     struct et
     {
         std::string_view input;
-        object expected;
+        std::variant<null_type, int64_t> expected;
     };
 
     std::array tests {
-        et {"if (true) { 10 }", {10}},
-        et {"if (false) { 10 }", {}},
-        et {"if (1) { 10 }", {10}},
-        et {"if (1 < 2) { 10 }", {10}},
-        et {"if (1 > 2) { 10 }", {}},
-        et {"if (1 > 2) { 10 } else { 20 }", {20}},
-        et {"if (1 < 2) { 10 } else { 20 }", {10}},
+        et {"if (true) { 10 }", 10},
+        et {"if (false) { 10 }", null_value},
+        et {"if (1) { 10 }", 10},
+        et {"if (1 < 2) { 10 }", 10},
+        et {"if (1 > 2) { 10 }", null_value},
+        et {"if (1 > 2) { 10 } else { 20 }", 20},
+        et {"if (1 < 2) { 10 } else { 20 }", 10},
     };
-    for (const auto& [input, expected] : tests) {
-        const auto evaluated = run(input);
-        if (expected.is<integer_type>()) {
-            require_eq(evaluated, expected.as<integer_type>(), input);
-        } else {
-            require_eq(evaluated, null_value, input);
-        }
+    for (const auto& test : tests) {
+        const auto evaluated = run(test.input);
+        std::visit(
+            overloaded {
+                [&](const null_type& /*null*/) { REQUIRE(evaluated->is(object::object_type::null)); },
+                [&](const int64_t value) { require_eq(evaluated, value, test.input); },
+            },
+            test.expected);
     }
 }
 
@@ -694,7 +733,7 @@ TEST_CASE("returnStatemets")
     struct rt
     {
         std::string_view input;
-        integer_type expected;
+        int64_t expected;
     };
 
     std::array tests {
@@ -728,27 +767,27 @@ TEST_CASE("errorHandling")
     std::array tests {
         et {
             "5 + true;",
-            "type mismatch: integer + bool",
+            "type mismatch: integer + boolean",
         },
         et {
             "5 + true; 5;",
-            "type mismatch: integer + bool",
+            "type mismatch: integer + boolean",
         },
         et {
             "-true",
-            "unknown operator: -bool",
+            "unknown operator: -boolean",
         },
         et {
             "true + false;",
-            "unknown operator: bool + bool",
+            "unknown operator: boolean + boolean",
         },
         et {
             "5; true + false; 5",
-            "unknown operator: bool + bool",
+            "unknown operator: boolean + boolean",
         },
         et {
             "if (10 > 1) { true + false; }",
-            "unknown operator: bool + bool",
+            "unknown operator: boolean + boolean",
         },
         et {
             R"r(
@@ -759,7 +798,7 @@ return true + false;
 return 1;
 }
    )r",
-            "unknown operator: bool + bool",
+            "unknown operator: boolean + boolean",
         },
         et {
             "foobar",
@@ -777,7 +816,7 @@ return 1;
 
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, error {expected}, input);
+        require_error_eq(evaluated, expected, input);
     }
 }
 
@@ -786,7 +825,7 @@ TEST_CASE("integerLetStatements")
     struct lt
     {
         std::string_view input;
-        integer_type expected;
+        int64_t expected;
     };
 
     std::array tests {
@@ -805,8 +844,8 @@ TEST_CASE("boundFunction")
 {
     const auto* input = "fn(x) {x + 2; };";
     auto evaluated = run(input);
-    INFO("expected a function object, got ", std::to_string(evaluated.value));
-    REQUIRE(evaluated.is<bound_function>());
+    INFO("expected a function object, got ", evaluated->inspect());
+    REQUIRE(evaluated->is(object::object_type::function));
 }
 
 TEST_CASE("functionApplication")
@@ -837,7 +876,7 @@ TEST_CASE("multipleEvaluationsWithSameEnvAndDestroyedSources")
     const auto* input2 {R"(let hello = makeGreeter("hello");)"};
     const auto* input3 {R"(hello("banana");)"};
     std::deque<std::string> inputs {input1, input2, input3};
-    require_eq<string_type>(run_multi(inputs), "hello banana!", fmt::format("{}", fmt::join(inputs, "\n")));
+    require_eq(run_multi(inputs), std::string("hello banana!"), fmt::format("{}", fmt::join(inputs, "\n")));
 }
 
 TEST_CASE("builtinFunctions")
@@ -886,11 +925,11 @@ TEST_CASE("builtinFunctions")
         auto evaluated = run(test.input);
         std::visit(
             overloaded {
-                [&](const integer_type val) { require_eq(evaluated, val, test.input); },
-                [&](const error& val) { require_eq(evaluated, val, test.input); },
+                [&](const int64_t val) { require_eq(evaluated, val, test.input); },
+                [&](const error& val) { require_error_eq(evaluated, val.message, test.input); },
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
-                [&](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
-                [&](const null_type& /*val*/) { require_eq(evaluated, null_value, test.input); },
+                [&](const array& val) { require_array_eq(evaluated, val, test.input); },
+                [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
             },
             test.expected);
     }
@@ -899,12 +938,12 @@ TEST_CASE("builtinFunctions")
 TEST_CASE("arrayExpression")
 {
     auto evaluated = run("[1, 2 * 2, 3 + 3]");
-    INFO("got: " << evaluated.type_name());
-    REQUIRE(evaluated.is<array>());
-    auto as_arr = evaluated.as<array>();
-    require_eq<integer_type>(as_arr[0], 1, "...");
-    require_eq<integer_type>(as_arr[1], 4, "...");
-    require_eq<integer_type>(as_arr[2], 6, "...");
+    INFO("got: " << evaluated->type());
+    REQUIRE(evaluated->is(object::object_type::array));
+    const auto& as_arr = evaluated->as<array_object>()->elements;
+    require_eq(as_arr[0], 1L, "...");
+    require_eq(as_arr[1], 4L, "...");
+    require_eq(as_arr[2], 6L, "...");
 }
 
 TEST_CASE("indexOperatorExpressions")
@@ -912,7 +951,7 @@ TEST_CASE("indexOperatorExpressions")
     struct it
     {
         std::string_view input;
-        value_type expected;
+        std::variant<int64_t, std::string, null_type> expected;
     };
 
     std::array tests {
@@ -966,16 +1005,26 @@ TEST_CASE("indexOperatorExpressions")
         },
     };
 
-    for (const auto& [input, expected] : tests) {
-        auto evaluated = run(input);
-        INFO("got: ", evaluated.type_name(), " with: ", std::to_string(evaluated.value));
-        CHECK_EQ(object {evaluated.value}, object {expected});
+    for (const auto& test : tests) {
+        auto evaluated = run(test.input);
+        INFO("got: ", evaluated->type(), " with: ", evaluated->inspect());
+        std::visit(
+            overloaded {
+                [&](const int64_t val) { require_eq(evaluated, val, test.input); },
+                [&](const error& val) { require_error_eq(evaluated, val.message, test.input); },
+                [&](const std::string& val) { require_eq(evaluated, val, test.input); },
+                [&](const array& val) { require_array_eq(evaluated, val, test.input); },
+                [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
+            },
+            test.expected);
     }
 }
 
 TEST_CASE("hashLiterals")
 {
-    auto evaluated = run(R"(let two = "two";
+    auto evaluated = run(R"(
+
+    let two = "two";
     {
         "one": 10 - 9,
         two: 1 + 1,
@@ -983,14 +1032,15 @@ TEST_CASE("hashLiterals")
         4: 4,
         true: 5,
         false: 6
-    })");
+    }
+        )");
 
-    INFO("expected hash, got: " << evaluated.type_name());
-    REQUIRE(evaluated.is<hash>());
+    INFO("expected hash, got: " << evaluated->type());
+    REQUIRE(evaluated->is(object::object_type::hash));
 
     struct expect
     {
-        hash_key_type key;
+        hashable_object::hash_key_type key;
         int64_t value;
     };
 
@@ -1002,10 +1052,10 @@ TEST_CASE("hashLiterals")
         expect {true, 5},
         expect {false, 6},
     };
-    const auto& as_hash = evaluated.as<hash>();
+    const auto& as_hash = evaluated->as<hash_object>()->pairs;
     for (const auto& [key, value] : expected) {
         REQUIRE(as_hash.contains(key));
-        REQUIRE_EQ(value, std::any_cast<object>(as_hash.at(key)).as<integer_type>());
+        REQUIRE_EQ(value, as_hash.at(key)->as<integer_object>()->value);
     };
 }
 
@@ -1014,7 +1064,7 @@ TEST_CASE("hashIndexExpression")
     struct ht
     {
         std::string_view input;
-        value_type expected;
+        std::variant<null_type, int64_t> expected;
     };
 
     std::array tests {
@@ -1047,10 +1097,20 @@ TEST_CASE("hashIndexExpression")
             5,
         },
     };
+
     for (const auto& [input, expected] : tests) {
         auto evaluated = run(input);
-        CHECK_FALSE(evaluated.is<error>());
-        CHECK_EQ(evaluated, object {expected});
+        REQUIRE_FALSE(evaluated->is_error());
+        std::visit(
+            overloaded {
+                [&](const null_type&) { CHECK(evaluated->is(object::object_type::null)); },
+                [&](const int64_t value)
+                {
+                    REQUIRE(evaluated->is(object::object_type::integer));
+                    CHECK_EQ(evaluated->as<integer_object>()->value, value);
+                },
+            },
+            expected);
     }
 }
 

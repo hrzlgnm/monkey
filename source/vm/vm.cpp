@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -14,9 +15,6 @@
 #include <fmt/core.h>
 #include <parser/parser.hpp>
 
-static const object tru {true};
-static const object fals {false};
-
 vm::vm(frames&& frames, constants_ptr&& consts, constants_ptr globals)
     : m_constans {std::move(consts)}
     , m_globals {std::move(globals)}
@@ -26,9 +24,9 @@ vm::vm(frames&& frames, constants_ptr&& consts, constants_ptr globals)
 
 auto vm::run() -> void
 {
-    for (; current_frame().ip < static_cast<ssize_t>(current_frame().cl.fn.instrs.size()); current_frame().ip++) {
+    for (; current_frame().ip < static_cast<ssize_t>(current_frame().cl->fn->instrs.size()); current_frame().ip++) {
         const auto instr_ptr = static_cast<size_t>(current_frame().ip);
-        auto& code = current_frame().cl.fn.instrs;
+        auto& code = current_frame().cl->fn->instrs;
         const auto op_code = static_cast<opcodes>(code.at(instr_ptr));
         switch (op_code) {
             case opcodes::constant: {
@@ -51,10 +49,10 @@ auto vm::run() -> void
                 pop();
                 break;
             case opcodes::tru:
-                push(tru);
+                push(true_object);
                 break;
             case opcodes::fals:
-                push(fals);
+                push(false_object);
                 break;
             case opcodes::bang:
                 exec_bang();
@@ -70,7 +68,7 @@ auto vm::run() -> void
                 auto pos = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
                 auto condition = pop();
-                if (!condition.is_truthy()) {
+                if (!condition->is_truthy()) {
                     current_frame().ip = pos - 1;
                 }
 
@@ -106,7 +104,7 @@ auto vm::run() -> void
             case opcodes::index: {
                 auto index = pop();
                 auto left = pop();
-                exec_index(std::move(left), std::move(index));
+                exec_index(left, index);
             } break;
             case opcodes::call: {
                 auto num_args = code.at(instr_ptr + 1UL);
@@ -140,7 +138,7 @@ auto vm::run() -> void
                 auto builtin_index = code.at(instr_ptr + 1UL);
                 current_frame().ip += 1;
                 const auto& builtin = builtin_function_expression::builtins[builtin_index];
-                push({&builtin});
+                push(std::make_shared<builtin_object>(&builtin));
             } break;
             case opcodes::closure: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -152,7 +150,7 @@ auto vm::run() -> void
                 auto free_index = code.at(instr_ptr + 1UL);
                 current_frame().ip += 1;
                 auto current_closure = current_frame().cl;
-                push(current_closure.free[free_index]);
+                push(current_closure->free[free_index]);
             } break;
             case opcodes::current_closure: {
                 push({current_frame().cl});
@@ -163,7 +161,7 @@ auto vm::run() -> void
     }
 }
 
-auto vm::push(const object& obj) -> void
+auto vm::push(const object_ptr& obj) -> void
 {
     if (m_sp >= stack_size) {
         throw std::runtime_error("stack overflow");
@@ -172,7 +170,7 @@ auto vm::push(const object& obj) -> void
     m_sp++;
 }
 
-auto vm::pop() -> object
+auto vm::pop() -> object_ptr
 {
     if (m_sp == 0) {
         throw std::runtime_error("stack empty");
@@ -182,7 +180,7 @@ auto vm::pop() -> object
     return result;
 }
 
-auto vm::last_popped() const -> object
+auto vm::last_popped() const -> object_ptr
 {
     return m_stack[m_sp];
 }
@@ -191,33 +189,34 @@ auto vm::exec_binary_op(opcodes opcode) -> void
 {
     auto right = pop();
     auto left = pop();
-    if (left.is<integer_type>() && right.is<integer_type>()) {
-        auto left_value = left.as<integer_type>();
-        auto right_value = right.as<integer_type>();
+    using enum object::object_type;
+    if (left->is(integer) && right->is(integer)) {
+        auto left_value = left->as<integer_object>()->value;
+        auto right_value = right->as<integer_object>()->value;
         switch (opcode) {
             case opcodes::sub:
-                push({left_value - right_value});
+                push(std::make_shared<integer_object>(left_value - right_value));
                 break;
             case opcodes::mul:
-                push({left_value * right_value});
+                push(std::make_shared<integer_object>(left_value * right_value));
                 break;
             case opcodes::div:
-                push({left_value / right_value});
+                push(std::make_shared<integer_object>(left_value / right_value));
                 break;
             case opcodes::add:
-                push({left_value + right_value});
+                push(std::make_shared<integer_object>(left_value + right_value));
                 break;
             default:
                 throw std::runtime_error(fmt::format("unknown integer operator"));
         }
         return;
     }
-    if (left.is<string_type>() && right.is<string_type>()) {
-        const auto& left_value = left.as<string_type>();
-        const auto& right_value = right.as<string_type>();
+    if (left->is(string) && right->is(string)) {
+        const auto& left_value = left->as<string_object>()->value;
+        const auto& right_value = right->as<string_object>()->value;
         switch (opcode) {
             case opcodes::add:
-                push({left_value + right_value});
+                push(std::make_shared<string_object>(left_value + right_value));
                 break;
             default:
                 throw std::runtime_error(fmt::format("unknown string {} string operator", opcode));
@@ -225,20 +224,20 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         return;
     }
     throw std::runtime_error(
-        fmt::format("unsupported types for binary operation: {} {} {}", left.type_name(), opcode, right.type_name()));
+        fmt::format("unsupported types for binary operation: {} {} {}", left->type(), opcode, right->type()));
 }
 
 template<typename ValueType>
-auto exec_value_cmp(opcodes opcode, const ValueType& lhs, const ValueType& rhs)
+auto exec_value_cmp(opcodes opcode, const ValueType& lhs, const ValueType& rhs) -> object_ptr
 {
     using enum opcodes;
     switch (opcode) {
         case equal:
-            return lhs == rhs;
+            return native_bool_to_object(lhs == rhs);
         case not_equal:
-            return lhs != rhs;
+            return native_bool_to_object(lhs != rhs);
         case greater_than:
-            return lhs > rhs;
+            return native_bool_to_object(lhs > rhs);
         default:
             throw std::runtime_error(fmt::format("unknown operator {}", opcode));
     }
@@ -248,130 +247,129 @@ auto vm::exec_cmp(opcodes opcode) -> void
 {
     auto right = pop();
     auto left = pop();
-    if (left.is<integer_type>() && right.is<integer_type>()) {
-        push({exec_value_cmp(opcode, left.as<integer_type>(), right.as<integer_type>())});
-        return;
-    }
-    if (left.is<string_type>() && right.is<string_type>()) {
-        push({exec_value_cmp(opcode, left.as<string_type>(), right.as<string_type>())});
+    using enum object::object_type;
+    if (left->is(integer) && right->is(integer)) {
+        push(exec_value_cmp(opcode, left->as<integer_object>()->value, right->as<integer_object>()->value));
         return;
     }
 
-    using enum opcodes;
+    if (left->is(string) && right->is(string)) {
+        push(exec_value_cmp(opcode, left->as<string_object>()->value, right->as<string_object>()->value));
+        return;
+    }
+
     switch (opcode) {
-        case equal:
-            return push({left == right});
-        case not_equal:
-            return push({left != right});
+        case opcodes::equal:
+            return push(native_bool_to_object(left->equals_to(right)));
+        case opcodes::not_equal:
+            return push(native_bool_to_object(!left->equals_to(right)));
         default:
-            throw std::runtime_error(
-                fmt::format("unknown operator {} ({} {})", opcode, left.type_name(), right.type_name()));
+            throw std::runtime_error(fmt::format("unknown operator {} ({} {})", opcode, left->type(), right->type()));
     }
 }
 
 auto vm::exec_bang() -> void
 {
+    using enum object::object_type;
     auto operand = pop();
-    if (operand.is<bool>()) {
-        return push({!operand.as<bool>()});
+    if (operand->is(boolean)) {
+        return push(native_bool_to_object(!operand->as<boolean_object>()->value));
     }
-    if (operand.is_nil()) {
-        return push(tru);
+    if (operand->is(null)) {
+        return push(true_object);
     }
-    push(fals);
+    push(false_object);
 }
 
 auto vm::exec_minus() -> void
 {
     auto operand = pop();
-    if (!operand.is<integer_type>()) {
-        throw std::runtime_error(fmt::format("unsupported type for negation {}", operand.type_name()));
+    if (!operand->is(object::object_type::integer)) {
+        throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
     }
-    push({-operand.as<integer_type>()});
+    push(std::make_shared<integer_object>(-operand->as<integer_object>()->value));
 }
 
-auto vm::build_array(size_t start, size_t end) const -> object
+auto vm::build_array(size_t start, size_t end) const -> object_ptr
 {
-    array arr;
+    array_object::array arr;
     for (auto idx = start; idx < end; idx++) {
         arr.push_back(m_stack.at(idx));
     }
-    return {arr};
+    return std::make_shared<array_object>(std::move(arr));
 }
 
-auto vm::build_hash(size_t start, size_t end) const -> object
+auto vm::build_hash(size_t start, size_t end) const -> object_ptr
 {
-    hash hsh;
+    hash_object::hash hsh;
     for (auto idx = start; idx < end; idx += 2) {
         auto key = m_stack[idx];
         auto val = m_stack[idx + 1];
-        hsh[key.hash_key()] = val;
+        hsh[key->as<hashable_object>()->hash_key()] = val;
     }
-    return {hsh};
+    return std::make_shared<hash_object>(std::move(hsh));
 }
 
-auto exec_hash(const hash& hsh, const hash_key_type& key) -> object
+auto exec_hash(const hash_object::hash& hsh, const hashable_object::hash_key_type& key) -> object_ptr
 {
     if (!hsh.contains(key)) {
         return null;
     }
-    return unwrap(hsh.at(key));
+    return hsh.at(key);
 }
 
-auto vm::exec_index(object&& left, object&& index) -> void
+auto vm::exec_index(const object_ptr& left, const object_ptr& index) -> void
 {
-    std::visit(overloaded {[&](const array& arr, int64_t index)
-                           {
-                               auto max = static_cast<int64_t>(arr.size() - 1);
-                               if (index < 0 || index > max) {
-                                   return push(null);
-                               }
-                               return push(arr.at(static_cast<size_t>(index)));
-                           },
-                           [&](const std::string& str, int64_t index)
-                           {
-                               auto max = static_cast<int64_t>(str.size() - 1);
-                               if (index < 0 || index > max) {
-                                   return push(null);
-                               }
-                               return push({str.substr(static_cast<size_t>(index), 1)});
-                           },
-                           [&](const hash& hsh, bool index) { push(exec_hash(hsh, {index})); },
-                           [&](const hash& hsh, int64_t index) { push(exec_hash(hsh, {index})); },
-                           [&](const hash& hsh, const std::string& index) { push(exec_hash(hsh, {index})); },
-                           [&](const auto& /*lft*/, const auto& /*idx*/) {
-                               throw std::runtime_error(fmt::format(
-                                   "invalid index operation: {}:[{}]", left.type_name(), index.type_name()));
-                           }},
-               left.value,
-               index.value);
+    using enum object::object_type;
+    if (left->is(array) && index->is(integer)) {
+        auto idx = index->as<integer_object>()->value;
+        auto max = static_cast<int64_t>(left->as<array_object>()->elements.size()) - 1;
+        if (idx < 0 || idx > max) {
+            return push(::null);
+        }
+        return push(left->as<array_object>()->elements.at(static_cast<size_t>(idx)));
+    }
+    if (left->is(string) && index->is(integer)) {
+        auto idx = index->as<integer_object>()->value;
+        auto max = static_cast<int64_t>(left->as<string_object>()->value.size()) - 1;
+        if (idx < 0 || idx > max) {
+            return push(::null);
+        }
+        return push(
+            std::make_shared<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
+    }
+    if (left->is(hash) && index->is_hashable()) {
+        return push(exec_hash(left->as<hash_object>()->pairs, index->as<hashable_object>()->hash_key()));
+    }
+    push(make_error("invalid index operation: {}[{}]", left->type(), index->type()));
 }
 
 auto vm::exec_call(size_t num_args) -> void
 {
     auto callee = m_stack[m_sp - 1 - num_args];
-    std::visit(
-        overloaded {[&](const closure& closure)
-                    {
-                        if (num_args != closure.fn.num_arguments) {
-                            throw std::runtime_error(fmt::format(
-                                "wrong number of arguments: want={}, got={}", closure.fn.num_arguments, num_args));
-                        }
-                        frame frm {closure, -1, static_cast<ssize_t>(m_sp - num_args)};
-                        m_sp = static_cast<size_t>(frm.base_ptr) + closure.fn.num_locals;
-                        push_frame(std::move(frm));
-                    },
-                    [&](const builtin_function_expression* builtin)
-                    {
-                        array args;
-                        for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
-                            args.push_back(m_stack[idx]);
-                        }
-                        auto result = builtin->body(std::move(args));
-                        push(result);
-                    },
-                    [](const auto& /*other*/) { throw std::runtime_error("calling non-closure and non-builtin"); }},
-        callee.value);
+    using enum object::object_type;
+    if (callee->is(closure)) {
+        const auto clsr = callee->as<closure_object>();
+        if (num_args != clsr->fn->num_arguments) {
+            throw std::runtime_error(
+                fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
+        }
+        frame frm {clsr, -1, static_cast<ssize_t>(m_sp - num_args)};
+        m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
+        push_frame(std::move(frm));
+        return;
+    }
+    if (callee->is(builtin)) {
+        const auto* const builtin = callee->as<builtin_object>()->builtin;
+        array_object::array args;
+        for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
+            args.push_back(m_stack[idx]);
+        }
+        auto result = builtin->body(std::move(args));
+        push(result);
+        return;
+    }
+    throw std::runtime_error("calling non-closure and non-builtin");
 }
 
 auto vm::current_frame() -> frame&
@@ -394,20 +392,19 @@ auto vm::pop_frame() -> frame
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 {
     auto constant = m_constans->at(const_idx);
-    if (!constant.is<compiled_function>()) {
+    if (!constant->is(object::object_type::compiled_function)) {
         throw std::runtime_error("not a function");
     }
-    array free;
+    array_object::array free;
     for (auto i = 0UL; i < num_free; i++) {
         free.push_back(m_stack.at(m_sp - num_free + i));
     }
     m_sp -= num_free;
-    push({closure {.fn = constant.as<compiled_function>(), .free = free}});
+    push(std::make_shared<closure_object>(constant->as<compiled_function_object>(), free));
 }
 
 namespace
 {
-
 template<typename T>
 auto maker(std::initializer_list<T> list) -> std::vector<T>
 {
@@ -432,42 +429,106 @@ auto check_program(std::string_view input) -> parsed_program
     return {std::move(prgrm), std::move(prsr)};
 }
 
-template<typename Expected>
-auto require_is(const Expected& exp, const object& actual_obj, std::string_view input) -> void
+struct error
+{
+    std::string message;
+};
+
+using hash = std::unordered_map<hashable_object::hash_key_type, int64_t>;
+using null_type = std::monostate;
+const null_type null_value {};
+
+auto require_is(const bool expected, const object_ptr& actual_obj, std::string_view input) -> void
 {
     INFO(input,
-         " expected: ",
-         object {exp}.type_name(),
-         " with: ",
-         std::to_string(exp),
+         " expected: boolean with: ",
+         expected,
          " got: ",
-         actual_obj.type_name(),
+         actual_obj->type(),
          " with: ",
-         std::to_string(actual_obj.value),
+         actual_obj->inspect(),
          " instead");
-    REQUIRE(actual_obj.is<Expected>());
-    const auto& actual = actual_obj.as<Expected>();
-    INFO(std::to_string(actual), actual == exp, std::to_string(exp));
-    REQUIRE(actual == exp);
+    REQUIRE(actual_obj->is(object::object_type::boolean));
+    const auto& actual = actual_obj->as<boolean_object>()->value;
+    REQUIRE(actual == expected);
 }
 
-auto require_array_object(const std::vector<int>& expected, const object& actual, std::string_view input) -> void
+auto require_is(const int64_t expected, const object_ptr& actual_obj, std::string_view input) -> void
 {
-    INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
-    REQUIRE(actual.is<array>());
-    auto actual_arr = actual.as<array>();
+    INFO(input,
+         " expected: integer with: ",
+         expected,
+         " got: ",
+         actual_obj->type(),
+         " with: ",
+         actual_obj->inspect(),
+         " instead");
+    REQUIRE(actual_obj->is(object::object_type::integer));
+    const auto& actual = actual_obj->as<integer_object>()->value;
+    REQUIRE(actual == expected);
+}
+
+auto require_is(const std::string& expected, const object_ptr& actual_obj, std::string_view input) -> void
+{
+    INFO(input,
+         " expected: string with: ",
+         expected,
+         " got: ",
+         actual_obj->type(),
+         " with: ",
+         actual_obj->inspect(),
+         " instead");
+    REQUIRE(actual_obj->is(object::object_type::string));
+    const auto& actual = actual_obj->as<string_object>()->value;
+    REQUIRE(actual == expected);
+}
+
+auto require_is(const error& expected, const object_ptr& actual_obj, std::string_view input) -> void
+{
+    INFO(input,
+         " expected: error with: ",
+         expected.message,
+         " got: ",
+         actual_obj->type(),
+         " with: ",
+         actual_obj->inspect(),
+         " instead");
+    REQUIRE(actual_obj->is(object::object_type::error));
+    const auto& actual = actual_obj->as<error_object>()->message;
+    REQUIRE(actual == expected.message);
+}
+
+auto require_array_object(const std::vector<int>& expected, const object_ptr& actual, std::string_view input) -> void
+{
+    INFO(input,
+         " expected: array with: ",
+         expected.size(),
+         " elements, got: ",
+         actual->type(),
+         " with: ",
+         actual->inspect(),
+         " instead");
+    REQUIRE(actual->is(object::object_type::array));
+    const auto& actual_arr = actual->as<array_object>()->elements;
     REQUIRE_EQ(actual_arr.size(), expected.size());
     for (auto idx = 0UL; const auto& elem : expected) {
-        REQUIRE_EQ(elem, actual_arr.at(idx).as<integer_type>());
+        REQUIRE_EQ(elem, actual_arr.at(idx)->as<integer_object>()->value);
         ++idx;
     }
 }
 
-auto require_hash_object(const hash& expected, const object& actual, std::string_view input) -> void
+auto require_hash_object(const hash& expected, const object_ptr& actual, std::string_view input) -> void
 {
-    INFO(input, " got ", actual.type_name(), " with ", std::to_string(actual.value), " instead");
-    REQUIRE(actual.is<hash>());
-    auto actual_hash = actual.as<hash>();
+    INFO(input,
+         " expected: hash with: ",
+         expected.size(),
+         " pairs, got: ",
+         actual->type(),
+         " with: ",
+         actual->inspect(),
+         " instead");
+    REQUIRE(actual->is(object::object_type::hash));
+    const auto actual_hash = actual->as<hash_object>()->pairs;
     REQUIRE_EQ(actual_hash.size(), expected.size());
 }
 
@@ -479,17 +540,18 @@ struct vt
 };
 
 template<typename... T>
-auto require_eq(const std::variant<T...>& expected, const object& actual, std::string_view input) -> void
+auto require_eq(const std::variant<T...>& expected, const object_ptr& actual, std::string_view input) -> void
 {
+    using enum object::object_type;
     std::visit(
         overloaded {
             [&](const int64_t exp) { require_is(exp, actual, input); },
             [&](const bool exp) { require_is(exp, actual, input); },
-            [&](const null_type) { REQUIRE(actual.is_nil()); },
+            [&](const null_type& /*null*/) { REQUIRE(actual->is(null)); },
             [&](const std::string& exp) { require_is(exp, actual, input); },
-            [&](const error& exp) { require_is(exp, actual, input); },
+            [&](const ::error& exp) { require_is(exp, actual, input); },
             [&](const std::vector<int>& exp) { require_array_object(exp, actual, input); },
-            [&](const hash& exp) { require_hash_object(exp, actual, input); },
+            [&](const ::hash& exp) { require_hash_object(exp, actual, input); },
         },
         expected);
 }
@@ -588,8 +650,8 @@ TEST_CASE("conditionals")
         vt<int64_t, null_type> {"if (1 < 2) { 10 }", 10},
         vt<int64_t, null_type> {"if (1 < 2) { 10 } else { 20 }", 10},
         vt<int64_t, null_type> {"if (1 > 2) { 10 } else { 20 }", 20},
-        vt<int64_t, null_type> {"if (1 > 2) { 10 }", null_type {}},
-        vt<int64_t, null_type> {"if (false) { 10 }", null_type {}},
+        vt<int64_t, null_type> {"if (1 > 2) { 10 }", null_value},
+        vt<int64_t, null_type> {"if (false) { 10 }", null_value},
         vt<int64_t, null_type> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
     };
     run(tests);
@@ -649,7 +711,6 @@ TEST_CASE("hashLiterals")
         vt<hash> {
             "{1 + 1: 2 * 2, 3 + 3: 4 * 4}",
             {hash {{2, 4}, {6, 16}}},
-
         },
     };
     run(tests);
@@ -658,20 +719,20 @@ TEST_CASE("hashLiterals")
 TEST_CASE("indexExpressions")
 {
     const std::array tests {
-        vt<string_type, int64_t, null_type> {"[1, 2, 3][1]", 2},
-        vt<string_type, int64_t, null_type> {"[1, 2, 3][0 + 2]", 3},
-        vt<string_type, int64_t, null_type> {"[[1, 1, 1]][0][0]", 1},
-        vt<string_type, int64_t, null_type> {"[][0]", null_value},
-        vt<string_type, int64_t, null_type> {"[1, 2, 3][99]", null_value},
-        vt<string_type, int64_t, null_type> {"[1][-1]", null_value},
-        vt<string_type, int64_t, null_type> {"{1: 1, 2: 2}[1]", 1},
-        vt<string_type, int64_t, null_type> {"{1: 1, 2: 2}[2]", 2},
-        vt<string_type, int64_t, null_type> {"{1: 1}[0]", null_value},
-        vt<string_type, int64_t, null_type> {"{}[0]", null_value},
-        vt<string_type, int64_t, null_type> {R"({"a": 5}["a"])", 5},
-        vt<string_type, int64_t, null_type> {R"("a"[0])", "a"},
-        vt<string_type, int64_t, null_type> {R"("ab"[1])", "b"},
-        vt<string_type, int64_t, null_type> {R"("ab"[2])", null_value},
+        vt<std::string, int64_t, null_type> {"[1, 2, 3][1]", 2},
+        vt<std::string, int64_t, null_type> {"[1, 2, 3][0 + 2]", 3},
+        vt<std::string, int64_t, null_type> {"[[1, 1, 1]][0][0]", 1},
+        vt<std::string, int64_t, null_type> {"[][0]", null_value},
+        vt<std::string, int64_t, null_type> {"[1, 2, 3][99]", null_value},
+        vt<std::string, int64_t, null_type> {"[1][-1]", null_value},
+        vt<std::string, int64_t, null_type> {"{1: 1, 2: 2}[1]", 1},
+        vt<std::string, int64_t, null_type> {"{1: 1, 2: 2}[2]", 2},
+        vt<std::string, int64_t, null_type> {"{1: 1}[0]", null_value},
+        vt<std::string, int64_t, null_type> {"{}[0]", null_value},
+        vt<std::string, int64_t, null_type> {R"({"a": 5}["a"])", 5},
+        vt<std::string, int64_t, null_type> {R"("a"[0])", "a"},
+        vt<std::string, int64_t, null_type> {R"("ab"[1])", "b"},
+        vt<std::string, int64_t, null_type> {R"("ab"[2])", null_value},
     };
     run(tests);
 }
@@ -916,26 +977,26 @@ TEST_CASE("callFunctionsWithWrongArgument")
 TEST_CASE("callBuiltins")
 {
     const std::array tests {
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len(""))", 0},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len("four"))", 4},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len("hello world"))", 11},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len([1, 2, 3]))", 3},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len([]))", 0},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(puts("hello", "world!"))", null_value},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(first([1, 2, 3]))", 1},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(first("hello"))", "h"},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(first([]))", null_value},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last([]))", null_value},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last(""))", null_value},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last("o"))", "o"},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest([1, 2, 3]))", maker<int>({2, 3})},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest("hello"))", "ello"},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest("lo"))", "o"},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest("o"))", null_value},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest(""))", null_value},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest([]))", null_value},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
-        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last([1, 2, 3]))", 3},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(len(""))", 0},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(len("four"))", 4},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(len("hello world"))", 11},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(len([1, 2, 3]))", 3},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(len([]))", 0},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(puts("hello", "world!"))", null_value},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(first([1, 2, 3]))", 1},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(first("hello"))", "h"},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(first([]))", null_value},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(last([]))", null_value},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(last(""))", null_value},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(last("o"))", "o"},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(rest([1, 2, 3]))", maker<int>({2, 3})},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(rest("hello"))", "ello"},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(rest("lo"))", "o"},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(rest("o"))", null_value},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(rest(""))", null_value},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(rest([]))", null_value},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(last([1, 2, 3]))", 3},
     };
     const std::array errortests {
         vt<error> {

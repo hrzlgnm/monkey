@@ -41,7 +41,7 @@ fibonacci(35);
     auto lxr = lexer {input};
     auto prsr = parser {lxr};
     auto prgrm = prsr.parse_program();
-    object result;
+    object_ptr result;
     std::chrono::duration<double> duration {};
     if (engine_vm) {
         auto cmplr = compiler::create();
@@ -60,9 +60,6 @@ fibonacci(35);
         duration = end - start;
         env->break_cycle();
     }
-    fmt::print("engine={}, result={}, duration={}\n",
-               (engine_vm ? "vm" : "eval"),
-               std::to_string(result.value),
-               duration.count());
+    fmt::print("engine={}, result={}, duration={}\n", (engine_vm ? "vm" : "eval"), result->inspect(), duration.count());
     return 0;
 }

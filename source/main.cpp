@@ -126,17 +126,17 @@ auto run_file(const command_line_args& opts) -> int
         auto machine = vm::create(cmplr.byte_code());
         machine.run();
         auto result = machine.last_popped();
-        if (!result.is_nil()) {
-            std::cout << std::to_string(result.value) << "\n";
+        if (!result->is(object::object_type::null)) {
+            std::cout << result->inspect() << "\n";
         }
     } else {
         auto global_env = std::make_shared<environment>();
         for (const auto& builtin : builtin_function_expression::builtins) {
-            global_env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
+            global_env->set(builtin.name, std::make_shared<function_object>(&builtin, environment_ptr {}));
         }
-        auto evaluated = prgrm->eval(global_env);
-        if (!evaluated.is_nil()) {
-            std::cout << std::to_string(evaluated.value) << "\n";
+        auto result = prgrm->eval(global_env);
+        if (!result->is(object::object_type::null)) {
+            std::cout << result->inspect() << "\n";
         }
         global_env->break_cycle();
     }
@@ -150,7 +150,7 @@ auto run_repl(const command_line_args& opts) -> int
     auto consts = std::make_shared<constants>();
     auto globals = std::make_shared<constants>(globals_size);
     for (auto idx = 0UL; const auto& builtin : builtin_function_expression::builtins) {
-        global_env->set(builtin.name, object {bound_function(&builtin, environment_ptr {})});
+        global_env->set(builtin.name, std::make_shared<function_object>(&builtin, environment_ptr {}));
         symbols->define_builtin(idx, builtin.name);
         idx++;
     }
@@ -171,11 +171,13 @@ auto run_repl(const command_line_args& opts) -> int
             auto machine = vm::create_with_state(cmplr.byte_code(), globals);
             machine.run();
             auto result = machine.last_popped();
-            std::cout << std::to_string(result.value) << "\n";
+            if (!result->is(object::object_type::null)) {
+                std::cout << result->inspect() << "\n";
+            }
         } else {
-            auto evaluated = prgrm->eval(global_env);
-            if (!evaluated.is_nil()) {
-                std::cout << std::to_string(evaluated.value) << "\n";
+            auto result = prgrm->eval(global_env);
+            if (!result->is(object::object_type::null)) {
+                std::cout << result->inspect() << "\n";
             }
         }
         std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));

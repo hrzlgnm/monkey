@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
@@ -120,7 +122,7 @@ auto index_expression::compile(compiler& comp) const -> void
 
 auto integer_literal::compile(compiler& comp) const -> void
 {
-    comp.emit(opcodes::constant, comp.add_constant({value}));
+    comp.emit(opcodes::constant, comp.add_constant(std::make_shared<integer_object>(value)));
 }
 
 auto program::compile(compiler& comp) const -> void
@@ -163,7 +165,7 @@ auto block_statement::compile(compiler& comp) const -> void
 
 auto string_literal::compile(compiler& comp) const -> void
 {
-    comp.emit(opcodes::constant, comp.add_constant({value}));
+    comp.emit(opcodes::constant, comp.add_constant(std::make_shared<string_object>(value)));
 }
 
 auto unary_expression::compile(compiler& comp) const -> void
@@ -205,7 +207,8 @@ auto function_expression::compile(compiler& comp) const -> void
     for (const auto& sym : free) {
         comp.load_symbol(sym);
     }
-    auto function_index = comp.add_constant({compiled_function {instrs, num_locals, parameters.size()}});
+    auto function_index =
+        comp.add_constant(std::make_shared<compiled_function_object>(std::move(instrs), num_locals, parameters.size()));
     comp.emit(closure, {function_index, free.size()});
 }
 
