@@ -3,6 +3,7 @@
 #include <memory>
 
 #include <eval/environment_fwd.hpp>
+#include <eval/object.hpp>
 
 struct object;
 struct compiler;
@@ -17,7 +18,7 @@ struct expression
     virtual ~expression() = default;
 
     [[nodiscard]] virtual auto string() const -> std::string = 0;
-    [[nodiscard]] virtual auto eval(environment_ptr) const -> object = 0;
+    [[nodiscard]] virtual auto eval(environment_ptr) const -> object_ptr = 0;
     virtual inline auto compile(compiler& /*comp*/) const -> void = 0;
 };
 

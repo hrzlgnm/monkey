@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <any>
+#include <cstdint>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -11,9 +12,9 @@
 #include <vector>
 
 #include <code/code.hpp>
+#include <compiler/symbol_table.hpp>
 #include <fmt/core.h>
 
-#include "compiler/symbol_table.hpp"
 #include "environment_fwd.hpp"
 
 // helper type for std::visit
@@ -25,122 +26,299 @@ struct overloaded : T...
 template<class... T>
 overloaded(T...) -> overloaded<T...>;
 
-using null_type = std::monostate;
+struct object;
+using object_ptr = std::shared_ptr<object>;
 
-struct error
+struct object : std::enable_shared_from_this<object>
 {
+    enum class object_type
+    {
+        integer,
+        boolean,
+        string,
+        null,
+        error,
+        array,
+        hash,
+        function,
+        compiled_function,
+        closure,
+        builtin,
+    };
+    object() = default;
+    object(const object&) = delete;
+    object(object&&) = delete;
+    auto operator=(const object&) -> object& = delete;
+    auto operator=(object&&) -> object& = delete;
+    virtual ~object() = default;
+
+    [[nodiscard]] inline auto is(object_type obj_type) const -> bool { return type() == obj_type; }
+
+    template<typename T>
+    [[nodiscard]] inline auto as() -> std::shared_ptr<T>
+    {
+        return std::dynamic_pointer_cast<T>(shared_from_this());
+    }
+
+    [[nodiscard]] inline auto is_error() const -> bool { return type() == object_type::error; }
+
+    [[nodiscard]] virtual auto is_truthy() const -> bool { return true; }
+
+    [[nodiscard]] virtual auto is_hashable() const -> bool { return false; }
+
+    [[nodiscard]] virtual auto type() const -> object_type = 0;
+    [[nodiscard]] virtual auto inspect() const -> std::string = 0;
+    [[nodiscard]] virtual auto equals_to(const object_ptr& other) const -> bool = 0;
+    bool is_return_value {};
+};
+
+auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;
+
+struct hashable_object : object
+{
+    using hash_key_type = std::variant<char, int64_t, std::string, bool>;
+
+    [[nodiscard]] inline auto is_hashable() const -> bool override { return true; }
+
+    [[nodiscard]] virtual auto hash_key() const -> hash_key_type = 0;
+};
+
+struct integer_object : hashable_object
+{
+    explicit inline integer_object(int64_t val)
+        : value {val}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::integer; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return std::to_string(value); }
+
+    [[nodiscard]] auto hash_key() const -> hash_key_type override;
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& other) const -> bool override
+    {
+        return other->is(type()) && other->as<integer_object>()->value == value;
+    }
+
+    int64_t value {};
+};
+
+struct boolean_object : hashable_object
+{
+    explicit inline boolean_object(bool val)
+        : value {val}
+    {
+    }
+
+    [[nodiscard]] auto is_truthy() const -> bool override { return value; }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::boolean; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return value ? "true" : "false"; }
+
+    [[nodiscard]] auto hash_key() const -> hash_key_type override;
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& other) const -> bool override
+    {
+        return other->is(type()) && other->as<boolean_object>()->value == value;
+    }
+
+    bool value {};
+};
+
+static const object_ptr false_object {std::make_shared<boolean_object>(false)};
+static const object_ptr true_object {std::make_shared<boolean_object>(true)};
+
+inline auto native_bool_to_object(bool val) -> object_ptr
+{
+    if (val) {
+        return true_object;
+    }
+    return false_object;
+}
+
+struct string_object : hashable_object
+{
+    explicit inline string_object(std::string val)
+        : value {std::move(val)}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::string; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return value; }
+
+    [[nodiscard]] auto hash_key() const -> hash_key_type override;
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& other) const -> bool override
+    {
+        return other->is(type()) && other->as<string_object>()->value == value;
+    }
+
+    std::string value;
+};
+
+struct null_object : object
+{
+    null_object() = default;
+
+    [[nodiscard]] auto is_truthy() const -> bool override { return false; }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::null; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return "null"; }
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& other) const -> bool override { return other->is(type()); }
+};
+
+static const object_ptr null {std::make_shared<null_object>()};
+
+struct error_object : object
+{
+    explicit inline error_object(std::string msg)
+        : message {std::move(msg)}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::error; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return "ERROR: " + message; }
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& other) const -> bool override
+    {
+        return other->is(type()) && other->as<error_object>()->message == message;
+    }
+
     std::string message;
 };
 
-auto operator==(const error& lhs, const error& rhs) -> bool;
+template<typename... T>
+auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object_ptr
+{
+    return std::make_unique<error_object>(fmt::format(fmt, std::forward<T>(args)...));
+}
 
-using integer_type = std::int64_t;
-using string_type = std::string;
-struct object;
-using array = std::vector<object>;
-using hash_key_type = std::variant<integer_type, char, string_type, bool>;
-using hash = std::unordered_map<hash_key_type, std::any>;
+struct array_object : object
+{
+    using array = std::vector<object_ptr>;
+
+    inline explicit array_object(array&& arr)
+        : elements {std::move(arr)}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::array; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return "todo"; }
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& other) const -> bool override
+    {
+        // FIXME:
+        return other->is(type()) && other->as<array_object>()->elements.size() == elements.size();
+    }
+
+    array elements;
+};
+
+struct hash_object : object
+{
+    using hash = std::unordered_map<hashable_object::hash_key_type, object_ptr>;
+
+    inline explicit hash_object(hash&& hsh)
+        : pairs {std::move(hsh)}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::hash; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return "todo"; }
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& other) const -> bool override
+    {
+        // FIXME:
+        return other->is(type()) && other->as<hash_object>()->pairs.size() == pairs.size();
+    }
+
+    hash pairs;
+};
 
 struct callable_expression;
-using bound_function = std::pair<const callable_expression*, environment_ptr>;
-struct builtin_function_expression;
 
-struct compiled_function
+struct function_object : object
 {
+    inline explicit function_object(const callable_expression* expr, environment_ptr env)
+        : callable {expr}
+        , closure_env {std::move(env)}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::function; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return "todo"; }
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
+
+    const callable_expression* callable;
+    environment_ptr closure_env;
+};
+
+struct compiled_function_object : object
+{
+    using ptr = std::shared_ptr<compiled_function_object>;
+
+    inline compiled_function_object(instructions&& instr, size_t locals, size_t args)
+        : instrs {std::move(instr)}
+        , num_locals {locals}
+        , num_arguments {args}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::compiled_function; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return "fn<compiled>(...) {...}"; }
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
+
     instructions instrs;
     size_t num_locals {};
     size_t num_arguments {};
 };
 
-struct closure
+struct closure_object : object
 {
-    compiled_function fn;
-    array free;
+    using ptr = std::shared_ptr<closure_object>;
+
+    inline explicit closure_object(compiled_function_object::ptr cmpld, std::vector<object_ptr> frees = {})
+        : fn {std::move(cmpld)}
+        , free {std::move(frees)}
+    {
+    }
+
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::closure; }
+
+    [[nodiscard]] inline auto inspect() const -> std::string override { return "closure{...}"; }
+
+    [[nodiscard]] inline auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
+
+    compiled_function_object::ptr fn;
+    std::vector<object_ptr> free;
 };
 
-using value_type = std::variant<null_type,
-                                bool,
-                                integer_type,
-                                string_type,
-                                error,
-                                array,
-                                hash,
-                                bound_function,
-                                compiled_function,
-                                closure,
-                                const builtin_function_expression*>;
+struct builtin_function_expression;
 
-namespace std
+struct builtin_object : object
 {
-auto to_string(const value_type& value) -> std::string;
-}  // namespace std
-
-struct object
-{
-    template<typename T>
-    [[nodiscard]] inline constexpr auto is() const -> bool
+    inline explicit builtin_object(const builtin_function_expression* bltn)
+        : builtin {bltn}
     {
-        return std::holds_alternative<T>(value);
     }
 
-    template<typename T>
-    [[nodiscard]] auto as() const -> const T&
-    {
-        if (!is<T>()) {
-            throw std::runtime_error(
-                fmt::format("cannot convert {} to {}", std::to_string(value), object {T {}}.type_name()));
-        }
-        return std::get<T>(value);
-    }
+    [[nodiscard]] inline auto type() const -> object_type override { return object_type::builtin; }
 
-    [[nodiscard]] inline constexpr auto is_nil() const -> bool { return is<null_type>(); }
+    [[nodiscard]] auto inspect() const -> std::string override;
 
-    [[nodiscard]] [[nodiscard]] inline constexpr auto is_hashable() const -> bool
-    {
-        return is<integer_type>() || is<string_type>() || is<bool>();
-    }
+    [[nodiscard]] inline auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
 
-    [[nodiscard]] inline auto is_truthy() const -> bool { return !is_nil() && (!is<bool>() || as<bool>()); }
-
-    [[nodiscard]] inline auto hash_key() const -> hash_key_type
-    {
-        return std::visit(overloaded {[](const integer_type integer) -> hash_key_type { return {integer}; },
-                                      [](const string_type& str) -> hash_key_type { return {str}; },
-                                      [](const bool val) -> hash_key_type { return {val}; },
-                                      [](const auto& other) -> hash_key_type {
-                                          throw std::invalid_argument(object {other}.type_name() + " is not hashable");
-                                      }},
-                          value);
-    }
-
-    [[nodiscard]] auto type_name() const -> std::string;
-
-    value_type value {};
-    bool is_return_value {};
+    const builtin_function_expression* builtin;
 };
-
-static const null_type null_value {};
-static const object null {null_value};
-auto unwrap(const std::any& obj) -> object;
-
-template<typename... T>
-auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
-{
-    return {error {.message = fmt::format(fmt, std::forward<T>(args)...)}};
-}
-
-inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
-{
-    return std::visit(
-        overloaded {[](const null_type, const null_type) { return true; },
-                    [](const bool val1, const bool val2) { return val1 == val2; },
-                    [](const integer_type val1, const integer_type val2) { return val1 == val2; },
-                    [](const string_type& val1, const string_type& val2) { return val1 == val2; },
-                    [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },
-                    [](const error& err1, const error& err2) { return err1.message == err2.message; },
-                    [](const array& arr1, const array& arr2)
-                    { return arr1.size() == arr2.size() && std::equal(arr1.cbegin(), arr1.cend(), arr2.begin()); },
-                    [](const auto&, const auto&) { return false; }},
-        lhs.value,
-        rhs.value);
-}

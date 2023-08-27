@@ -10,6 +10,7 @@
 #include <doctest/doctest.h>
 #include <parser/parser.hpp>
 
+#include "eval/object.hpp"
 #include "symbol_table.hpp"
 
 auto compiler::create() -> compiler
@@ -33,7 +34,7 @@ auto compiler::compile(const program_ptr& program) -> void
     program->compile(*this);
 }
 
-auto compiler::add_constant(object&& obj) -> size_t
+auto compiler::add_constant(object_ptr&& obj) -> size_t
 {
     m_consts->push_back(std::move(obj));
     return m_consts->size() - 1;
@@ -239,10 +240,10 @@ auto check_constants(const std::vector<expected_value>& expecteds, const constan
         const auto& actual = consts.at(idx);
         std::visit(
             overloaded {
-                [&](const int64_t val) { CHECK_EQ(val, actual.as<integer_type>()); },
-                [&](const std::string& val) { CHECK_EQ(val, actual.as<string_type>()); },
+                [&](const int64_t val) { CHECK_EQ(val, actual->as<integer_object>()->value); },
+                [&](const std::string& val) { CHECK_EQ(val, actual->as<string_object>()->value); },
                 [&](const std::vector<instructions>& instrs)
-                { check_instructions(instrs, actual.as<compiled_function>().instrs); },
+                { check_instructions(instrs, actual->as<compiled_function_object>()->instrs); },
             },
             expected);
         idx++;

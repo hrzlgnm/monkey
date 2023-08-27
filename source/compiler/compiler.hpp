@@ -8,7 +8,7 @@
 
 #include "symbol_table.hpp"
 
-using constants = std::vector<object>;
+using constants = std::vector<object_ptr>;
 using constants_ptr = std::shared_ptr<constants>;
 
 struct bytecode
@@ -40,7 +40,7 @@ struct compiler
         return compiler {std::move(constants), std::move(symbols)};
     }
 
-    auto add_constant(object&& obj) -> size_t;
+    auto add_constant(object_ptr&& obj) -> size_t;
     auto add_instructions(instructions&& ins) -> size_t;
     auto emit(opcodes opcode, operands&& operands = {}) -> size_t;
 
