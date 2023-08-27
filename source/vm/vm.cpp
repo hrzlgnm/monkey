@@ -547,7 +547,7 @@ auto require_eq(const std::variant<T...>& expected, const object_ptr& actual, st
         overloaded {
             [&](const int64_t exp) { require_is(exp, actual, input); },
             [&](const bool exp) { require_is(exp, actual, input); },
-            [&](const std::monostate& /*null*/) { REQUIRE(actual->is(null)); },
+            [&](const null_type& /*null*/) { REQUIRE(actual->is(null)); },
             [&](const std::string& exp) { require_is(exp, actual, input); },
             [&](const ::error& exp) { require_is(exp, actual, input); },
             [&](const std::vector<int>& exp) { require_array_object(exp, actual, input); },
@@ -643,16 +643,16 @@ TEST_CASE("booleanExpressions")
 TEST_CASE("conditionals")
 {
     const std::array tests {
-        vt<int64_t, std::monostate> {"if (true) { 10 }", 10},
-        vt<int64_t, std::monostate> {"if (true) { 10 } else { 20 }", 10},
-        vt<int64_t, std::monostate> {"if (false) { 10 } else { 20 } ", 20},
-        vt<int64_t, std::monostate> {"if (1) { 10 }", 10},
-        vt<int64_t, std::monostate> {"if (1 < 2) { 10 }", 10},
-        vt<int64_t, std::monostate> {"if (1 < 2) { 10 } else { 20 }", 10},
-        vt<int64_t, std::monostate> {"if (1 > 2) { 10 } else { 20 }", 20},
-        vt<int64_t, std::monostate> {"if (1 > 2) { 10 }", std::monostate {}},
-        vt<int64_t, std::monostate> {"if (false) { 10 }", std::monostate {}},
-        vt<int64_t, std::monostate> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
+        vt<int64_t, null_type> {"if (true) { 10 }", 10},
+        vt<int64_t, null_type> {"if (true) { 10 } else { 20 }", 10},
+        vt<int64_t, null_type> {"if (false) { 10 } else { 20 } ", 20},
+        vt<int64_t, null_type> {"if (1) { 10 }", 10},
+        vt<int64_t, null_type> {"if (1 < 2) { 10 }", 10},
+        vt<int64_t, null_type> {"if (1 < 2) { 10 } else { 20 }", 10},
+        vt<int64_t, null_type> {"if (1 > 2) { 10 } else { 20 }", 20},
+        vt<int64_t, null_type> {"if (1 > 2) { 10 }", null_value},
+        vt<int64_t, null_type> {"if (false) { 10 }", null_value},
+        vt<int64_t, null_type> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
     };
     run(tests);
 }

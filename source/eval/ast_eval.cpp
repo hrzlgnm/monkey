@@ -884,7 +884,7 @@ TEST_CASE("builtinFunctions")
     struct bt
     {
         std::string_view input;
-        std::variant<std::int64_t, std::string, error, std::monostate, array> expected;
+        std::variant<std::int64_t, std::string, error, null_type, array> expected;
     };
 
     const std::array tests {
@@ -929,7 +929,7 @@ TEST_CASE("builtinFunctions")
                 [&](const error& val) { require_error_eq(evaluated, val.message, test.input); },
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
                 [&](const array& val) { require_array_eq(evaluated, val, test.input); },
-                [&](const std::monostate& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
+                [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
             },
             test.expected);
     }
@@ -1014,7 +1014,7 @@ TEST_CASE("indexOperatorExpressions")
                 [&](const error& val) { require_error_eq(evaluated, val.message, test.input); },
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
                 [&](const array& val) { require_array_eq(evaluated, val, test.input); },
-                [&](const std::monostate& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
+                [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
             },
             test.expected);
     }
@@ -1064,7 +1064,7 @@ TEST_CASE("hashIndexExpression")
     struct ht
     {
         std::string_view input;
-        std::variant<std::monostate, int64_t> expected;
+        std::variant<null_type, int64_t> expected;
     };
 
     std::array tests {
@@ -1074,7 +1074,7 @@ TEST_CASE("hashIndexExpression")
         },
         ht {
             R"({"foo": 5}["bar"])",
-            std::monostate {},
+            null_value,
         },
         ht {
             R"(let key = "foo"; {"foo": 5}[key])",
@@ -1082,7 +1082,7 @@ TEST_CASE("hashIndexExpression")
         },
         ht {
             R"({}["foo"])",
-            std::monostate {},
+            null_value,
         },
         ht {
             R"({5: 5}[5])",
@@ -1103,7 +1103,7 @@ TEST_CASE("hashIndexExpression")
         REQUIRE_FALSE(evaluated->is_error());
         std::visit(
             overloaded {
-                [&](const std::monostate&) { CHECK(evaluated->is(object::object_type::null)); },
+                [&](const null_type&) { CHECK(evaluated->is(object::object_type::null)); },
                 [&](const int64_t value)
                 {
                     REQUIRE(evaluated->is(object::object_type::integer));
