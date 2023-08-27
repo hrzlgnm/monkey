@@ -111,9 +111,6 @@ auto lexer::next_token() -> token
     if (m_byte == '"') {
         return read_string();
     }
-    if (m_byte == '\'') {
-        return read_character();
-    }
     if (is_letter(m_byte)) {
         return read_identifier_or_keyword();
     }
@@ -194,24 +191,6 @@ auto lexer::read_string() -> token
     return read_char(), token {token_type::string, m_input.substr(position, count)};
 }
 
-auto lexer::read_character() -> token
-{
-    const auto position = m_position + 1;
-    while (true) {
-        read_char();
-        if (m_byte == '\'' || m_byte == '\0') {
-            break;
-        }
-    }
-
-    auto end = m_position;
-    auto count = end - position;
-    if (count > 1) {
-        return read_char(), token {token_type::illegal, m_input.substr(position, count)};
-    }
-    return read_char(), token {token_type::character, m_input.substr(position, count)};
-}
-
 namespace
 {
 TEST_CASE("lexing")
@@ -239,8 +218,6 @@ return false;
 ""
 [1,2];
 {"foo": "bar"}
-'c'
-'cd'
         )"};
     const std::array expected_tokens {
         token {let, "let"},       token {ident, "five"},     token {assign, "="},       token {integer, "5"},
@@ -264,8 +241,7 @@ return false;
         token {semicolon, ";"},   token {string, "foobar"},  token {string, "foo bar"}, token {string, ""},
         token {lbracket, "["},    token {integer, "1"},      token {comma, ","},        token {integer, "2"},
         token {rbracket, "]"},    token {semicolon, ";"},    token {lsquirly, "{"},     token {string, "foo"},
-        token {colon, ":"},       token {string, "bar"},     token {rsquirly, "}"},     token {character, "c"},
-        token {illegal, "cd"},    token {eof, ""},
+        token {colon, ":"},       token {string, "bar"},     token {rsquirly, "}"},     token {eof, ""},
 
     };
     for (const auto& expected_token : expected_tokens) {

@@ -25,7 +25,7 @@ struct overloaded : T...
 template<class... T>
 overloaded(T...) -> overloaded<T...>;
 
-using nil_type = std::monostate;
+using null_type = std::monostate;
 
 struct error
 {
@@ -58,10 +58,9 @@ struct closure
     array free;
 };
 
-using value_type = std::variant<nil_type,
+using value_type = std::variant<null_type,
                                 bool,
                                 integer_type,
-                                char,
                                 string_type,
                                 error,
                                 array,
@@ -94,30 +93,11 @@ struct object
         return std::get<T>(value);
     }
 
-    template<typename T>
-    [[nodiscard]] auto to() const -> T
-    {
-        if (is<T>()) {
-            return as<T>();
-        }
-        return std::visit(
-            overloaded {
-                [](const char from) -> T { return std::string(&from, 1); },
-                [](const auto& from) -> T
-                {
-                    throw std::runtime_error(fmt::format("conversion from {} to {} is not supported",
-                                                         object {from}.type_name(),
-                                                         object {T {}}.type_name()));
-                },
-            },
-            value);
-    }
-
-    [[nodiscard]] inline constexpr auto is_nil() const -> bool { return is<nil_type>(); }
+    [[nodiscard]] inline constexpr auto is_nil() const -> bool { return is<null_type>(); }
 
     [[nodiscard]] [[nodiscard]] inline constexpr auto is_hashable() const -> bool
     {
-        return is<integer_type>() || is<char>() || is<string_type>() || is<bool>();
+        return is<integer_type>() || is<string_type>() || is<bool>();
     }
 
     [[nodiscard]] inline auto is_truthy() const -> bool { return !is_nil() && (!is<bool>() || as<bool>()); }
@@ -125,7 +105,6 @@ struct object
     [[nodiscard]] inline auto hash_key() const -> hash_key_type
     {
         return std::visit(overloaded {[](const integer_type integer) -> hash_key_type { return {integer}; },
-                                      [](const char chr) -> hash_key_type { return {chr}; },
                                       [](const string_type& str) -> hash_key_type { return {str}; },
                                       [](const bool val) -> hash_key_type { return {val}; },
                                       [](const auto& other) -> hash_key_type {
@@ -140,8 +119,8 @@ struct object
     bool is_return_value {};
 };
 
-static const nil_type nilv {};
-static const object nil {nilv};
+static const null_type null_value {};
+static const object null {null_value};
 auto unwrap(const std::any& obj) -> object;
 
 template<typename... T>
@@ -153,9 +132,8 @@ auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object
 inline constexpr auto operator==(const object& lhs, const object& rhs) -> bool
 {
     return std::visit(
-        overloaded {[](const nil_type, const nil_type) { return true; },
+        overloaded {[](const null_type, const null_type) { return true; },
                     [](const bool val1, const bool val2) { return val1 == val2; },
-                    [](const char val1, const char val2) { return val1 == val2; },
                     [](const integer_type val1, const integer_type val2) { return val1 == val2; },
                     [](const string_type& val1, const string_type& val2) { return val1 == val2; },
                     [](const bound_function& /*val1*/, const bound_function& /*val2*/) { return false; },

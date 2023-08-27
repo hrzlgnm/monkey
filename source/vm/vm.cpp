@@ -76,7 +76,7 @@ auto vm::run() -> void
 
             } break;
             case opcodes::null:
-                push(nil);
+                push(null);
                 break;
             case opcodes::set_global: {
                 auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -122,7 +122,7 @@ auto vm::run() -> void
             case opcodes::ret: {
                 auto frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(nil);
+                push(null);
             } break;
             case opcodes::set_local: {
                 auto local_index = code.at(instr_ptr + 1UL);
@@ -212,23 +212,24 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         }
         return;
     }
-    if ((left.is<char>() || left.is<string_type>()) && (right.is<string_type>() || right.is<char>())) {
-        const auto& left_value = left.to<string_type>();
-        const auto& right_value = right.to<string_type>();
+    if (left.is<string_type>() && right.is<string_type>()) {
+        const auto& left_value = left.as<string_type>();
+        const auto& right_value = right.as<string_type>();
         switch (opcode) {
             case opcodes::add:
                 push({left_value + right_value});
                 break;
             default:
-                throw std::runtime_error(fmt::format("unknown string operator"));
+                throw std::runtime_error(fmt::format("unknown string {} string operator", opcode));
         }
         return;
     }
     throw std::runtime_error(
-        fmt::format("unsupported types for binary operation: {} {}", left.type_name(), right.type_name()));
+        fmt::format("unsupported types for binary operation: {} {} {}", left.type_name(), opcode, right.type_name()));
 }
 
-auto exec_int_cmp(opcodes opcode, integer_type lhs, integer_type rhs) -> bool
+template<typename ValueType>
+auto exec_value_cmp(opcodes opcode, const ValueType& lhs, const ValueType& rhs)
 {
     using enum opcodes;
     switch (opcode) {
@@ -248,12 +249,11 @@ auto vm::exec_cmp(opcodes opcode) -> void
     auto right = pop();
     auto left = pop();
     if (left.is<integer_type>() && right.is<integer_type>()) {
-        push({exec_int_cmp(opcode, left.as<integer_type>(), right.as<integer_type>())});
+        push({exec_value_cmp(opcode, left.as<integer_type>(), right.as<integer_type>())});
         return;
     }
-
-    if (left.is<char>() && right.is<char>()) {
-        push({exec_int_cmp(opcode, left.as<char>(), right.as<char>())});
+    if (left.is<string_type>() && right.is<string_type>()) {
+        push({exec_value_cmp(opcode, left.as<string_type>(), right.as<string_type>())});
         return;
     }
 
@@ -313,7 +313,7 @@ auto vm::build_hash(size_t start, size_t end) const -> object
 auto exec_hash(const hash& hsh, const hash_key_type& key) -> object
 {
     if (!hsh.contains(key)) {
-        return nil;
+        return null;
     }
     return unwrap(hsh.at(key));
 }
@@ -324,7 +324,7 @@ auto vm::exec_index(object&& left, object&& index) -> void
                            {
                                auto max = static_cast<int64_t>(arr.size() - 1);
                                if (index < 0 || index > max) {
-                                   return push(nil);
+                                   return push(null);
                                }
                                return push(arr.at(static_cast<size_t>(index)));
                            },
@@ -332,13 +332,12 @@ auto vm::exec_index(object&& left, object&& index) -> void
                            {
                                auto max = static_cast<int64_t>(str.size() - 1);
                                if (index < 0 || index > max) {
-                                   return push(nil);
+                                   return push(null);
                                }
-                               return push({str.at(static_cast<size_t>(index))});
+                               return push({str.substr(static_cast<size_t>(index), 1)});
                            },
                            [&](const hash& hsh, bool index) { push(exec_hash(hsh, {index})); },
                            [&](const hash& hsh, int64_t index) { push(exec_hash(hsh, {index})); },
-                           [&](const hash& hsh, char index) { push(exec_hash(hsh, {index})); },
                            [&](const hash& hsh, const std::string& index) { push(exec_hash(hsh, {index})); },
                            [&](const auto& /*lft*/, const auto& /*idx*/) {
                                throw std::runtime_error(fmt::format(
@@ -408,8 +407,6 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 
 namespace
 {
-// NOLINTBEGIN(*)
-TEST_SUITE_BEGIN("vm");
 
 template<typename T>
 auto maker(std::initializer_list<T> list) -> std::vector<T>
@@ -487,9 +484,8 @@ auto require_eq(const std::variant<T...>& expected, const object& actual, std::s
     std::visit(
         overloaded {
             [&](const int64_t exp) { require_is(exp, actual, input); },
-            [&](const char exp) { require_is(exp, actual, input); },
             [&](const bool exp) { require_is(exp, actual, input); },
-            [&](const nil_type) { REQUIRE(actual.is_nil()); },
+            [&](const null_type) { REQUIRE(actual.is_nil()); },
             [&](const std::string& exp) { require_is(exp, actual, input); },
             [&](const error& exp) { require_is(exp, actual, input); },
             [&](const std::vector<int>& exp) { require_array_object(exp, actual, input); },
@@ -499,7 +495,7 @@ auto require_eq(const std::variant<T...>& expected, const object& actual, std::s
 }
 
 template<size_t N, typename... Expecteds>
-auto run(std::array<vt<Expecteds...>, N>&& tests)
+auto run(std::array<vt<Expecteds...>, N> tests)
 {
     for (const auto& [input, expected] : tests) {
         auto [prgrm, _] = check_program(input);
@@ -514,11 +510,13 @@ auto run(std::array<vt<Expecteds...>, N>&& tests)
     }
 }
 
+// YOLINTBEGIN(*)
+
 TEST_SUITE_BEGIN("vm");
 
 TEST_CASE("integerArithmetics")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {"1", 1},
         vt<int64_t> {"2", 2},
         vt<int64_t> {"1 + 2", 3},
@@ -537,90 +535,90 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("booleanExpressions")
 {
-    std::array tests {
-        vt<bool> {"true", true},
-        vt<bool> {"false", false},
-        vt<bool> {"'a' < 'b'", true},
-        vt<bool> {"'b' < 'a'", false},
-        vt<bool> {"1 < 2", true},
-        vt<bool> {"1 > 2", false},
-        vt<bool> {"1 < 1", false},
-        vt<bool> {"1 > 1", false},
-        vt<bool> {"'a' == 'a'", true},
-        vt<bool> {"1 == 1", true},
-        vt<bool> {"'a' != 'a'", false},
-        vt<bool> {"1 != 1", false},
-        vt<bool> {"1 == 2", false},
-        vt<bool> {"1 != 2", true},
-        vt<bool> {"true == true", true},
-        vt<bool> {"false == false", true},
-        vt<bool> {"true == false", false},
-        vt<bool> {"true != false", true},
-        vt<bool> {"false != true", true},
-        vt<bool> {"(1 < 2) == true", true},
-        vt<bool> {"(1 < 2) == false", false},
-        vt<bool> {"(1 > 2) == true", false},
-        vt<bool> {"(1 > 2) == false", true},
-        vt<bool> {"('a' > 'b') == false", true},
-        vt<bool> {"!true", false},
-        vt<bool> {"!false", true},
-        vt<bool> {"!'a'", false},
-        vt<bool> {"!!'a'", true},
-        vt<bool> {"!5", false},
-        vt<bool> {"!!true", true},
-        vt<bool> {"!!false", false},
-        vt<bool> {"!!5", true},
-        vt<bool> {"!(if (false) { 5; })", true},
+    const std::array tests {
+        vt<bool> {R"(true)", true},
+        vt<bool> {R"(false)", false},
+        vt<bool> {R"("a" < "b")", true},
+        vt<bool> {R"("b" < "a")", false},
+        vt<bool> {R"(1 < 2)", true},
+        vt<bool> {R"(1 > 2)", false},
+        vt<bool> {R"(1 < 1)", false},
+        vt<bool> {R"(1 > 1)", false},
+        vt<bool> {R"("a" == "a")", true},
+        vt<bool> {R"(1 == 1)", true},
+        vt<bool> {R"("a" != "a")", false},
+        vt<bool> {R"(1 != 1)", false},
+        vt<bool> {R"(1 == 2)", false},
+        vt<bool> {R"(1 != 2)", true},
+        vt<bool> {R"(true == true)", true},
+        vt<bool> {R"(false == false)", true},
+        vt<bool> {R"(true == false)", false},
+        vt<bool> {R"(true != false)", true},
+        vt<bool> {R"(false != true)", true},
+        vt<bool> {R"((1 < 2) == true)", true},
+        vt<bool> {R"((1 < 2) == false)", false},
+        vt<bool> {R"((1 > 2) == true)", false},
+        vt<bool> {R"((1 > 2) == false)", true},
+        vt<bool> {R"(("a" > "b") == false)", true},
+        vt<bool> {R"(!true)", false},
+        vt<bool> {R"(!false)", true},
+        vt<bool> {R"(!"a")", false},
+        vt<bool> {R"(!!"a")", true},
+        vt<bool> {R"(!5)", false},
+        vt<bool> {R"(!!true)", true},
+        vt<bool> {R"(!!false)", false},
+        vt<bool> {R"(!!5)", true},
+        vt<bool> {R"(!(if (false) { 5; }))", true},
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("conditionals")
 {
-    std::array tests {
-        vt<int64_t, nil_type> {"if (true) { 10 }", 10},
-        vt<int64_t, nil_type> {"if (true) { 10 } else { 20 }", 10},
-        vt<int64_t, nil_type> {"if (false) { 10 } else { 20 } ", 20},
-        vt<int64_t, nil_type> {"if (1) { 10 }", 10},
-        vt<int64_t, nil_type> {"if (1 < 2) { 10 }", 10},
-        vt<int64_t, nil_type> {"if (1 < 2) { 10 } else { 20 }", 10},
-        vt<int64_t, nil_type> {"if (1 > 2) { 10 } else { 20 }", 20},
-        vt<int64_t, nil_type> {"if (1 > 2) { 10 }", nil_type {}},
-        vt<int64_t, nil_type> {"if (false) { 10 }", nil_type {}},
-        vt<int64_t, nil_type> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
+    const std::array tests {
+        vt<int64_t, null_type> {"if (true) { 10 }", 10},
+        vt<int64_t, null_type> {"if (true) { 10 } else { 20 }", 10},
+        vt<int64_t, null_type> {"if (false) { 10 } else { 20 } ", 20},
+        vt<int64_t, null_type> {"if (1) { 10 }", 10},
+        vt<int64_t, null_type> {"if (1 < 2) { 10 }", 10},
+        vt<int64_t, null_type> {"if (1 < 2) { 10 } else { 20 }", 10},
+        vt<int64_t, null_type> {"if (1 > 2) { 10 } else { 20 }", 20},
+        vt<int64_t, null_type> {"if (1 > 2) { 10 }", null_type {}},
+        vt<int64_t, null_type> {"if (false) { 10 }", null_type {}},
+        vt<int64_t, null_type> {"if ((if (false) { 10 })) { 10 } else { 20 }", 20},
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("globalLetStatemets")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {"let one = 1; one", 1},
         vt<int64_t> {"let one = 1; let two = 2; one + two", 3},
         vt<int64_t> {"let one = 1; let two = one + one; one + two", 3},
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("stringExpression")
 {
-    std::array tests {
+    const std::array tests {
         vt<std::string> {R"("monkey")", "monkey"},
         vt<std::string> {R"("mon" + "key")", "monkey"},
         vt<std::string> {R"("mon" + "key" + "banana")", "monkeybanana"},
-        vt<std::string> {R"("mon" + 'k' + 'a' + 'S')", "monkaS"},
+        vt<std::string> {R"("mon" + "k" + "a" + "S")", "monkaS"},
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("arrayLiterals")
 {
-    std::array tests {
+    const std::array tests {
         vt<std::vector<int>> {
             "[]",
             {},
@@ -634,12 +632,12 @@ TEST_CASE("arrayLiterals")
             {std::vector<int> {3, 12, 11}},
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("hashLiterals")
 {
-    std::array tests {
+    const std::array tests {
         vt<hash> {
             "{}",
             {},
@@ -654,33 +652,33 @@ TEST_CASE("hashLiterals")
 
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("indexExpressions")
 {
-    std::array tests {
-        vt<char, int64_t, nil_type> {"[1, 2, 3][1]", 2},
-        vt<char, int64_t, nil_type> {"[1, 2, 3][0 + 2]", 3},
-        vt<char, int64_t, nil_type> {"[[1, 1, 1]][0][0]", 1},
-        vt<char, int64_t, nil_type> {"[][0]", nilv},
-        vt<char, int64_t, nil_type> {"[1, 2, 3][99]", nilv},
-        vt<char, int64_t, nil_type> {"[1][-1]", nilv},
-        vt<char, int64_t, nil_type> {"{1: 1, 2: 2}[1]", 1},
-        vt<char, int64_t, nil_type> {"{1: 1, 2: 2}[2]", 2},
-        vt<char, int64_t, nil_type> {"{1: 1}[0]", nilv},
-        vt<char, int64_t, nil_type> {"{}[0]", nilv},
-        vt<char, int64_t, nil_type> {"{'a': 5}['a']", 5},
-        vt<char, int64_t, nil_type> {R"("a"[0])", 'a'},
-        vt<char, int64_t, nil_type> {R"("ab"[1])", 'b'},
-        vt<char, int64_t, nil_type> {R"("ab"[2])", nilv},
+    const std::array tests {
+        vt<string_type, int64_t, null_type> {"[1, 2, 3][1]", 2},
+        vt<string_type, int64_t, null_type> {"[1, 2, 3][0 + 2]", 3},
+        vt<string_type, int64_t, null_type> {"[[1, 1, 1]][0][0]", 1},
+        vt<string_type, int64_t, null_type> {"[][0]", null_value},
+        vt<string_type, int64_t, null_type> {"[1, 2, 3][99]", null_value},
+        vt<string_type, int64_t, null_type> {"[1][-1]", null_value},
+        vt<string_type, int64_t, null_type> {"{1: 1, 2: 2}[1]", 1},
+        vt<string_type, int64_t, null_type> {"{1: 1, 2: 2}[2]", 2},
+        vt<string_type, int64_t, null_type> {"{1: 1}[0]", null_value},
+        vt<string_type, int64_t, null_type> {"{}[0]", null_value},
+        vt<string_type, int64_t, null_type> {R"({"a": 5}["a"])", 5},
+        vt<string_type, int64_t, null_type> {R"("a"[0])", "a"},
+        vt<string_type, int64_t, null_type> {R"("ab"[1])", "b"},
+        vt<string_type, int64_t, null_type> {R"("ab"[2])", null_value},
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("callFunctionsWithoutArgs")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(let fivePlusTen = fn() { 5 + 10; };
                fivePlusTen();)",
@@ -700,12 +698,12 @@ TEST_CASE("callFunctionsWithoutArgs")
             3,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("callFunctionsWithReturnStatements")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(let earlyExit = fn() { return 99; 100; };
                earlyExit();)",
@@ -717,31 +715,31 @@ TEST_CASE("callFunctionsWithReturnStatements")
             99,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("callFunctionsWithNoReturnValue")
 {
-    std::array tests {
-        vt<nil_type> {
+    const std::array tests {
+        vt<null_type> {
             R"(let noReturn = fn() { };
                noReturn();)",
-            nilv,
+            null_value,
         },
-        vt<nil_type> {
+        vt<null_type> {
             R"(let noReturn = fn() { };
                let noReturnTwo = fn() { noReturn(); };
                noReturn();
                noReturnTwo();)",
-            nilv,
+            null_value,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("callFirstClassFunctions")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(let returnsOne = fn() { 1; };
                let returnsOneReturner = fn() { returnsOne; };
@@ -763,12 +761,12 @@ TEST_CASE("callFirstClassFunctions")
             98,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("callFunctionsWithBindings")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(
             let one = fn() { let one = 1; one };
@@ -815,12 +813,12 @@ TEST_CASE("callFunctionsWithBindings")
             97,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("callFunctionsWithArgumentsAndBindings")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(
         let identity = fn(a) { a; };
@@ -886,12 +884,12 @@ TEST_CASE("callFunctionsWithArgumentsAndBindings")
             50,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("callFunctionsWithWrongArgument")
 {
-    std::array tests {
+    const std::array tests {
         vt<std::string> {
             R"(fn() { 1; }(1);)",
             "wrong number of arguments: want=0, got=1",
@@ -917,29 +915,29 @@ TEST_CASE("callFunctionsWithWrongArgument")
 
 TEST_CASE("callBuiltins")
 {
-    std::array tests {
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(len(""))", 0},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(len("four"))", 4},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(len("hello world"))", 11},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(len([1, 2, 3]))", 3},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(len([]))", 0},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(puts("hello", "world!"))", nilv},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(first([1, 2, 3]))", 1},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(first("hello"))", 'h'},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(first([]))", nilv},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(last([]))", nilv},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(last(""))", nilv},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(last("o"))", 'o'},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(rest([1, 2, 3]))", maker<int>({2, 3})},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(rest("hello"))", "ello"},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(rest("lo"))", "o"},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(rest("o"))", nilv},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(rest(""))", nilv},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(rest([]))", nilv},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
-        vt<char, int64_t, nil_type, string_type, std::vector<int>> {R"(last([1, 2, 3]))", 3},
+    const std::array tests {
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len(""))", 0},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len("four"))", 4},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len("hello world"))", 11},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len([1, 2, 3]))", 3},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(len([]))", 0},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(puts("hello", "world!"))", null_value},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(first([1, 2, 3]))", 1},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(first("hello"))", "h"},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(first([]))", null_value},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last([]))", null_value},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last(""))", null_value},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last("o"))", "o"},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest([1, 2, 3]))", maker<int>({2, 3})},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest("hello"))", "ello"},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest("lo"))", "o"},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest("o"))", null_value},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest(""))", null_value},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(rest([]))", null_value},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
+        vt<int64_t, null_type, string_type, std::vector<int>> {R"(last([1, 2, 3]))", 3},
     };
-    std::array errortests {
+    const std::array errortests {
         vt<error> {
             R"(len(1))",
             error {
@@ -971,13 +969,13 @@ TEST_CASE("callBuiltins")
             },
         },
     };
-    run(std::move(tests));
-    run(std::move(errortests));
+    run(tests);
+    run(errortests);
 }
 
 TEST_CASE("closures")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(
         let newClosure = fn(a) {
@@ -989,13 +987,12 @@ TEST_CASE("closures")
             99,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("recursiveFunction")
 {
-    using enum opcodes;
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(
         let countDown = fn(x) {
@@ -1042,12 +1039,12 @@ TEST_CASE("recursiveFunction")
             0,
         },
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_CASE("recuriveFibonnacci")
 {
-    std::array tests {
+    const std::array tests {
         vt<int64_t> {
             R"(
         let fibonacci = fn(x) {
@@ -1064,9 +1061,9 @@ TEST_CASE("recuriveFibonnacci")
         fibonacci(15);)",
             610},
     };
-    run(std::move(tests));
+    run(tests);
 }
 
 TEST_SUITE_END();
-// NOLINTEND(*)
+// YOLINTEND(*)
 }  // namespace

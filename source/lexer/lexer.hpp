@@ -17,7 +17,6 @@ class lexer final
     auto read_identifier_or_keyword() -> token;
     auto read_integer() -> token;
     auto read_string() -> token;
-    auto read_character() -> token;
     std::string_view m_input;
 
     std::string_view::size_type m_position {0};
