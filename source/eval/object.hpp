@@ -57,7 +57,7 @@ struct object : std::enable_shared_from_this<object>
     template<typename T>
     [[nodiscard]] inline auto as() -> std::shared_ptr<T>
     {
-        return std::dynamic_pointer_cast<T>(shared_from_this());
+        return std::static_pointer_cast<T>(shared_from_this());
     }
 
     [[nodiscard]] inline auto is_error() const -> bool { return type() == object_type::error; }
