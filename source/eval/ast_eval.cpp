@@ -62,6 +62,12 @@ auto eval_character_binary_expression(token_type oper, const char left, const ch
 {
     using enum token_type;
     switch (oper) {
+        case plus: {
+            string_type res;
+            res.push_back(left);
+            res.push_back(right);
+            return {res};
+        }
         case less_than:
             return {left < right};
         case greater_than:
@@ -75,40 +81,44 @@ auto eval_character_binary_expression(token_type oper, const char left, const ch
     }
 }
 
-auto eval_string_binary_expression(token_type oper, const object& left, const object& right) -> object
+auto eval_string_binary_expression(token_type oper, const string_type& left, const string_type& right) -> object
 {
     using enum token_type;
     if (oper != plus) {
-        return make_error("unknown operator: {} {} {}", left.type_name(), oper, right.type_name());
+        return make_error("unknown operator: string {} string", oper);
     }
-    const auto& left_str = left.as<string_type>();
-    const auto& right_str = right.as<string_type>();
-    return {left_str + right_str};
+    return {left + right};
 }
 
 auto binary_expression::eval(environment_ptr env) const -> object
 {
-    using enum token_type;
     auto evaluated_left = left->eval(env);
     if (evaluated_left.is<error>()) {
         return evaluated_left;
     }
+
     auto evaluated_right = right->eval(env);
     if (evaluated_right.is<error>()) {
         return evaluated_right;
     }
-    if (evaluated_left.value.index() != evaluated_right.value.index()) {
-        return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
+
+    if (evaluated_left.is<char>() && evaluated_right.is<char>()) {
+        return eval_character_binary_expression(op, evaluated_left.as<char>(), evaluated_right.as<char>());
+    }
+    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
+        return eval_string_binary_expression(op, evaluated_left.as<string_type>(), evaluated_right.as<string_type>());
+    }
+    if ((evaluated_left.is<char>() || evaluated_left.is<string_type>())
+        && (evaluated_right.is<string_type>() || evaluated_right.is<char>()))
+    {
+        return eval_string_binary_expression(op, evaluated_left.to<string_type>(), evaluated_right.to<string_type>());
     }
     if (evaluated_left.is<integer_type>() && evaluated_right.is<integer_type>()) {
         return eval_integer_binary_expression(
             op, evaluated_left.as<integer_type>(), evaluated_right.as<integer_type>());
     }
-    if (evaluated_left.is<char>() && evaluated_right.is<char>()) {
-        return eval_character_binary_expression(op, evaluated_left.as<char>(), evaluated_right.as<char>());
-    }
-    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
-        return eval_string_binary_expression(op, evaluated_left, evaluated_right);
+    if (evaluated_left.value.index() != evaluated_right.value.index()) {
+        return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
     }
     return make_error("unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
 }
@@ -505,10 +515,17 @@ namespace
 template<typename Expected>
 auto require_eq(const object& obj, const Expected& expected) -> void
 {
-    INFO("expected: ", object {expected}.type_name(), " got: ", obj.type_name(), " with: ", std::to_string(obj.value));
+    INFO("expected: ",
+         object {expected}.type_name(),
+         " with: ",
+         std::to_string(expected),
+         " got: ",
+         obj.type_name(),
+         " with: ",
+         std::to_string(obj.value));
     REQUIRE(obj.is<Expected>());
     const auto& actual = obj.as<Expected>();
-    REQUIRE_EQ(actual, expected);
+    REQUIRE(actual == expected);
 }
 
 auto check_no_parse_errors(const parser& prsr) -> bool
@@ -641,6 +658,7 @@ TEST_CASE("booleanExpresssion")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
+        INFO("with input: ", input);
         require_eq(evaluated, expected);
     }
 }
@@ -662,6 +680,35 @@ TEST_CASE("characterExpression")
 {
     auto evaluated = run(R"('H')");
     require_eq<char>(evaluated, 'H');
+}
+
+TEST_CASE("stringCharacterConcatenation")
+{
+    struct et
+    {
+        std::string_view input;
+        string_type expected;
+    };
+
+    std::array tests {
+        et {
+            R"("Hel" + 'p')",
+            "Help",
+        },
+        et {
+            R"('H' + "ell" + 'o')",
+            "Hello",
+        },
+        et {
+            R"('H' + 'e' + 'l' + 'l' + 'o')",
+            "Hello",
+        },
+    };
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        INFO("with input: `", input, "` ", evaluated.as<string_type>().length(), " <-> ", expected.length());
+        require_eq(evaluated, expected);
+    }
 }
 
 TEST_CASE("bangOperator")
