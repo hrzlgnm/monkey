@@ -954,7 +954,7 @@ TEST_CASE("builtinFunctions")
         bt {R"(push("c", 'a'))", "ca"},
     };
 
-    for (auto [input, expected] : tests) {
+    for (const auto& [input, expected] : tests) {
         auto evaluated = run(input);
         std::visit(
             overloaded {
