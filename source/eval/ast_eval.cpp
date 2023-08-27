@@ -958,12 +958,12 @@ TEST_CASE("builtinFunctions")
         auto evaluated = run(input);
         std::visit(
             overloaded {
-                [&](const char val) { require_eq(evaluated, val, input); },
-                [&](const integer_type val) { require_eq(evaluated, val, input); },
-                [&](const error& val) { require_eq(evaluated, val, input); },
-                [&](const std::string& val) { require_eq(evaluated, val, input); },
-                [&](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
-                [&](const nil_type& /*val*/) { require_eq(evaluated, nilv, input); },
+                [=](const char val) { require_eq(evaluated, val, input); },
+                [=](const integer_type val) { require_eq(evaluated, val, input); },
+                [=](const error& val) { require_eq(evaluated, val, input); },
+                [=](const std::string& val) { require_eq(evaluated, val, input); },
+                [=](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
+                [=](const nil_type& /*val*/) { require_eq(evaluated, nilv, input); },
             },
             expected);
     }
