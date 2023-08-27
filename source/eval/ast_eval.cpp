@@ -510,9 +510,10 @@ namespace
 {
 // NOLINTBEGIN(*)
 template<typename Expected>
-auto require_eq(const object& obj, const Expected& expected) -> void
+auto require_eq(const object& obj, const Expected& expected, std::string_view input) -> void
 {
-    INFO("expected: ",
+    INFO(input,
+         " expected: ",
          object {expected}.type_name(),
          " with: ",
          std::to_string(expected),
@@ -602,7 +603,7 @@ TEST_CASE("integerExpresssion")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -620,7 +621,7 @@ TEST_CASE("characterExpresssion")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -655,28 +656,29 @@ TEST_CASE("booleanExpresssion")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        INFO("with input: ", input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
 TEST_CASE("stringExpression")
 {
-    auto evaluated = run(R"("Hello World!")");
-    require_eq<string_type>(evaluated, "Hello World!");
+    auto input = R"("Hello World!")";
+    auto evaluated = run(input);
+    require_eq<string_type>(evaluated, "Hello World!", input);
 }
 
 TEST_CASE("stringConcatenation")
 {
-    auto evaluated = run(R"("Hello" + " " + "World!")");
-    INFO("expected a string, got: ", evaluated.type_name());
-    require_eq<string_type>(evaluated, "Hello World!");
+    auto input = R"("Hello" + " " + "World!")";
+    auto evaluated = run(input);
+    require_eq<string_type>(evaluated, "Hello World!", input);
 }
 
 TEST_CASE("characterExpression")
 {
-    auto evaluated = run(R"('H')");
-    require_eq<char>(evaluated, 'H');
+    auto input = R"('H')";
+    auto evaluated = run(input);
+    require_eq<char>(evaluated, 'H', input);
 }
 
 TEST_CASE("stringCharacterConcatenation")
@@ -703,8 +705,7 @@ TEST_CASE("stringCharacterConcatenation")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        INFO("with input: `", input, "` ", evaluated.as<string_type>().length(), " <-> ", expected.length());
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -729,7 +730,7 @@ TEST_CASE("bangOperator")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -753,9 +754,9 @@ TEST_CASE("ifElseExpressions")
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
         if (expected.is<integer_type>()) {
-            require_eq(evaluated, expected.as<integer_type>());
+            require_eq(evaluated, expected.as<integer_type>(), input);
         } else {
-            require_eq(evaluated, nilv);
+            require_eq(evaluated, nilv, input);
         }
     }
 }
@@ -784,7 +785,7 @@ if (10 > 1) {
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -848,8 +849,7 @@ return 1;
 
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        INFO("expected an error, got ", evaluated.type_name());
-        require_eq(evaluated, error {expected});
+        require_eq(evaluated, error {expected}, input);
     }
 }
 
@@ -869,7 +869,7 @@ TEST_CASE("integerLetStatements")
     };
 
     for (const auto& [input, expected] : tests) {
-        require_eq(run(input), expected);
+        require_eq(run(input), expected, input);
     }
 }
 
@@ -899,7 +899,7 @@ TEST_CASE("functionApplication")
         ft {"let c = fn(x) { x + 2; }; c(2 + c(4))", 10},
     };
     for (const auto& [input, expected] : tests) {
-        require_eq(run(input), expected);
+        require_eq(run(input), expected, input);
     }
 }
 
@@ -909,7 +909,7 @@ TEST_CASE("multipleEvaluationsWithSameEnvAndDestroyedSources")
     const auto* input2 {R"(let hello = makeGreeter("hello");)"};
     const auto* input3 {R"(hello("banana");)"};
     std::deque<std::string> inputs {input1, input2, input3};
-    require_eq<string_type>(run_multi(inputs), "hello banana!");
+    require_eq<string_type>(run_multi(inputs), "hello banana!", fmt::format("{}", fmt::join(inputs, "\n")));
 }
 
 TEST_CASE("builtinFunctions")
@@ -954,19 +954,18 @@ TEST_CASE("builtinFunctions")
         bt {R"(push("c", 'a'))", "ca"},
     };
 
-    for (auto test : tests) {
-        auto evaluated = run(test.input);
-        INFO("with input: `", test.input, "`");
+    for (auto [input, expected] : tests) {
+        auto evaluated = run(input);
         std::visit(
             overloaded {
-                [&evaluated](const char val) { require_eq(evaluated, val); },
-                [&evaluated](const integer_type val) { require_eq(evaluated, val); },
-                [&evaluated](const error& val) { require_eq(evaluated, val); },
-                [&evaluated](const std::string& val) { require_eq(evaluated, val); },
-                [&evaluated](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
-                [&evaluated](const nil_type& /*val*/) { require_eq(evaluated, nilv); },
+                [&](const char val) { require_eq(evaluated, val, input); },
+                [&](const integer_type val) { require_eq(evaluated, val, input); },
+                [&](const error& val) { require_eq(evaluated, val, input); },
+                [&](const std::string& val) { require_eq(evaluated, val, input); },
+                [&](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
+                [&](const nil_type& /*val*/) { require_eq(evaluated, nilv, input); },
             },
-            test.expected);
+            expected);
     }
 }
 
@@ -976,9 +975,9 @@ TEST_CASE("arrayExpression")
     INFO("got: " << evaluated.type_name());
     REQUIRE(evaluated.is<array>());
     auto as_arr = evaluated.as<array>();
-    require_eq<integer_type>(as_arr[0], 1);
-    require_eq<integer_type>(as_arr[1], 4);
-    require_eq<integer_type>(as_arr[2], 6);
+    require_eq<integer_type>(as_arr[0], 1, "...");
+    require_eq<integer_type>(as_arr[1], 4, "...");
+    require_eq<integer_type>(as_arr[2], 6, "...");
 }
 
 TEST_CASE("indexOperatorExpressions")
