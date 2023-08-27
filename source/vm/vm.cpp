@@ -510,7 +510,7 @@ auto run(std::array<vt<Expecteds...>, N> tests)
     }
 }
 
-// YOLINTBEGIN(*)
+// NOLINTBEGIN(*)
 
 TEST_SUITE_BEGIN("vm");
 
@@ -1065,5 +1065,5 @@ TEST_CASE("recuriveFibonnacci")
 }
 
 TEST_SUITE_END();
-// YOLINTEND(*)
+// NOLINTEND(*)
 }  // namespace

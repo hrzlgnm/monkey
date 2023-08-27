@@ -32,7 +32,7 @@ struct vm
     {
         auto main_fn = compiled_function {.instrs = std::move(code.instrs)};
         closure main_clousre {.fn = std::move(main_fn), .free {}};
-        frame main_frame {.cl = std::move(main_clousre)};
+        const frame main_frame {.cl = std::move(main_clousre)};
         frames frms;
         frms[0] = main_frame;
         return vm {std::move(frms), std::move(code.consts), std::move(globals)};

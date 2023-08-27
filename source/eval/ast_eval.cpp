@@ -510,7 +510,7 @@ auto require_eq(const object& obj, const Expected& expected, std::string_view in
 
 auto check_no_parse_errors(const parser& prsr) -> bool
 {
-    INFO("expected no errors, got:", fmt::format("{}", fmt::join(prsr.errors(), ", ")));
+    INFO("expected no errors, got:\n", fmt::format("{}", fmt::join(prsr.errors(), "\n")));
     CHECK(prsr.errors().empty());
     return prsr.errors().empty();
 }
