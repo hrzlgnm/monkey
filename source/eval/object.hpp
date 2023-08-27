@@ -94,6 +94,25 @@ struct object
         return std::get<T>(value);
     }
 
+    template<typename T>
+    [[nodiscard]] auto to() const -> T
+    {
+        if (is<T>()) {
+            return as<T>();
+        }
+        return std::visit(
+            overloaded {
+                [](const char from) -> T { return std::string(&from, 1); },
+                [](const auto& from) -> T
+                {
+                    throw std::runtime_error(fmt::format("conversion from {} to {} is not supported",
+                                                         object {from}.type_name(),
+                                                         object {T {}}.type_name()));
+                },
+            },
+            value);
+    }
+
     [[nodiscard]] inline constexpr auto is_nil() const -> bool { return is<nil_type>(); }
 
     [[nodiscard]] [[nodiscard]] inline constexpr auto is_hashable() const -> bool

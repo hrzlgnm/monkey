@@ -62,6 +62,9 @@ auto eval_character_binary_expression(token_type oper, const char left, const ch
 {
     using enum token_type;
     switch (oper) {
+        case plus: {
+            return {string_type(1, left).append(1, right)};
+        }
         case less_than:
             return {left < right};
         case greater_than:
@@ -75,40 +78,44 @@ auto eval_character_binary_expression(token_type oper, const char left, const ch
     }
 }
 
-auto eval_string_binary_expression(token_type oper, const object& left, const object& right) -> object
+auto eval_string_binary_expression(token_type oper, const string_type& left, const string_type& right) -> object
 {
     using enum token_type;
     if (oper != plus) {
-        return make_error("unknown operator: {} {} {}", left.type_name(), oper, right.type_name());
+        return make_error("unknown operator: string {} string", oper);
     }
-    const auto& left_str = left.as<string_type>();
-    const auto& right_str = right.as<string_type>();
-    return {left_str + right_str};
+    return {left + right};
 }
 
 auto binary_expression::eval(environment_ptr env) const -> object
 {
-    using enum token_type;
     auto evaluated_left = left->eval(env);
     if (evaluated_left.is<error>()) {
         return evaluated_left;
     }
+
     auto evaluated_right = right->eval(env);
     if (evaluated_right.is<error>()) {
         return evaluated_right;
     }
-    if (evaluated_left.value.index() != evaluated_right.value.index()) {
-        return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
+
+    if (evaluated_left.is<char>() && evaluated_right.is<char>()) {
+        return eval_character_binary_expression(op, evaluated_left.as<char>(), evaluated_right.as<char>());
+    }
+    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
+        return eval_string_binary_expression(op, evaluated_left.as<string_type>(), evaluated_right.as<string_type>());
+    }
+    if ((evaluated_left.is<char>() || evaluated_left.is<string_type>())
+        && (evaluated_right.is<string_type>() || evaluated_right.is<char>()))
+    {
+        return eval_string_binary_expression(op, evaluated_left.to<string_type>(), evaluated_right.to<string_type>());
     }
     if (evaluated_left.is<integer_type>() && evaluated_right.is<integer_type>()) {
         return eval_integer_binary_expression(
             op, evaluated_left.as<integer_type>(), evaluated_right.as<integer_type>());
     }
-    if (evaluated_left.is<char>() && evaluated_right.is<char>()) {
-        return eval_character_binary_expression(op, evaluated_left.as<char>(), evaluated_right.as<char>());
-    }
-    if (evaluated_left.is<string_type>() && evaluated_right.is<string_type>()) {
-        return eval_string_binary_expression(op, evaluated_left, evaluated_right);
+    if (evaluated_left.value.index() != evaluated_right.value.index()) {
+        return make_error("type mismatch: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
     }
     return make_error("unknown operator: {} {} {}", evaluated_left.type_name(), op, evaluated_right.type_name());
 }
@@ -503,12 +510,20 @@ namespace
 {
 // NOLINTBEGIN(*)
 template<typename Expected>
-auto require_eq(const object& obj, const Expected& expected) -> void
+auto require_eq(const object& obj, const Expected& expected, std::string_view input) -> void
 {
-    INFO("expected: ", object {expected}.type_name(), " got: ", obj.type_name(), " with: ", std::to_string(obj.value));
+    INFO(input,
+         " expected: ",
+         object {expected}.type_name(),
+         " with: ",
+         std::to_string(expected),
+         " got: ",
+         obj.type_name(),
+         " with: ",
+         std::to_string(obj.value));
     REQUIRE(obj.is<Expected>());
     const auto& actual = obj.as<Expected>();
-    REQUIRE_EQ(actual, expected);
+    REQUIRE(actual == expected);
 }
 
 auto check_no_parse_errors(const parser& prsr) -> bool
@@ -588,7 +603,7 @@ TEST_CASE("integerExpresssion")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -606,7 +621,7 @@ TEST_CASE("characterExpresssion")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -641,27 +656,57 @@ TEST_CASE("booleanExpresssion")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
 TEST_CASE("stringExpression")
 {
-    auto evaluated = run(R"("Hello World!")");
-    require_eq<string_type>(evaluated, "Hello World!");
+    auto input = R"("Hello World!")";
+    auto evaluated = run(input);
+    require_eq<string_type>(evaluated, "Hello World!", input);
 }
 
 TEST_CASE("stringConcatenation")
 {
-    auto evaluated = run(R"("Hello" + " " + "World!")");
-    INFO("expected a string, got: ", evaluated.type_name());
-    require_eq<string_type>(evaluated, "Hello World!");
+    auto input = R"("Hello" + " " + "World!")";
+    auto evaluated = run(input);
+    require_eq<string_type>(evaluated, "Hello World!", input);
 }
 
 TEST_CASE("characterExpression")
 {
-    auto evaluated = run(R"('H')");
-    require_eq<char>(evaluated, 'H');
+    auto input = R"('H')";
+    auto evaluated = run(input);
+    require_eq<char>(evaluated, 'H', input);
+}
+
+TEST_CASE("stringCharacterConcatenation")
+{
+    struct et
+    {
+        std::string_view input;
+        string_type expected;
+    };
+
+    std::array tests {
+        et {
+            R"("Hell" + 'o')",
+            "Hello",
+        },
+        et {
+            R"('H' + "ell" + 'o')",
+            "Hello",
+        },
+        et {
+            R"('H' + 'e' + 'l' + 'l' + 'o')",
+            "Hello",
+        },
+    };
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        require_eq(evaluated, expected, input);
+    }
 }
 
 TEST_CASE("bangOperator")
@@ -685,7 +730,7 @@ TEST_CASE("bangOperator")
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -709,9 +754,9 @@ TEST_CASE("ifElseExpressions")
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
         if (expected.is<integer_type>()) {
-            require_eq(evaluated, expected.as<integer_type>());
+            require_eq(evaluated, expected.as<integer_type>(), input);
         } else {
-            require_eq(evaluated, nilv);
+            require_eq(evaluated, nilv, input);
         }
     }
 }
@@ -740,7 +785,7 @@ if (10 > 1) {
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        require_eq(evaluated, expected);
+        require_eq(evaluated, expected, input);
     }
 }
 
@@ -804,8 +849,7 @@ return 1;
 
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
-        INFO("expected an error, got ", evaluated.type_name());
-        require_eq(evaluated, error {expected});
+        require_eq(evaluated, error {expected}, input);
     }
 }
 
@@ -825,7 +869,7 @@ TEST_CASE("integerLetStatements")
     };
 
     for (const auto& [input, expected] : tests) {
-        require_eq(run(input), expected);
+        require_eq(run(input), expected, input);
     }
 }
 
@@ -855,7 +899,7 @@ TEST_CASE("functionApplication")
         ft {"let c = fn(x) { x + 2; }; c(2 + c(4))", 10},
     };
     for (const auto& [input, expected] : tests) {
-        require_eq(run(input), expected);
+        require_eq(run(input), expected, input);
     }
 }
 
@@ -865,7 +909,7 @@ TEST_CASE("multipleEvaluationsWithSameEnvAndDestroyedSources")
     const auto* input2 {R"(let hello = makeGreeter("hello");)"};
     const auto* input3 {R"(hello("banana");)"};
     std::deque<std::string> inputs {input1, input2, input3};
-    require_eq<string_type>(run_multi(inputs), "hello banana!");
+    require_eq<string_type>(run_multi(inputs), "hello banana!", fmt::format("{}", fmt::join(inputs, "\n")));
 }
 
 TEST_CASE("builtinFunctions")
@@ -876,7 +920,7 @@ TEST_CASE("builtinFunctions")
         std::variant<char, std::int64_t, std::string, error, nil_type, array> expected;
     };
 
-    std::array tests {
+    const std::array tests {
         bt {R"(len(""))", 0},
         bt {R"(len("four"))", 4},
         bt {R"(len("hello world"))", 11},
@@ -910,17 +954,16 @@ TEST_CASE("builtinFunctions")
         bt {R"(push("c", 'a'))", "ca"},
     };
 
-    for (auto test : tests) {
+    for (const auto& test : tests) {
         auto evaluated = run(test.input);
-        INFO("with input: `", test.input, "`");
         std::visit(
             overloaded {
-                [&evaluated](const char val) { require_eq(evaluated, val); },
-                [&evaluated](const integer_type val) { require_eq(evaluated, val); },
-                [&evaluated](const error& val) { require_eq(evaluated, val); },
-                [&evaluated](const std::string& val) { require_eq(evaluated, val); },
-                [&evaluated](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
-                [&evaluated](const nil_type& /*val*/) { require_eq(evaluated, nilv); },
+                [&](const char val) { require_eq(evaluated, val, test.input); },
+                [&](const integer_type val) { require_eq(evaluated, val, test.input); },
+                [&](const error& val) { require_eq(evaluated, val, test.input); },
+                [&](const std::string& val) { require_eq(evaluated, val, test.input); },
+                [&](const array& val) { REQUIRE_EQ(object {val}, evaluated); },
+                [&](const nil_type& /*val*/) { require_eq(evaluated, nilv, test.input); },
             },
             test.expected);
     }
@@ -932,9 +975,9 @@ TEST_CASE("arrayExpression")
     INFO("got: " << evaluated.type_name());
     REQUIRE(evaluated.is<array>());
     auto as_arr = evaluated.as<array>();
-    require_eq<integer_type>(as_arr[0], 1);
-    require_eq<integer_type>(as_arr[1], 4);
-    require_eq<integer_type>(as_arr[2], 6);
+    require_eq<integer_type>(as_arr[0], 1, "...");
+    require_eq<integer_type>(as_arr[1], 4, "...");
+    require_eq<integer_type>(as_arr[2], 6, "...");
 }
 
 TEST_CASE("indexOperatorExpressions")

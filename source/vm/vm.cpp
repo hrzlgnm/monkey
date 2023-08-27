@@ -1,6 +1,7 @@
 #include <array>
 #include <cstdint>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 
 #include "vm.hpp"
@@ -211,9 +212,9 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         }
         return;
     }
-    if (left.is<string_type>() && right.is<string_type>()) {
-        const auto& left_value = left.as<string_type>();
-        const auto& right_value = right.as<string_type>();
+    if ((left.is<char>() || left.is<string_type>()) && (right.is<string_type>() || right.is<char>())) {
+        const auto& left_value = left.to<string_type>();
+        const auto& right_value = right.to<string_type>();
         switch (opcode) {
             case opcodes::add:
                 push({left_value + right_value});
@@ -440,14 +441,17 @@ auto require_is(const Expected& exp, const object& actual_obj, std::string_view 
     INFO(input,
          " expected: ",
          object {exp}.type_name(),
+         " with: ",
+         std::to_string(exp),
          " got: ",
          actual_obj.type_name(),
          " with: ",
          std::to_string(actual_obj.value),
          " instead");
     REQUIRE(actual_obj.is<Expected>());
-    auto actual = actual_obj.as<Expected>();
-    REQUIRE_EQ(actual, exp);
+    const auto& actual = actual_obj.as<Expected>();
+    INFO(std::to_string(actual), actual == exp, std::to_string(exp));
+    REQUIRE(actual == exp);
 }
 
 auto require_array_object(const std::vector<int>& expected, const object& actual, std::string_view input) -> void
@@ -609,7 +613,7 @@ TEST_CASE("stringExpression")
         vt<std::string> {R"("monkey")", "monkey"},
         vt<std::string> {R"("mon" + "key")", "monkey"},
         vt<std::string> {R"("mon" + "key" + "banana")", "monkeybanana"},
-
+        vt<std::string> {R"("mon" + 'k' + 'a' + 'S')", "monkaS"},
     };
     run(std::move(tests));
 }
