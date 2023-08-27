@@ -63,10 +63,7 @@ auto eval_character_binary_expression(token_type oper, const char left, const ch
     using enum token_type;
     switch (oper) {
         case plus: {
-            string_type res;
-            res.push_back(left);
-            res.push_back(right);
-            return {res};
+            return {string_type(1, left).append(1, right)};
         }
         case less_than:
             return {left < right};
@@ -692,8 +689,8 @@ TEST_CASE("stringCharacterConcatenation")
 
     std::array tests {
         et {
-            R"("Hel" + 'p')",
-            "Help",
+            R"("Hell" + 'o')",
+            "Hello",
         },
         et {
             R"('H' + "ell" + 'o')",
