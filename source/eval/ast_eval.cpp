@@ -117,7 +117,7 @@ auto binary_expression::eval(environment_ptr env) const -> object_ptr
 
 auto boolean::eval(environment_ptr /*env*/) const -> object_ptr
 {
-    return nanative_bool_to_object(value);
+    return native_bool_to_object(value);
 }
 
 auto function_expression::call(environment_ptr closure_env,
