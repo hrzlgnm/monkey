@@ -383,10 +383,10 @@ auto vm::push_frame(frame&& frm) -> void
     m_frame_index++;
 }
 
-auto vm::pop_frame() -> frame
+auto vm::pop_frame() -> frame&
 {
     m_frame_index--;
-    return m_frames[m_frame_index];
+    return m_frames.at(m_frame_index);
 }
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
