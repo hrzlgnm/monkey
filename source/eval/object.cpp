@@ -7,8 +7,6 @@
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
 
-#include "lexer/token_type.hpp"
-
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
 {
     using enum object::object_type;
