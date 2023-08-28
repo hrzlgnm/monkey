@@ -57,7 +57,7 @@ struct vm
 
     auto current_frame() -> frame&;
     auto push_frame(frame&& frm) -> void;
-    auto pop_frame() -> frame;
+    auto pop_frame() -> frame&;
     auto push_closure(uint16_t const_idx, uint8_t num_free) -> void;
 
     constants_ptr m_constans;
