@@ -118,7 +118,7 @@ auto vm::run() -> void
                 push(return_value);
             } break;
             case opcodes::ret: {
-                auto frame = pop_frame();
+                auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(null);
             } break;
