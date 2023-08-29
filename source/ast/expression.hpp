@@ -5,7 +5,6 @@
 #include <eval/environment_fwd.hpp>
 #include <eval/object.hpp>
 
-struct object;
 struct compiler;
 
 struct expression
