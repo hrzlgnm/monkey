@@ -1,7 +1,6 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
-#include <stdexcept>
 #include <variant>
 
 #include <ast/array_expression.hpp>
