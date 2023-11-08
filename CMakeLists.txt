@@ -66,7 +66,7 @@ target_include_directories(
 target_compile_definitions(monkey_lib PUBLIC DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 target_compile_features(monkey_lib PUBLIC cxx_std_20)
 target_link_libraries(monkey_lib PRIVATE doctest::doctest doctest::dll)
-target_link_libraries(monkey_lib PRIVATE fmt::fmt)
+target_link_libraries(monkey_lib PUBLIC fmt::fmt)
 add_executable(monkey_exe source/main.cpp)
 add_executable(monkey::exe ALIAS monkey_exe)
 target_compile_definitions(monkey_exe PRIVATE DOCTEST_CONFIG_DISABLE)
