@@ -1,91 +1,91 @@
 name: Continuous Integration
 
 on:
-    push:
-        branches:
-            - master
+  push:
+    branches:
+      - master
 
-    pull_request:
-        branches:
-            - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
-    lint:
-        runs-on: ubuntu-22.04
+  lint:
+    runs-on: ubuntu-22.04
 
-        steps:
-            - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-            - uses: actions/setup-python@v4
-              with: { python-version: '3.8' }
+      - uses: actions/setup-python@v4
+        with: { python-version: "3.8" }
 
-            - name: Install codespell
-              run: pip3 install codespell
+      - name: Install codespell
+        run: pip3 install codespell
 
-            - name: Lint
-              run: cmake -D FORMAT_COMMAND=clang-format-14 -P cmake/lint.cmake
+      - name: Lint
+        run: cmake -D FORMAT_COMMAND=clang-format-14 -P cmake/lint.cmake
 
-            - name: Spell check
-              if: always()
-              run: cmake -P cmake/spell.cmake
-    sanitize:
-        needs: [lint]
+      - name: Spell check
+        if: always()
+        run: cmake -P cmake/spell.cmake
+  sanitize:
+    needs: [lint]
 
-        runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04
 
-        env: { CXX: clang++-14 }
+    env: { CXX: clang++-14 }
 
-        steps:
-            - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-            - name: Install Deps
-              run: sudo apt-get update -q
-                  && sudo apt-get install ninja-build libfmt-dev -q -y
+      - name: Install Deps
+        run: sudo apt-get update -q
+          && sudo apt-get install ninja-build -q -y
 
-            - name: Configure
-              run: cmake --preset=ci-sanitize -GNinja
+      - name: Configure
+        run: cmake --preset=ci-sanitize -GNinja
 
-            - name: Build
-              run: cmake --build build/sanitize -j 2
+      - name: Build
+        run: cmake --build build/sanitize -j 2
 
-            - name: Test
-              env:
-                  ASAN_OPTIONS: "strict_string_checks=1:\
-                      detect_stack_use_after_return=1:\
-                      check_initialization_order=1:\
-                      strict_init_order=1:\
-                      detect_leaks=1"
-                  UBSAN_OPTIONS: print_stacktrace=1
-              working-directory: build/sanitize
-              run: ctest --output-on-failure --no-tests=error
-    test:
-        needs: [lint]
+      - name: Test
+        env:
+          ASAN_OPTIONS: "strict_string_checks=1:\
+            detect_stack_use_after_return=1:\
+            check_initialization_order=1:\
+            strict_init_order=1:\
+            detect_leaks=1"
+          UBSAN_OPTIONS: print_stacktrace=1
+        working-directory: build/sanitize
+        run: ctest --output-on-failure --no-tests=error
+  test:
+    needs: [lint]
 
-        strategy:
-            matrix:
-                os: [ubuntu-22.04]
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
 
-        runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-        steps:
-            - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-            - name: Install static analyzers and dependencies
-              if: matrix.os == 'ubuntu-22.04'
-              run: >-
-                  sudo apt-get update -q
+      - name: Install static analyzers and dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: >-
+          sudo apt-get update -q
 
-                  sudo apt-get install clang-tidy-14 cppcheck ninja-build libfmt-dev -y -q
+          sudo apt-get install clang-tidy-14 cppcheck ninja-build -y -q
 
-                  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
+          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
 
-            - name: Configure
-              shell: pwsh
-              run: cmake "--preset=ci-$("${{ matrix.os }}".split("-")[0])" -GNinja
+      - name: Configure
+        shell: pwsh
+        run: cmake "--preset=ci-$("${{ matrix.os }}".split("-")[0])" -GNinja
 
-            - name: Build
-              run: cmake --build build --config Release -j 2
+      - name: Build
+        run: cmake --build build --config Release -j 2
 
-            - name: Test
-              working-directory: build
-              run: ctest --output-on-failure --no-tests=error -j 2
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure --no-tests=error -j 2
