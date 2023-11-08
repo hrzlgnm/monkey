@@ -43,7 +43,7 @@ jobs:
           && sudo apt-get install ninja-build -q -y
 
       - name: Configure
-        run: cmake --Wno-error=dev -preset=ci-sanitize -GNinja
+        run: cmake -Wno-error=dev --preset=ci-sanitize -GNinja
 
       - name: Build
         run: cmake --build build/sanitize -j 2
