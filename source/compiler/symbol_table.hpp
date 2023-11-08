@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <fmt/ostream.h>
+
 template<typename Value>
 using string_map = std::map<std::string, Value, std::less<>>;
 

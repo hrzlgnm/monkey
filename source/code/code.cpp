@@ -9,7 +9,7 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 
-auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
+auto operator<<(std::ostream& ostream, const opcodes& opcode) -> std::ostream&
 {
     using enum opcodes;
     switch (opcode) {
