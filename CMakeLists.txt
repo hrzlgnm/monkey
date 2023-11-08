@@ -9,7 +9,6 @@ project(
   HOMEPAGE_URL "https://github.com/hrzlgnm/monkey"
   LANGUAGES CXX)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fmt.cmake)
 
 # ---- Declare library ----
 add_library(
@@ -77,4 +76,5 @@ target_compile_features(monkey_exe PRIVATE cxx_std_20)
 
 target_link_libraries(monkey_exe PRIVATE monkey_lib)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fmt.cmake)
 include(cmake/dev-mode.cmake)
