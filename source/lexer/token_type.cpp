@@ -1,6 +1,6 @@
 #include "token_type.hpp"
 
-auto operator<<(std::ostream& ostream, const token_type& type) -> std::ostream&
+auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
 {
     switch (type) {
         case token_type::asterisk:

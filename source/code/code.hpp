@@ -45,7 +45,7 @@ enum class opcodes : uint8_t
     current_closure,
 };
 
-auto operator<<(std::ostream& ostream, const opcodes& opcode) -> std::ostream&;
+auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
 
 using operands = std::vector<size_t>;
 using instructions = std::vector<uint8_t>;
