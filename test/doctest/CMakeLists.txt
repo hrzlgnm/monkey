@@ -16,7 +16,7 @@ target_compile_features(doctest_exe PRIVATE cxx_std_20)
 
 add_test(NAME doctest COMMAND $<TARGET_FILE:doctest_exe> --no-version)
 
-# HACK(hrzgnm): disable analyzer checks on doctest library
+# HACK(hrzgnm): disable analyzer checks on doctest targets
 set_target_properties(doctest_exe PROPERTIES
     CXX_CLANG_TIDY ""
     CXX_CPPCHECK "")
