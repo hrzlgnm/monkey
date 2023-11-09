@@ -33,7 +33,7 @@ jobs:
 
     runs-on: ubuntu-22.04
 
-    env: { CXX: clang++-14 }
+    env: { CXX: clang++-15 }
 
     steps:
       - uses: actions/checkout@v3
@@ -41,7 +41,7 @@ jobs:
       - name: Install Deps
         run: |
           sudo apt-get update -q
-          sudo apt-get install ninja-build -q -y
+          sudo apt-get install ninja-build clang-15 -q -y
 
       - name: Configure
         run: >-
@@ -80,8 +80,8 @@ jobs:
         if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update -q
-          sudo apt-get install clang-tidy-14 cppcheck ninja-build -y -q
-          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
+          sudo apt-get install clang-tidy-15 cppcheck ninja-build -y -q
+          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-15 150
 
       - name: Configure
         run: >-
