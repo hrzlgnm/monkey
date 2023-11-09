@@ -44,7 +44,12 @@ jobs:
           sudo apt-get install ninja-build -q -y
 
       - name: Configure
-        run: cmake -DCMAKE_BUILD_TYPE=Sanitize -DCMAKE_CXX_FLAGS_SANITIZE="-O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common" -GNinja -S . -B ../build/sanitize
+        run: >-
+          cmake
+          -DCMAKE_BUILD_TYPE=Sanitize
+          -DCMAKE_CXX_FLAGS_SANITIZE="-O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common"
+          -GNinja -S .
+          -B ../build/sanitize
 
       - name: Build
         run: cmake --build ../build/sanitize -j 2
@@ -87,11 +92,10 @@ jobs:
           -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
           -DCMAKE_CXX_CLANG_TIDY="clang-tidy;--header-filter=^/home/runner/work/monkey/monkey"
           -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
-          -DCMAKE_CXX_CPPCHECK="cppcheck;--inline-suppr;--library=/home/runner/work/monkey/monkey/cppcheck/doctest.cfg"
+          -DCMAKE_CXX_CPPCHECK="cppcheck;--inline-suppr;--library=/home/runner/work/monkey/monkey/cppcheck/monkey.cfg"
           -DCMAKE_CXX_EXTENSIONS=OFF
           -DCMAKE_CXX_STANDARD=20
           -DCMAKE_CXX_STANDARD_REQUIRED=ON
-          -Dmonkey_DEVELOPER_MODE=ON
           -S .
           -B ../build/Release
 
