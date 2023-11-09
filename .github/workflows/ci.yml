@@ -43,10 +43,10 @@ jobs:
           && sudo apt-get install ninja-build -q -y
 
       - name: Configure
-        run: cmake -Wno-error=dev --preset=ci-sanitize -GNinja
+        run: cmake -Wno-error=dev -DCMAKE_BUILD_TYPE=Sanitize -DCMAKE_CXX_FLAGS_SANITIZE="-O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common" -GNinja -S . -B ../build/sanitize
 
       - name: Build
-        run: cmake --build build/sanitize -j 2
+        run: cmake --build ../build/sanitize -j 2
 
       - name: Test
         env:
@@ -56,7 +56,7 @@ jobs:
             strict_init_order=1:\
             detect_leaks=1"
           UBSAN_OPTIONS: print_stacktrace=1
-        working-directory: build/sanitize
+        working-directory: ../build/sanitize
         run: ctest --output-on-failure --no-tests=error
   test:
     needs: [lint]
@@ -81,11 +81,11 @@ jobs:
 
       - name: Configure
         shell: pwsh
-        run: cmake -Wno-error=dev "--preset=ci-$("${{ matrix.os }}".split("-")[0])" -GNinja
+        run: cmake -Wno-error=dev -GNinja -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-D_FORTIFY_SOURCE=3 -fstack-protector-strong -fcf-protection=full -fstack-clash-protection -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow-compatible-local -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now" -S . -B ../build/Release
 
       - name: Build
-        run: cmake --build build --config Release -j 2
+        run: cmake --build ../build/Release -j 2
 
       - name: Test
-        working-directory: build
+        working-directory: ../build/Release
         run: ctest --output-on-failure --no-tests=error -j 2

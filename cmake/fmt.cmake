@@ -11,4 +11,3 @@ FetchContent_Declare(fmt
 
 FetchContent_MakeAvailable(fmt)
 
-write_file(${CMAKE_BINARY_DIR}/.clang-tidy "Checks: '-*'")
