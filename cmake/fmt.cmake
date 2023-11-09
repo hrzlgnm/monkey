@@ -11,6 +11,8 @@ FetchContent_Declare(fmt
 
 FetchContent_MakeAvailable(fmt)
 
-# HACK(hrzgnm): disable clang-tidy checks on fmt library
+# HACK(hrzgnm): disable analyzer checks on fmt library
 set_target_properties(fmt PROPERTIES
-    CXX_CLANG_TIDY "")
+    CXX_CLANG_TIDY ""
+    CXX_CPPCHECK "")
+
