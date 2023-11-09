@@ -39,8 +39,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install Deps
-        run: sudo apt-get update -q
-          && sudo apt-get install ninja-build -q -y
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install ninja-build -q -y
 
       - name: Configure
         run: cmake -DCMAKE_BUILD_TYPE=Sanitize -DCMAKE_CXX_FLAGS_SANITIZE="-O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common" -GNinja -S . -B ../build/sanitize
@@ -72,11 +73,9 @@ jobs:
 
       - name: Install static analyzers and dependencies
         if: matrix.os == 'ubuntu-22.04'
-        run: >-
+        run: |
           sudo apt-get update -q
-
           sudo apt-get install clang-tidy-14 cppcheck ninja-build -y -q
-
           sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
 
       - name: Configure
@@ -84,7 +83,8 @@ jobs:
           cmake
           -GNinja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_CXX_FLAGS="-O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fcf-protection=full -fstack-clash-protection -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow-compatible-local -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
+          -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fcf-protection=full -fstack-clash-protection -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow-compatible-local -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now" 
+          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
           -DCMAKE_CXX_CLANG_TIDY="clang-tidy;--header-filter=^/home/runner/work/monkey/monkey"
           -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
           -DCMAKE_CXX_CPPCHECK="cppcheck;--inline-suppr;--library=/home/runner/work/monkey/monkey/cppcheck/doctest.cfg"
