@@ -88,7 +88,8 @@ jobs:
           cmake
           -GNinja
           -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fcf-protection=full -fstack-clash-protection -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow-compatible-local -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast" -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now" 
+          -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fcf-protection=full -fstack-clash-protection -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow=compatible-local -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast"
+          -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
           -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
           -DCMAKE_CXX_CLANG_TIDY="clang-tidy;--header-filter=^/home/runner/work/monkey/monkey"
           -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
