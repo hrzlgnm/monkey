@@ -9,6 +9,10 @@ project(
   HOMEPAGE_URL "https://github.com/hrzlgnm/monkey"
   LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fmt.cmake)
 
 # ---- Declare library ----
@@ -65,17 +69,13 @@ target_include_directories(
   monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
 target_compile_definitions(monkey_lib PUBLIC DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 target_compile_features(monkey_lib PUBLIC cxx_std_20)
-target_link_libraries(monkey_lib PRIVATE doctest::doctest doctest::dll)
-target_link_libraries(monkey_lib PUBLIC fmt::fmt)
+target_link_libraries(monkey_lib PRIVATE fmt::fmt doctest::doctest doctest::dll)
+
 add_executable(monkey_exe source/main.cpp)
 add_executable(monkey::exe ALIAS monkey_exe)
 target_compile_definitions(monkey_exe PRIVATE DOCTEST_CONFIG_DISABLE)
-
 set_property(TARGET monkey_exe PROPERTY OUTPUT_NAME monkey)
-
 target_compile_features(monkey_exe PRIVATE cxx_std_20)
-
-target_link_libraries(monkey_exe PRIVATE monkey_lib)
-
+target_link_libraries(monkey_exe PRIVATE fmt::fmt monkey_lib)
 
 include(cmake/dev-mode.cmake)
