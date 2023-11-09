@@ -1,91 +1,108 @@
 name: Continuous Integration
 
 on:
-    push:
-        branches:
-            - master
+  push:
+    branches:
+      - master
 
-    pull_request:
-        branches:
-            - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
-    lint:
-        runs-on: ubuntu-22.04
+  lint:
+    runs-on: ubuntu-22.04
 
-        steps:
-            - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-            - uses: actions/setup-python@v4
-              with: { python-version: '3.8' }
+      - uses: actions/setup-python@v4
+        with: { python-version: "3.8" }
 
-            - name: Install codespell
-              run: pip3 install codespell
+      - name: Install codespell
+        run: pip3 install codespell
 
-            - name: Lint
-              run: cmake -D FORMAT_COMMAND=clang-format-14 -P cmake/lint.cmake
+      - name: Lint
+        run: cmake -D FORMAT_COMMAND=clang-format-14 -P cmake/lint.cmake
 
-            - name: Spell check
-              if: always()
-              run: cmake -P cmake/spell.cmake
-    sanitize:
-        needs: [lint]
+      - name: Spell check
+        if: always()
+        run: cmake -P cmake/spell.cmake
+  sanitize:
+    needs: [lint]
 
-        runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04
 
-        env: { CXX: clang++-14 }
+    env: { CXX: clang++-15 }
 
-        steps:
-            - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-            - name: Install Deps
-              run: sudo apt-get update -q
-                  && sudo apt-get install ninja-build libfmt-dev -q -y
+      - name: Install Deps
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install ninja-build clang-15 -q -y
 
-            - name: Configure
-              run: cmake --preset=ci-sanitize -GNinja
+      - name: Configure
+        run: >-
+          cmake
+          -DCMAKE_BUILD_TYPE=Sanitize
+          -DCMAKE_CXX_FLAGS_SANITIZE="-O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common"
+          -GNinja -S .
+          -B ../build/sanitize
 
-            - name: Build
-              run: cmake --build build/sanitize -j 2
+      - name: Build
+        run: cmake --build ../build/sanitize -j 2
 
-            - name: Test
-              env:
-                  ASAN_OPTIONS: "strict_string_checks=1:\
-                      detect_stack_use_after_return=1:\
-                      check_initialization_order=1:\
-                      strict_init_order=1:\
-                      detect_leaks=1"
-                  UBSAN_OPTIONS: print_stacktrace=1
-              working-directory: build/sanitize
-              run: ctest --output-on-failure --no-tests=error
-    test:
-        needs: [lint]
+      - name: Test
+        env:
+          ASAN_OPTIONS: "strict_string_checks=1:\
+            detect_stack_use_after_return=1:\
+            check_initialization_order=1:\
+            strict_init_order=1:\
+            detect_leaks=1"
+          UBSAN_OPTIONS: print_stacktrace=1
+        working-directory: ../build/sanitize
+        run: ctest --output-on-failure --no-tests=error
+  test:
+    needs: [lint]
 
-        strategy:
-            matrix:
-                os: [ubuntu-22.04]
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
 
-        runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
 
-        steps:
-            - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-            - name: Install static analyzers and dependencies
-              if: matrix.os == 'ubuntu-22.04'
-              run: >-
-                  sudo apt-get update -q
+      - name: Install static analyzers and dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install clang-tidy-15 cppcheck ninja-build -y -q
+          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-15 150
 
-                  sudo apt-get install clang-tidy-14 cppcheck ninja-build libfmt-dev -y -q
+      - name: Configure
+        run: >-
+          cmake
+          -GNinja
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fcf-protection=full -fstack-clash-protection -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow=compatible-local -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast"
+          -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
+          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
+          -DCMAKE_CXX_CLANG_TIDY="clang-tidy;--header-filter=^/home/runner/work/monkey/monkey"
+          -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
+          -DCMAKE_CXX_CPPCHECK="cppcheck;--inline-suppr;--library=/home/runner/work/monkey/monkey/cppcheck/monkey.cfg"
+          -DCMAKE_CXX_EXTENSIONS=OFF
+          -DCMAKE_CXX_STANDARD=20
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -S .
+          -B ../build/Release
 
-                  sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-14 140
+      - name: Build
+        run: cmake --build ../build/Release -j 2
 
-            - name: Configure
-              shell: pwsh
-              run: cmake "--preset=ci-$("${{ matrix.os }}".split("-")[0])" -GNinja
-
-            - name: Build
-              run: cmake --build build --config Release -j 2
-
-            - name: Test
-              working-directory: build
-              run: ctest --output-on-failure --no-tests=error -j 2
+      - name: Test
+        working-directory: ../build/Release
+        run: ctest --output-on-failure --no-tests=error -j 2

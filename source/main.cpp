@@ -41,7 +41,7 @@ auto monkey_business()
 auto print_parse_errors(const std::vector<std::string>& errors)
 {
     monkey_business();
-    std::cerr << "  parser errorrs: \n";
+    std::cerr << "  parser errors: \n";
     for (const auto& error : errors) {
         std::cerr << "\t" << error << "\n";
     }
