@@ -2,7 +2,7 @@
 
 This is the monkey project.
 
-# Building and installing
+# Building
 
 See the [BUILDING](BUILDING.md) document.
 
