@@ -136,36 +136,39 @@ jobs:
             }
           - {
               runs_on: ubuntu-latest,
-              name: "GCC 10",
-              container: "ghcr.io/quick-lint/quick-lint-js-github-gcc:v1",
-              CC: gcc-10,
-              CXX: g++-10,
+              name: "Clang 15",
+              container: "ghcr.io/void-linux/void-musl-full:latest",
+              CC: clang,
+              CXX: clang++,
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Debug",
-              WARNINGS: "-Werror;{0}",
+              WARNINGS: "-Werror;{1}",
               CMAKE_FLAGS: "-G Ninja",
+              xbps_packages: "ninja clang cmake bash git",
             }
           - {
               runs_on: ubuntu-latest,
-              name: "GCC 10 ASAN+UBSAN",
-              container: "ghcr.io/quick-lint/quick-lint-js-github-gcc:v1",
-              CC: gcc-10,
-              CXX: g++-10,
+              name: "Clang 15 ASAN+UBSAN",
+              container: "ghcr.io/void-linux/void-musl-full:latest",
+              CC: clang,
+              CXX: clang++,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -fuse-ld=gold",
               CMAKE_BUILD_TYPE: "Debug",
-              WARNINGS: "-Werror;{0}",
+              WARNINGS: "-Werror;{1}",
               CMAKE_FLAGS: "-G Ninja",
               ASAN_OPTIONS: "strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1",
+              xbps_packages: "ninja clang cmake bash git",
             }
           - {
               runs_on: ubuntu-latest,
-              name: "GCC 10 Release",
-              container: "ghcr.io/quick-lint/quick-lint-js-github-gcc:v1",
-              CC: gcc-10,
-              CXX: g++-10,
+              name: "Clang 15 Release",
+              container: "ghcr.io/void-linux/void-musl-full:latest",
+              CC: clang,
+              CXX: clang++,
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Release",
-              WARNINGS: "-Werror;{0}",
+              WARNINGS: "-Werror;{1}",
+              xbps_packages: "clang cmake bash git",
             }
     runs-on: ${{ matrix.toolchain.runs_on }}
     container: ${{ matrix.toolchain.container }}
@@ -196,6 +199,13 @@ jobs:
       - name: install dependencies (Homebrew)
         if: ${{ matrix.toolchain.homebrew_packages }}
         run: brew install ${{ matrix.toolchain.homebrew_packages }}
+
+      - name: install dependencies (Xbps)
+        if: ${{ matrix.toolchain.xbps_packages }}
+        run: |
+          xbps-install -Suy || xbps-install -uy xbps
+          xpps-install -uy 
+          xbps-install ${{ matrix.toolchain.homebrew_packages }}
 
       - name: configure
         run: |
