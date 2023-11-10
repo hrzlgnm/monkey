@@ -940,9 +940,9 @@ TEST_CASE("arrayExpression")
     INFO("got: " << evaluated->type());
     REQUIRE(evaluated->is(object::object_type::array));
     const auto& as_arr = evaluated->as<array_object>()->elements;
-    require_eq(as_arr[0], 1L, "...");
-    require_eq(as_arr[1], 4L, "...");
-    require_eq(as_arr[2], 6L, "...");
+    require_eq(as_arr[0], int64_t(1), "...");
+    require_eq(as_arr[1], int64_t(4), "...");
+    require_eq(as_arr[2], int64_t(6), "...");
 }
 
 TEST_CASE("indexOperatorExpressions")
