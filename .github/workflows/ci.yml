@@ -11,7 +11,9 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/void-linux/void-musl-full:latest"
 
     steps:
       - uses: actions/checkout@v3
@@ -20,10 +22,12 @@ jobs:
         with: { python-version: "3.8" }
 
       - name: Install codespell
-        run: pip3 install codespell
+        run: |
+          xbps-install -Suy || xbps-install -u xbps
+          xbps-install -yu python3-codespell cmake clang
 
       - name: Lint
-        run: cmake -D FORMAT_COMMAND=clang-format-14 -P cmake/lint.cmake
+        run: cmake -D FORMAT_COMMAND=clang-format -P cmake/lint.cmake
 
       - name: Spell check
         if: always()
