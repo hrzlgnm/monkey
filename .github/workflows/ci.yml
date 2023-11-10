@@ -168,7 +168,8 @@ jobs:
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Release",
               WARNINGS: "-Werror;{1}",
-              xbps_packages: "clang cmake bash git",
+              CMAKE_FLAGS: "-G Ninja",
+              xbps_packages: "ninja clang cmake bash git",
             }
     runs-on: ${{ matrix.toolchain.runs_on }}
     container: ${{ matrix.toolchain.container }}
