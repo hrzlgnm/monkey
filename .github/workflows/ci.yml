@@ -16,15 +16,13 @@ jobs:
       image: "ghcr.io/void-linux/void-musl-full:latest"
 
     steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-python@v4
-        with: { python-version: "3.8" }
-
       - name: Install codespell
         run: |
           xbps-install -Suy || xbps-install -u xbps
           xbps-install -yu python3-codespell cmake clang
+
+      - name: Checkout
+        uses: classabbyamp/treeless-checkout-action@v1
 
       - name: Lint
         run: cmake -D FORMAT_COMMAND=clang-format -P cmake/lint.cmake
