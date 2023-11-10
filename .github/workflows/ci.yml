@@ -206,12 +206,12 @@ jobs:
           xbps-install -uy
           xbps-install -y ${{ matrix.toolchain.xbps_packages }}
 
-      - name: checkout (Bash)
-        if: ${{ ! startsWith(matrix.toolchain.runs-on, 'macos') }}
+      - name: checkout (non macos)
+        if: ${{ ! startsWith(matrix.toolchain.runs_on, 'macos') }}
         uses: classabbyamp/treeless-checkout-action@v1
 
-      - name: checkout (Non Bash)
-        if: ${{ startsWith(matrix.toolchain.runs-on, 'macos') }}
+      - name: checkout (macos)
+        if: ${{ startsWith(matrix.toolchain.runs_on, 'macos') }}
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
       - name: configure
