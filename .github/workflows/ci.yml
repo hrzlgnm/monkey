@@ -10,7 +10,7 @@ on:
       - master
 
 jobs:
-  lint:
+  Lint:
     runs-on: ubuntu-latest
     container:
       image: "ghcr.io/void-linux/void-musl-full:latest"
@@ -33,7 +33,7 @@ jobs:
         run: cmake -P cmake/spell.cmake
 
   Build-And-Test:
-    needs: [lint]
+    needs: [Lint]
     name: ${{ matrix.toolchain.name }}
     strategy:
       fail-fast: false
@@ -156,26 +156,26 @@ jobs:
         ) }}
 
     steps:
-      - name: install dependencies (Homebrew)
+      - name: Install dependencies (Homebrew)
         if: ${{ matrix.toolchain.homebrew_packages }}
         run: brew install ${{ matrix.toolchain.homebrew_packages }}
 
-      - name: install dependencies (Xbps)
+      - name: Install dependencies (Xbps)
         if: ${{ matrix.toolchain.xbps_packages }}
         run: |
           xbps-install -Suy || xbps-install -uy xbps
           xbps-install -uy
           xbps-install -y ${{ matrix.toolchain.xbps_packages }}
 
-      - name: checkout (non macos)
+      - name: Checkout (non macos)
         if: ${{ ! startsWith(matrix.toolchain.runs_on, 'macos') }}
         uses: classabbyamp/treeless-checkout-action@v1
 
-      - name: checkout (macos)
+      - name: Checkout (macos)
         if: ${{ startsWith(matrix.toolchain.runs_on, 'macos') }}
         uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
-      - name: configure
+      - name: Configure
         run: |
           env | grep '^ASAN_OPTIONS\|^CMAKE\|^MONKEY' | sort
           cmake -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" ${CMAKE_C_COMPILER+-DCMAKE_C_COMPILER="${CMAKE_C_COMPILER}"} ${CMAKE_CXX_COMPILER+-DCMAKE_CXX_COMPILER="${CMAKE_CXX_COMPILER}"} -DCMAKE_C_FLAGS="${CMAKE_C_FLAGS}" -DCMAKE_CXX_FLAGS="${CMAKE_CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CMAKE_EXE_LINKER_FLAGS}" -DCMAKE_SHARED_LINKER_FLAGS="${CMAKE_SHARED_LINKER_FLAGS}" ${CMAKE_EXTRA_FLAGS} -S . -B ../build
@@ -187,7 +187,7 @@ jobs:
         run: ctest --build-config Debug --verbose
 
   Static-Analysis:
-    needs: [lint]
+    needs: [Lint]
     # TODO(hrzlgnm): todo migrate to own container
     runs-on: ubuntu-22.04
 
