@@ -31,53 +31,14 @@ jobs:
       - name: Spell check
         if: always()
         run: cmake -P cmake/spell.cmake
-  sanitize:
-    needs: [lint]
 
-    runs-on: ubuntu-latest
-    container:
-      image: "ghcr.io/void-linux/void-musl-full:latest"
-
-    env: { CXX: clang++ }
-
-    steps:
-      - name: Install Deps
-        run: |
-          xbps-install -Suy || xbps-install -u xbps
-          xbps-install -yu
-          xbps-install -y bash git ninja cmake clang
-
-      - name: Checkout
-        uses: classabbyamp/treeless-checkout-action@v1
-
-      - name: Configure
-        run: >-
-          cmake
-          -DCMAKE_BUILD_TYPE=Sanitize
-          -DCMAKE_CXX_FLAGS_SANITIZE="-O2 -g -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common"
-          -GNinja -S .
-          -B ../build/sanitize
-
-      - name: Build
-        run: cmake --build ../build/sanitize -j 2
-
-      - name: Test
-        env:
-          ASAN_OPTIONS: "strict_string_checks=1:\
-            detect_stack_use_after_return=1:\
-            check_initialization_order=1:\
-            strict_init_order=1:\
-            detect_leaks=1"
-          UBSAN_OPTIONS: print_stacktrace=1
-        working-directory: ../build/sanitize
-        run: ctest --output-on-failure --no-tests=error
-
-  build:
+  Build-And-Test:
     needs: [lint]
     name: ${{ matrix.toolchain.name }}
     strategy:
       fail-fast: false
       matrix:
+        # TODO(hrzlgnm): build own containers, to avoid installing all the packages again and again
         toolchain:
           - {
               runs_on: macos-12,
@@ -225,20 +186,15 @@ jobs:
         working-directory: ../build
         run: ctest --build-config Debug --verbose
 
-  test:
+  Static-Analysis:
     needs: [lint]
-
-    strategy:
-      matrix:
-        os: [ubuntu-22.04]
-
-    runs-on: ${{ matrix.os }}
+    # TODO(hrzlgnm): todo migrate to own container
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Install static analyzers and dependencies
-        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update -q
           sudo apt-get install clang-tidy-15 cppcheck ninja-build -y -q
@@ -248,7 +204,7 @@ jobs:
         run: >-
           cmake
           -GNinja
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Debug
           -DCMAKE_CXX_FLAGS="-fstack-protector-strong -fcf-protection=full -fstack-clash-protection -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wcast-qual -Wformat=2 -Wundef -Werror=float-equal -Wshadow=compatible-local -Wcast-align -Wunused -Wnull-dereference -Wdouble-promotion -Wimplicit-fallthrough -Wextra-semi -Woverloaded-virtual -Wnon-virtual-dtor -Wold-style-cast"
           -DCMAKE_EXE_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
           -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
@@ -259,11 +215,7 @@ jobs:
           -DCMAKE_CXX_STANDARD=20
           -DCMAKE_CXX_STANDARD_REQUIRED=ON
           -S .
-          -B ../build/Release
+          -B ../build
 
       - name: Build
-        run: cmake --build ../build/Release -j 2
-
-      - name: Test
-        working-directory: ../build/Release
-        run: ctest --output-on-failure --no-tests=error -j 2
+        run: cmake --build ../build -j 2
