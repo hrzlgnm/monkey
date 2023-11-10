@@ -23,5 +23,3 @@ set_target_properties(doctest_exe PROPERTIES
     CXX_CPPCHECK "")
 set_target_properties(doctest_dll PROPERTIES
     CXX_CPPCHECK "")
-set_target_properties(doctest PROPERTIES
-    CXX_CPPCHECK "")
