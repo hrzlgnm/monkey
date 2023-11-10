@@ -11,19 +11,22 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/void-linux/void-musl-full:latest"
 
     steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/setup-python@v4
-        with: { python-version: "3.8" }
-
       - name: Install codespell
-        run: pip3 install codespell
+        run: |
+          xbps-install -Suy || xbps-install -u xbps
+          xbps-install -yu
+          xbps-install -y bash grep curl git python3-codespell cmake clang
+
+      - name: Checkout
+        uses: classabbyamp/treeless-checkout-action@v1
 
       - name: Lint
-        run: cmake -D FORMAT_COMMAND=clang-format-14 -P cmake/lint.cmake
+        run: cmake -D FORMAT_COMMAND=clang-format -P cmake/lint.cmake
 
       - name: Spell check
         if: always()
@@ -31,17 +34,21 @@ jobs:
   sanitize:
     needs: [lint]
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/void-linux/void-musl-full:latest"
 
-    env: { CXX: clang++-15 }
+    env: { CXX: clang++ }
 
     steps:
-      - uses: actions/checkout@v3
-
       - name: Install Deps
         run: |
-          sudo apt-get update -q
-          sudo apt-get install ninja-build clang-15 -q -y
+          xbps-install -Suy || xbps-install -u xbps
+          xbps-install -yu
+          xbps-install -y bash git ninja cmake clang
+
+      - name: Checkout
+        uses: classabbyamp/treeless-checkout-action@v1
 
       - name: Configure
         run: >-
