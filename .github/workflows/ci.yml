@@ -19,7 +19,8 @@ jobs:
       - name: Install codespell
         run: |
           xbps-install -Suy || xbps-install -u xbps
-          xbps-install -yu python3-codespell cmake clang
+          xbps-install -yu
+          xbps-install -y bash grep curl git python3-codespell cmake clang
 
       - name: Checkout
         uses: classabbyamp/treeless-checkout-action@v1
