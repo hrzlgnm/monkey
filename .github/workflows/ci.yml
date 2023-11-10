@@ -73,6 +73,7 @@ jobs:
         run: ctest --output-on-failure --no-tests=error
 
   build:
+    needs: [lint]
     name: ${{ matrix.toolchain.name }}
     strategy:
       fail-fast: false
@@ -88,6 +89,7 @@ jobs:
               WARNINGS: "-Werror;{1}",
               CMAKE_FLAGS: "-G Ninja",
               homebrew_packages: "ninja",
+              checkout_other: true,
             }
           - {
               runs_on: ubuntu-latest,
@@ -205,8 +207,13 @@ jobs:
           xbps-install -uy
           xbps-install -y ${{ matrix.toolchain.xbps_packages }}
 
-      - name: checkout
+      - name: checkout (Bash)
+        if: ${{ matrix.toolchain.checkout_other }}
         uses: classabbyamp/treeless-checkout-action@v1
+
+      - name: checkout (Other)
+        if: ${{ ! matrix.toolchain.checkout_other }}
+        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3.5.2
 
       - name: configure
         run: |
