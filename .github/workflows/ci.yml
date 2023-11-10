@@ -193,9 +193,6 @@ jobs:
         ) }}
 
     steps:
-      - name: checkout
-        uses: classabbyamp/treeless-checkout-action@v1
-
       - name: install dependencies (Homebrew)
         if: ${{ matrix.toolchain.homebrew_packages }}
         run: brew install ${{ matrix.toolchain.homebrew_packages }}
@@ -205,7 +202,10 @@ jobs:
         run: |
           xbps-install -Suy || xbps-install -uy xbps
           xpps-install -uy 
-          xbps-install ${{ matrix.toolchain.homebrew_packages }}
+          xbps-install -y ${{ matrix.toolchain.homebrew_packages }}
+
+      - name: checkout
+        uses: classabbyamp/treeless-checkout-action@v1
 
       - name: configure
         run: |
