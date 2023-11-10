@@ -201,8 +201,8 @@ jobs:
         if: ${{ matrix.toolchain.xbps_packages }}
         run: |
           xbps-install -Suy || xbps-install -uy xbps
-          xpps-install -uy 
-          xbps-install -y ${{ matrix.toolchain.homebrew_packages }}
+          xbps-install -uy
+          xbps-install -y ${{ matrix.toolchain.xbps_packages }}
 
       - name: checkout
         uses: classabbyamp/treeless-checkout-action@v1
