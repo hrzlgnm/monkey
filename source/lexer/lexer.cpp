@@ -9,11 +9,11 @@
 #include "token.hpp"
 #include "token_type.hpp"
 
-using chart_literal_lookup_table = std::array<token_type, std::numeric_limits<unsigned char>::max()>;
+using char_literal_lookup_table = std::array<token_type, std::numeric_limits<unsigned char>::max()>;
 
-constexpr auto build_char_to_token_type_map() -> chart_literal_lookup_table
+constexpr auto build_char_to_token_type_map() -> char_literal_lookup_table
 {
-    auto arr = chart_literal_lookup_table {};
+    auto arr = char_literal_lookup_table {};
     using enum token_type;
     arr.fill(illegal);
     arr['*'] = asterisk;
@@ -156,7 +156,7 @@ auto lexer::read_identifier_or_keyword() -> token
     auto end = m_position;
     const auto count = end - position;
     const auto identifier_or_keyword = m_input.substr(position, count);
-    const auto* const itr =
+    const auto itr =
         std::find_if(keyword_tokens.begin(),
                      keyword_tokens.end(),
                      [&identifier_or_keyword](auto pair) -> bool { return pair.first == identifier_or_keyword; });
