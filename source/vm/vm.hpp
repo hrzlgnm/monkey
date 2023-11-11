@@ -13,11 +13,13 @@ constexpr auto stack_size = 2048UL;
 constexpr auto globals_size = 65536UL;
 constexpr auto max_frames = 1024UL;
 
+using ssize_type = std::make_signed<size_t>::type;
+
 struct frame
 {
     closure_object::ptr cl {};
-    ssize_t ip {};
-    ssize_t base_ptr {};
+    ssize_type ip {};
+    ssize_type base_ptr {};
 };
 
 using frames = std::array<frame, max_frames>;
