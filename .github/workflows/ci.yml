@@ -13,15 +13,9 @@ jobs:
   Lint:
     runs-on: ubuntu-latest
     container:
-      image: "ghcr.io/void-linux/void-musl-full:latest"
+      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1"
 
     steps:
-      - name: Install codespell
-        run: |
-          xbps-install -Suy || xbps-install -u xbps
-          xbps-install -yu
-          xbps-install -y bash grep curl git python3-codespell cmake clang
-
       - name: Checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -38,7 +32,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO(hrzlgnm): build own containers, to avoid installing all the packages again and again
         toolchain:
           - {
               runs_on: macos-12,
@@ -54,7 +47,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 libc++",
-              container: "ghcr.io/quick-lint/quick-lint-js-github-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libc++",
@@ -65,7 +58,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 libstdc++",
-              container: "ghcr.io/quick-lint/quick-lint-js-github-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libstdc++",
@@ -76,7 +69,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 ASAN+UBSAN libstdc++",
-              container: "ghcr.io/quick-lint/quick-lint-js-github-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -stdlib=libstdc++",
@@ -88,7 +81,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 Release libstdc++",
-              container: "ghcr.io/quick-lint/quick-lint-js-github-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libstdc++",
@@ -99,19 +92,18 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15",
-              container: "ghcr.io/void-linux/void-musl-full:latest",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Debug",
               WARNINGS: "-Werror;{1}",
               CMAKE_FLAGS: "-G Ninja",
-              xbps_packages: "ninja clang cmake bash git",
             }
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 ASAN+UBSAN",
-              container: "ghcr.io/void-linux/void-musl-full:latest",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -fuse-ld=gold",
@@ -119,19 +111,17 @@ jobs:
               WARNINGS: "-Werror;{1}",
               CMAKE_FLAGS: "-G Ninja",
               ASAN_OPTIONS: "strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1",
-              xbps_packages: "ninja clang cmake bash git",
             }
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 Release",
-              container: "ghcr.io/void-linux/void-musl-full:latest",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Release",
               WARNINGS: "-Werror;{1}",
               CMAKE_FLAGS: "-G Ninja",
-              xbps_packages: "ninja clang cmake bash git",
             }
     runs-on: ${{ matrix.toolchain.runs_on }}
     container: ${{ matrix.toolchain.container }}
@@ -160,13 +150,6 @@ jobs:
         if: ${{ matrix.toolchain.homebrew_packages }}
         run: brew install ${{ matrix.toolchain.homebrew_packages }}
 
-      - name: Install dependencies (Xbps)
-        if: ${{ matrix.toolchain.xbps_packages }}
-        run: |
-          xbps-install -Suy || xbps-install -uy xbps
-          xbps-install -uy
-          xbps-install -y ${{ matrix.toolchain.xbps_packages }}
-
       - name: Checkout (non macos)
         if: ${{ ! startsWith(matrix.toolchain.runs_on, 'macos') }}
         uses: classabbyamp/treeless-checkout-action@v1
@@ -188,17 +171,12 @@ jobs:
 
   Static-Analysis:
     needs: [Lint]
-    # TODO(hrzlgnm): todo migrate to own container
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1"
 
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Install static analyzers and dependencies
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install clang-tidy-15 cppcheck ninja-build -y -q
-          sudo update-alternatives --install /usr/bin/clang-tidy clang-tidy /usr/bin/clang-tidy-15 150
+      - uses: classabbyamp/treeless-checkout-action@v1
 
       - name: Configure
         run: >-
