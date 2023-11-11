@@ -123,6 +123,20 @@ jobs:
               WARNINGS: "-Werror;{1}",
               CMAKE_FLAGS: "-G Ninja",
             }
+          - {
+              runs_on: windows-latest,
+              name: "MSVC",
+              CFLAGS: "",
+              CMAKE_BUILD_TYPE: "Debug",
+              WARNINGS: "",
+            }
+          - {
+              runs_on: windows-latest,
+              name: "MSVC Release",
+              CFLAGS: "",
+              CMAKE_BUILD_TYPE: "Release",
+              WARNINGS: "",
+            }
     runs-on: ${{ matrix.toolchain.runs_on }}
     container: ${{ matrix.toolchain.container }}
     env:
