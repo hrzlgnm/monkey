@@ -80,5 +80,4 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
         case token_type::not_equals:
             return ostream << "!=";
     }
-    __builtin_unreachable();
 }
