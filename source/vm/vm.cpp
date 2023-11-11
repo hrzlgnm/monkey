@@ -24,7 +24,7 @@ vm::vm(frames&& frames, constants_ptr&& consts, constants_ptr globals)
 
 auto vm::run() -> void
 {
-    for (; current_frame().ip < static_cast<ssize_t>(current_frame().cl->fn->instrs.size()); current_frame().ip++) {
+    for (; current_frame().ip < static_cast<ssize_type>(current_frame().cl->fn->instrs.size()); current_frame().ip++) {
         const auto instr_ptr = static_cast<size_t>(current_frame().ip);
         auto& code = current_frame().cl->fn->instrs;
         const auto op_code = static_cast<opcodes>(code.at(instr_ptr));
@@ -354,7 +354,7 @@ auto vm::exec_call(size_t num_args) -> void
             throw std::runtime_error(
                 fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
         }
-        frame frm {clsr, -1, static_cast<ssize_t>(m_sp - num_args)};
+        frame frm {clsr, -1, static_cast<ssize_type>(m_sp - num_args)};
         m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
         push_frame(std::move(frm));
         return;

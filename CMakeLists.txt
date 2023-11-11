@@ -68,6 +68,10 @@ target_precompile_headers(
 target_include_directories(
   monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
 target_compile_definitions(monkey_lib PUBLIC DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+if(MSVC)
+    target_compile_definitions(monkey_lib
+    PUBLIC DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS)
+endif()
 target_compile_features(monkey_lib PUBLIC cxx_std_20)
 target_link_libraries(monkey_lib PRIVATE fmt::fmt doctest::doctest doctest::dll)
 
