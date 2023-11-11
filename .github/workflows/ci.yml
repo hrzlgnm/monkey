@@ -10,7 +10,18 @@ on:
       - master
 
 jobs:
+  Login:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
   Lint:
+    needs: [Login]
     runs-on: ubuntu-latest
     container:
       image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1"
