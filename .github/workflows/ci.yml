@@ -16,13 +16,6 @@ jobs:
       image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1"
 
     steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
@@ -153,13 +146,6 @@ jobs:
         ) }}
 
     steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Install dependencies (Homebrew)
         if: ${{ matrix.toolchain.homebrew_packages }}
         run: brew install ${{ matrix.toolchain.homebrew_packages }}
@@ -190,13 +176,6 @@ jobs:
       image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1"
 
     steps:
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
