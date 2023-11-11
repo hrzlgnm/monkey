@@ -354,7 +354,7 @@ auto vm::exec_call(size_t num_args) -> void
             throw std::runtime_error(
                 fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
         }
-        frame frm {clsr, -1, static_cast<ssize_t>(m_sp - num_args)};
+        frame frm {clsr, -1, static_cast<ssize_type>(m_sp - num_args)};
         m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
         push_frame(std::move(frm));
         return;
