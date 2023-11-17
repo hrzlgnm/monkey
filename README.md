@@ -1,19 +1,23 @@
 # monkey
 
+<!--toc:start-->
+
+- [monkey](#monkey)
+  - [Building](#building)
+  - [Contributing](#contributing)
+  - [Licensing](#licensing)
+  <!--toc:end-->
+
 This is the monkey project.
 
-# Building
+## Building
 
 See the [BUILDING](BUILDING.md) document.
 
-# Contributing
+## Contributing
 
 See the [CONTRIBUTING](CONTRIBUTING.md) document.
 
-# Licensing
+## Licensing
 
-<!--
-Please go to https://choosealicense.com/licenses/ and choose a license that
-fits your needs. The recommended license for a project of this type is the
-GNU AGPLv3.
--->
+See the [LICENSE](LICENSE) file.
