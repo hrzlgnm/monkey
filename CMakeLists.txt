@@ -18,38 +18,42 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fmt.cmake)
 # ---- Declare library ----
 add_library(
   monkey_lib OBJECT
-  source/ast/array_expression.cpp
-  source/ast/binary_expression.cpp
-  source/ast/boolean.cpp
-  source/ast/builtin_function_expression.cpp
-  source/ast/callable_expression.cpp
-  source/ast/call_expression.cpp
-  source/ast/function_expression.cpp
-  source/ast/hash_literal_expression.cpp
-  source/ast/identifier.cpp
-  source/ast/if_expression.cpp
-  source/ast/index_expression.cpp
-  source/ast/integer_literal.cpp
-  source/ast/program.cpp
-  source/ast/statements.cpp
-  source/ast/string_literal.cpp
-  source/ast/unary_expression.cpp
-  source/code/code.cpp
-  source/compiler/ast_compile.cpp
-  source/compiler/compiler.cpp
-  source/compiler/symbol_table.cpp
-  source/eval/ast_eval.cpp
-  source/eval/environment.cpp
-  source/eval/object.cpp
-  source/lexer/lexer.cpp
-  source/lexer/token.cpp
-  source/lexer/token_type.cpp
-  source/parser/parser.cpp
-  source/vm/vm.cpp)
-
+)
 add_library(monkey::lib ALIAS monkey_lib)
-target_precompile_headers(
-  monkey_lib
+
+target_sources(monkey_lib
+  PRIVATE
+    source/ast/array_expression.cpp
+    source/ast/binary_expression.cpp
+    source/ast/boolean.cpp
+    source/ast/builtin_function_expression.cpp
+    source/ast/call_expression.cpp
+    source/ast/callable_expression.cpp
+    source/ast/function_expression.cpp
+    source/ast/hash_literal_expression.cpp
+    source/ast/identifier.cpp
+    source/ast/if_expression.cpp
+    source/ast/index_expression.cpp
+    source/ast/integer_literal.cpp
+    source/ast/program.cpp
+    source/ast/statements.cpp
+    source/ast/string_literal.cpp
+    source/ast/unary_expression.cpp
+    source/code/code.cpp
+    source/compiler/ast_compile.cpp
+    source/compiler/compiler.cpp
+    source/compiler/symbol_table.cpp
+    source/eval/ast_eval.cpp
+    source/eval/environment.cpp
+    source/eval/object.cpp
+    source/lexer/lexer.cpp
+    source/lexer/token.cpp
+    source/lexer/token_type.cpp
+    source/parser/parser.cpp
+    source/vm/vm.cpp
+)
+
+target_precompile_headers(monkey_lib
   PRIVATE
   <array>
   <algorithm>
@@ -63,7 +67,8 @@ target_precompile_headers(
   <optional>
   <string>
   <string_view>
-  <variant>)
+  <variant>
+)
 
 target_include_directories(
   monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
