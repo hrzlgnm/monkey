@@ -10,8 +10,7 @@ target_link_libraries(doctest_dll PRIVATE doctest::doctest)
 add_executable(doctest_exe main.cpp)
 
 target_precompile_headers(doctest_exe REUSE_FROM monkey_lib)
-target_link_libraries(doctest_exe PRIVATE doctest::doctest doctest::dll
-                                          fmt::fmt monkey::lib)
+target_link_libraries(doctest_exe PRIVATE doctest::dll doctest::doctest fmt::fmt monkey::lib)
 add_executable(doctest::exe ALIAS doctest_exe)
 set_property(TARGET doctest_exe PROPERTY OUTPUT_NAME doctest)
 target_compile_features(doctest_exe PRIVATE cxx_std_20)
