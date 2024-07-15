@@ -73,7 +73,7 @@ if(MSVC)
     PUBLIC DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS)
 endif()
 target_compile_features(monkey_lib PUBLIC cxx_std_20)
-target_link_libraries(monkey_lib PRIVATE fmt::fmt doctest::doctest doctest::dll)
+target_link_libraries(monkey_lib PRIVATE doctest::dll doctest::doctest fmt::fmt)
 
 add_executable(monkey_exe source/main.cpp)
 add_executable(monkey::exe ALIAS monkey_exe)
