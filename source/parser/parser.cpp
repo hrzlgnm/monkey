@@ -295,11 +295,13 @@ auto parser::parse_function_parameters() -> std::vector<std::string>
         return parameters;
     }
     next_token();
-    parameters.push_back(parse_identifier()->value);
+    auto param = parse_identifier();
+    parameters.push_back(param->value);
     while (peek_token_is(comma)) {
         next_token();
         next_token();
-        parameters.push_back(parse_identifier()->value);
+        param = parse_identifier();
+        parameters.push_back(param->value);
     }
     if (!get(rparen)) {
         return {};
