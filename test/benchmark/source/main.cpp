@@ -1,5 +1,4 @@
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <span>
 #include <string_view>

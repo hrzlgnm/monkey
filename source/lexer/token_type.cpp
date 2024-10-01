@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "token_type.hpp"
 
 auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
@@ -80,4 +82,5 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
         case token_type::not_equals:
             return ostream << "!=";
     }
+    throw std::invalid_argument("invalid token_type");
 }
