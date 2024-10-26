@@ -3,17 +3,21 @@ name: Continuous Integration
 on:
   push:
     branches:
-      - master
+      - main
 
   pull_request:
     branches:
-      - master
+      - main
+
+concurrency:
+  group: ${{ format('ci-{0}', github.ref) }}
+  cancel-in-progress: true
 
 jobs:
   Lint:
     runs-on: ubuntu-latest
     container:
-      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1"
+      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2"
 
     steps:
       - name: Checkout
@@ -47,7 +51,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 libc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libc++",
@@ -58,7 +62,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 libstdc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libstdc++",
@@ -69,7 +73,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 ASAN+UBSAN libstdc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -stdlib=libstdc++",
@@ -81,7 +85,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 Release libstdc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libstdc++",
@@ -92,7 +96,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 musl",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2",
               CC: clang,
               CXX: clang++,
               CFLAGS: "",
@@ -103,7 +107,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 musl ASAN+UBSAN",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2",
               CC: clang,
               CXX: clang++,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -fuse-ld=gold",
@@ -115,7 +119,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 musl Release",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1",
+              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2",
               CC: clang,
               CXX: clang++,
               CFLAGS: "",
@@ -187,7 +191,7 @@ jobs:
     needs: [Lint]
     runs-on: ubuntu-latest
     container:
-      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v1"
+      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2"
 
     steps:
       - name: Checkout
