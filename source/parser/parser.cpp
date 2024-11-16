@@ -27,7 +27,9 @@
 #include <fmt/core.h>
 #include <lexer/token.hpp>
 
-enum precedence
+namespace
+{
+enum precedence : std::uint8_t
 {
     lowest,
     equals,
@@ -39,7 +41,7 @@ enum precedence
     idx,
 };
 
-auto precedence_of_token(token_type type) -> int
+auto precedence_of_token(token_type type) -> std::uint8_t
 {
     switch (type) {
         case token_type::equals:
@@ -62,6 +64,7 @@ auto precedence_of_token(token_type type) -> int
             return lowest;
     }
 }
+}  // namespace
 
 parser::parser(lexer lxr)
     : m_lxr(lxr)
