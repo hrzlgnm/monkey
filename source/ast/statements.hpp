@@ -13,8 +13,8 @@ struct let_statement : statement
     [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
     auto compile(compiler& comp) const -> void override;
 
-    identifier_ptr name {};
-    expression_ptr value {};
+    identifier_ptr name;
+    expression_ptr value;
 };
 
 struct return_statement : statement
@@ -23,7 +23,7 @@ struct return_statement : statement
     [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
     auto compile(compiler& comp) const -> void override;
 
-    expression_ptr value {};
+    expression_ptr value;
 };
 
 struct expression_statement : statement
@@ -32,7 +32,7 @@ struct expression_statement : statement
     [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
     auto compile(compiler& comp) const -> void override;
 
-    expression_ptr expr {};
+    expression_ptr expr;
 };
 
 struct block_statement : statement
@@ -41,7 +41,7 @@ struct block_statement : statement
     [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
     auto compile(compiler& comp) const -> void override;
 
-    std::vector<statement_ptr> statements {};
+    std::vector<statement_ptr> statements;
 };
 
-using block_statement_ptr = std::unique_ptr<block_statement>;
+using block_statement_ptr = block_statement*;

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include <eval/environment_fwd.hpp>
 #include <eval/object.hpp>
 
@@ -21,4 +19,4 @@ struct expression
     virtual inline auto compile(compiler& /*comp*/) const -> void = 0;
 };
 
-using expression_ptr = std::unique_ptr<expression>;
+using expression_ptr = expression*;

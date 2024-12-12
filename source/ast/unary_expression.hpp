@@ -11,5 +11,5 @@ struct unary_expression : expression
     auto compile(compiler& comp) const -> void override;
 
     token_type op {};
-    expression_ptr right {};
+    expression_ptr right;
 };

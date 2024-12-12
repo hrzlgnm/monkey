@@ -52,12 +52,11 @@ fibonacci(35);
         auto end = std::chrono::steady_clock::now();
         duration = end - start;
     } else {
-        auto env = std::make_shared<environment>();
+        environment env;
         auto start = std::chrono::steady_clock::now();
-        result = prgrm->eval(env);
+        result = prgrm->eval(&env);
         auto end = std::chrono::steady_clock::now();
         duration = end - start;
-        env->break_cycle();
     }
     fmt::print("engine={}, result={}, duration={}\n", (engine_vm ? "vm" : "eval"), result->inspect(), duration.count());
     return 0;

@@ -1,5 +1,3 @@
-#include <memory>
-
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
@@ -13,6 +11,7 @@
 #include <ast/program.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <chungus.hpp>
 #include <code/code.hpp>
 #include <eval/object.hpp>
 
@@ -101,7 +100,7 @@ auto if_expression::compile(compiler& comp) const -> void
     auto after_consequence = comp.current_instrs().size();
     comp.change_operand(jump_not_truthy_pos, after_consequence);
 
-    if (!alternative) {
+    if (alternative == nullptr) {
         comp.emit(null);
     } else {
         alternative->compile(comp);
@@ -122,7 +121,7 @@ auto index_expression::compile(compiler& comp) const -> void
 
 auto integer_literal::compile(compiler& comp) const -> void
 {
-    comp.emit(opcodes::constant, comp.add_constant(std::make_shared<integer_object>(value)));
+    comp.emit(opcodes::constant, comp.add_constant(make<integer_object>(value)));
 }
 
 auto program::compile(compiler& comp) const -> void
@@ -165,7 +164,7 @@ auto block_statement::compile(compiler& comp) const -> void
 
 auto string_literal::compile(compiler& comp) const -> void
 {
-    comp.emit(opcodes::constant, comp.add_constant(std::make_shared<string_object>(value)));
+    comp.emit(opcodes::constant, comp.add_constant(make<string_object>(value)));
 }
 
 auto unary_expression::compile(compiler& comp) const -> void
@@ -208,7 +207,7 @@ auto function_expression::compile(compiler& comp) const -> void
         comp.load_symbol(sym);
     }
     auto function_index =
-        comp.add_constant(std::make_shared<compiled_function_object>(std::move(instrs), num_locals, parameters.size()));
+        comp.add_constant(make<compiled_function_object>(std::move(instrs), num_locals, parameters.size()));
     comp.emit(closure, {function_index, free.size()});
 }
 

@@ -2,9 +2,9 @@
 
 #include <fmt/format.h>
 
-function_expression::function_expression(std::vector<std::string>&& parameters, statement_ptr&& body)
+function_expression::function_expression(std::vector<std::string>&& parameters, statement_ptr body)
     : callable_expression(std::move(parameters))
-    , body(std::move(body))
+    , body(body)
 {
 }
 

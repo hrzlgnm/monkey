@@ -7,7 +7,7 @@
 
 struct function_expression : callable_expression
 {
-    function_expression(std::vector<std::string>&& parameters, statement_ptr&& body);
+    function_expression(std::vector<std::string>&& parameters, statement_ptr body);
 
     [[nodiscard]] auto string() const -> std::string override;
     [[nodiscard]] auto call(environment_ptr closure_env,

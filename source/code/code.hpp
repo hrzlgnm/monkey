@@ -91,10 +91,11 @@ const definition_type definitions {
     {opcodes::current_closure, definition {"OpCurrentClosure"}},
 };
 
-auto make(opcodes opcode, const operands& operands = {}) -> instructions;
-auto make(opcodes opcode, size_t operand) -> instructions;
-auto lookup(opcodes opcode) -> std::optional<definition>;
-auto read_operands(const definition& def, const instructions& instr) -> std::pair<operands, operands::size_type>;
-auto to_string(const instructions& code) -> std::string;
+[[nodiscard]] auto make(opcodes opcode, const operands& operands = {}) -> instructions;
+[[nodiscard]] auto make(opcodes opcode, size_t operand) -> instructions;
+[[nodiscard]] auto lookup(opcodes opcode) -> std::optional<definition>;
+[[nodiscard]] auto read_operands(const definition& def, const instructions& instr)
+    -> std::pair<operands, operands::size_type>;
+[[nodiscard]] auto to_string(const instructions& code) -> std::string;
 [[nodiscard]] auto read_uint16_big_endian(const instructions& bytes, size_t offset) -> uint16_t;
 void write_uint16_big_endian(instructions& bytes, size_t offset, uint16_t value);

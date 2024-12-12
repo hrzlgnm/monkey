@@ -1,11 +1,11 @@
 #include <array>
-#include <complex>
 #include <cstddef>
 #include <iterator>
 
 #include "compiler.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <chungus.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
 #include <parser/parser.hpp>
@@ -19,11 +19,11 @@ auto compiler::create() -> compiler
     for (size_t idx = 0; const auto& builtin : builtin_function_expression::builtins) {
         symbols->define_builtin(idx++, builtin.name);
     }
-    return {std::make_shared<constants>(), std::move(symbols)};
+    return {make<constants>(), std::move(symbols)};
 }
 
-compiler::compiler(constants_ptr&& consts, symbol_table_ptr symbols)
-    : m_consts {std::move(consts)}
+compiler::compiler(constants_ptr consts, symbol_table_ptr symbols)
+    : m_consts {consts}
     , m_symbols {std::move(symbols)}
     , m_scopes {1}
 {
@@ -34,9 +34,9 @@ auto compiler::compile(const program_ptr& program) -> void
     program->compile(*this);
 }
 
-auto compiler::add_constant(object_ptr&& obj) -> size_t
+auto compiler::add_constant(object_ptr obj) -> size_t
 {
-    m_consts->push_back(std::move(obj));
+    m_consts->push_back(obj);
     return m_consts->size() - 1;
 }
 
@@ -107,7 +107,7 @@ auto compiler::current_instrs() const -> const instructions&
 
 auto compiler::byte_code() const -> bytecode
 {
-    return {m_scopes[m_scope_index].instrs, m_consts};
+    return {.instrs = m_scopes[m_scope_index].instrs, .consts = m_consts};
 }
 
 auto compiler::enter_scope() -> void

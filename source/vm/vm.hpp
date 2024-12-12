@@ -2,8 +2,8 @@
 
 #include <array>
 #include <cstdint>
-#include <memory>
 
+#include <chungus.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
@@ -28,21 +28,21 @@ struct vm
 {
     inline static auto create(bytecode&& code) -> vm
     {
-        return create_with_state(std::move(code), std::make_shared<constants>(globals_size));
+        return create_with_state(std::move(code), make<constants>(globals_size));
     }
 
     inline static auto create_with_state(bytecode&& code, constants_ptr globals) -> vm
     {
-        auto main_fn = std::make_shared<compiled_function_object>(std::move(code.instrs), 0, 0);
-        auto main_clousre = std::make_shared<closure_object>(std::move(main_fn));
-        const frame main_frame {.cl = std::move(main_clousre)};
+        auto* main_fn = make<compiled_function_object>(std::move(code.instrs), 0, 0);
+        auto* main_clousre = make<closure_object>(main_fn);
+        const frame main_frame {.cl = main_clousre};
         frames frms;
         frms[0] = main_frame;
         return vm {std::move(frms), std::move(code.consts), std::move(globals)};
     }
 
     auto run() -> void;
-    auto push(const object_ptr& obj) -> void;
+    auto push(object_ptr obj) -> void;
     [[nodiscard]] auto last_popped() const -> object_ptr;
 
   private:

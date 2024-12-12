@@ -49,10 +49,10 @@ auto vm::run() -> void
                 pop();
                 break;
             case opcodes::tru:
-                push(true_object);
+                push(&true_obj);
                 break;
             case opcodes::fals:
-                push(false_object);
+                push(&false_obj);
                 break;
             case opcodes::bang:
                 exec_bang();
@@ -74,7 +74,7 @@ auto vm::run() -> void
 
             } break;
             case opcodes::null:
-                push(null);
+                push(&null_obj);
                 break;
             case opcodes::set_global: {
                 auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -120,7 +120,7 @@ auto vm::run() -> void
             case opcodes::ret: {
                 auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(null);
+                push(&null_obj);
             } break;
             case opcodes::set_local: {
                 auto local_index = code.at(instr_ptr + 1UL);
@@ -138,7 +138,7 @@ auto vm::run() -> void
                 auto builtin_index = code.at(instr_ptr + 1UL);
                 current_frame().ip += 1;
                 const auto& builtin = builtin_function_expression::builtins[builtin_index];
-                push(std::make_shared<builtin_object>(&builtin));
+                push(make<builtin_object>(&builtin));
             } break;
             case opcodes::closure: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -161,7 +161,7 @@ auto vm::run() -> void
     }
 }
 
-auto vm::push(const object_ptr& obj) -> void
+auto vm::push(object_ptr obj) -> void
 {
     if (m_sp >= stack_size) {
         throw std::runtime_error("stack overflow");
@@ -195,16 +195,16 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         auto right_value = right->as<integer_object>()->value;
         switch (opcode) {
             case opcodes::sub:
-                push(std::make_shared<integer_object>(left_value - right_value));
+                push(make<integer_object>(left_value - right_value));
                 break;
             case opcodes::mul:
-                push(std::make_shared<integer_object>(left_value * right_value));
+                push(make<integer_object>(left_value * right_value));
                 break;
             case opcodes::div:
-                push(std::make_shared<integer_object>(left_value / right_value));
+                push(make<integer_object>(left_value / right_value));
                 break;
             case opcodes::add:
-                push(std::make_shared<integer_object>(left_value + right_value));
+                push(make<integer_object>(left_value + right_value));
                 break;
             default:
                 throw std::runtime_error(fmt::format("unknown integer operator"));
@@ -216,7 +216,7 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         const auto& right_value = right->as<string_object>()->value;
         switch (opcode) {
             case opcodes::add:
-                push(std::make_shared<string_object>(left_value + right_value));
+                push(make<string_object>(left_value + right_value));
                 break;
             default:
                 throw std::runtime_error(fmt::format("unknown string {} string operator", opcode));
@@ -276,9 +276,9 @@ auto vm::exec_bang() -> void
         return push(native_bool_to_object(!operand->as<boolean_object>()->value));
     }
     if (operand->is(null)) {
-        return push(true_object);
+        return push(&true_obj);
     }
-    push(false_object);
+    push(&false_obj);
 }
 
 auto vm::exec_minus() -> void
@@ -287,7 +287,7 @@ auto vm::exec_minus() -> void
     if (!operand->is(object::object_type::integer)) {
         throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
     }
-    push(std::make_shared<integer_object>(-operand->as<integer_object>()->value));
+    push(make<integer_object>(-operand->as<integer_object>()->value));
 }
 
 auto vm::build_array(size_t start, size_t end) const -> object_ptr
@@ -296,7 +296,7 @@ auto vm::build_array(size_t start, size_t end) const -> object_ptr
     for (auto idx = start; idx < end; idx++) {
         arr.push_back(m_stack.at(idx));
     }
-    return std::make_shared<array_object>(std::move(arr));
+    return make<array_object>(std::move(arr));
 }
 
 auto vm::build_hash(size_t start, size_t end) const -> object_ptr
@@ -307,13 +307,13 @@ auto vm::build_hash(size_t start, size_t end) const -> object_ptr
         auto val = m_stack[idx + 1];
         hsh[key->as<hashable_object>()->hash_key()] = val;
     }
-    return std::make_shared<hash_object>(std::move(hsh));
+    return make<hash_object>(std::move(hsh));
 }
 
 auto exec_hash(const hash_object::hash& hsh, const hashable_object::hash_key_type& key) -> object_ptr
 {
     if (!hsh.contains(key)) {
-        return null;
+        return &null_obj;
     }
     return hsh.at(key);
 }
@@ -325,7 +325,7 @@ auto vm::exec_index(const object_ptr& left, const object_ptr& index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<array_object>()->elements.size()) - 1;
         if (idx < 0 || idx > max) {
-            return push(::null);
+            return push(&null_obj);
         }
         return push(left->as<array_object>()->elements.at(static_cast<size_t>(idx)));
     }
@@ -333,10 +333,9 @@ auto vm::exec_index(const object_ptr& left, const object_ptr& index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<string_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
-            return push(::null);
+            return push(&null_obj);
         }
-        return push(
-            std::make_shared<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
+        return push(make<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
     }
     if (left->is(hash) && index->is_hashable()) {
         return push(exec_hash(left->as<hash_object>()->pairs, index->as<hashable_object>()->hash_key()));
@@ -400,7 +399,7 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
         free.push_back(m_stack.at(m_sp - num_free + i));
     }
     m_sp -= num_free;
-    push(std::make_shared<closure_object>(constant->as<compiled_function_object>(), free));
+    push(make<closure_object>(constant->as<compiled_function_object>(), free));
 }
 
 namespace

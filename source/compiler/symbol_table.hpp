@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <optional>
@@ -12,7 +13,7 @@
 template<typename Value>
 using string_map = std::map<std::string, Value, std::less<>>;
 
-enum class symbol_scope
+enum class symbol_scope : std::uint8_t
 {
     global,
     local,
@@ -28,7 +29,7 @@ struct symbol
     symbol_scope scope {};
     size_t index {};
 
-    [[nodiscard]] inline auto is_local() const -> bool { return scope == symbol_scope::local; }
+    [[nodiscard]] auto is_local() const -> bool { return scope == symbol_scope::local; }
 };
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool;
@@ -39,9 +40,9 @@ using symbol_table_ptr = std::shared_ptr<symbol_table>;
 
 struct symbol_table : std::enable_shared_from_this<symbol_table>
 {
-    static inline auto create() -> symbol_table_ptr { return std::make_shared<symbol_table>(); }
+    static auto create() -> symbol_table_ptr { return std::make_shared<symbol_table>(); }
 
-    static inline auto create_enclosed(symbol_table_ptr outer) -> symbol_table_ptr
+    static auto create_enclosed(symbol_table_ptr outer) -> symbol_table_ptr
     {
         return std::make_shared<symbol_table>(std::move(outer));
     }
@@ -52,11 +53,11 @@ struct symbol_table : std::enable_shared_from_this<symbol_table>
     auto define_function_name(const std::string& name) -> symbol;
     auto resolve(const std::string& name) -> std::optional<symbol>;
 
-    inline auto is_global() const -> bool { return !m_parent; }
+    auto is_global() const -> bool { return !m_parent; }
 
-    inline auto parent() const -> symbol_table_ptr { return m_parent; }
+    auto parent() const -> symbol_table_ptr { return m_parent; }
 
-    inline auto num_definitions() const -> size_t { return m_defs; }
+    auto num_definitions() const -> size_t { return m_defs; }
 
     auto free() const -> std::vector<symbol>;
 

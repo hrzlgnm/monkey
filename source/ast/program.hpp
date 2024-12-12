@@ -11,7 +11,7 @@ struct program : expression
     [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
     auto compile(compiler& comp) const -> void override;
 
-    std::vector<statement_ptr> statements {};
+    std::vector<statement_ptr> statements;
 };
 
-using program_ptr = std::unique_ptr<program>;
+using program_ptr = program*;

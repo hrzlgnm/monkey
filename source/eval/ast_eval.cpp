@@ -1,6 +1,5 @@
 #include <cstdint>
 #include <deque>
-#include <memory>
 #include <variant>
 
 #include <ast/array_expression.hpp>
@@ -16,11 +15,11 @@
 #include <ast/program.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <chungus.hpp>
 #include <doctest/doctest.h>
 #include <lexer/token_type.hpp>
 #include <parser/parser.hpp>
 
-#include "code/code.hpp"
 #include "environment.hpp"
 #include "object.hpp"
 
@@ -28,27 +27,27 @@ auto array_expression::eval(environment_ptr env) const -> object_ptr
 {
     array_object::array arr;
     for (const auto& element : elements) {
-        auto evaluated = element->eval(env);
+        auto* evaluated = element->eval(env);
         if (evaluated->is_error()) {
             return evaluated;
         }
-        arr.push_back(std::move(evaluated));
+        arr.push_back(evaluated);
     }
-    return std::make_shared<array_object>(std::move(arr));
+    return make<array_object>(std::move(arr));
 }
 
-auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> object_ptr
+static auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> object_ptr
 {
     using enum token_type;
     switch (oper) {
         case plus:
-            return std::make_shared<integer_object>(left + right);
+            return make<integer_object>(left + right);
         case asterisk:
-            return std::make_shared<integer_object>(left * right);
+            return make<integer_object>(left * right);
         case minus:
-            return std::make_shared<integer_object>(left - right);
+            return make<integer_object>(left - right);
         case slash:
-            return std::make_shared<integer_object>(left / right);
+            return make<integer_object>(left / right);
         case less_than:
             return native_bool_to_object(left < right);
         case greater_than:
@@ -62,12 +61,13 @@ auto apply_integer_binary_operator(token_type oper, const int64_t left, const in
     }
 }
 
-auto apply_string_binary_operator(token_type oper, const std::string& left, const std::string& right) -> object_ptr
+static auto apply_string_binary_operator(token_type oper, const std::string& left, const std::string& right)
+    -> object_ptr
 {
     using enum token_type;
     switch (oper) {
         case plus:
-            return std::make_shared<string_object>(left + right);
+            return make<string_object>(left + right);
         case less_than:
             return native_bool_to_object(left < right);
         case greater_than:
@@ -123,7 +123,7 @@ auto function_expression::call(environment_ptr closure_env,
                                environment_ptr caller_env,
                                const std::vector<expression_ptr>& arguments) const -> object_ptr
 {
-    auto locals = std::make_shared<environment>(closure_env);
+    auto* locals = make<environment>(closure_env);
     for (auto arg_itr = arguments.begin(); const auto& parameter : parameters) {
         if (arg_itr != arguments.end()) {
             const auto& arg = *(arg_itr++);
@@ -163,7 +163,7 @@ auto hash_literal_expression::eval(environment_ptr env) const -> object_ptr
         }
         result.insert({eval_key->as<hashable_object>()->hash_key(), eval_val});
     }
-    return std::make_shared<hash_object>(std::move(result));
+    return make<hash_object>(std::move(result));
 }
 
 auto identifier::eval(environment_ptr env) const -> object_ptr
@@ -187,7 +187,7 @@ auto if_expression::eval(environment_ptr env) const -> object_ptr
     if (alternative) {
         return alternative->eval(env);
     }
-    return null;
+    return &null_obj;
 }
 
 auto index_expression::eval(environment_ptr env) const -> object_ptr
@@ -206,7 +206,7 @@ auto index_expression::eval(environment_ptr env) const -> object_ptr
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
-            return ::null;
+            return &null_obj;
         }
         return arr.at(static_cast<size_t>(index));
     }
@@ -216,9 +216,9 @@ auto index_expression::eval(environment_ptr env) const -> object_ptr
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(str.size() - 1);
         if (index < 0 || index > max) {
-            return ::null;
+            return &null_obj;
         }
-        return std::make_shared<string_object>(str.substr(static_cast<size_t>(index), 1));
+        return make<string_object>(str.substr(static_cast<size_t>(index), 1));
     }
 
     if (evaluated_left->is(hash)) {
@@ -228,7 +228,7 @@ auto index_expression::eval(environment_ptr env) const -> object_ptr
         }
         const auto hash_key = evaluated_index->as<hashable_object>()->hash_key();
         if (!hsh.contains(hash_key)) {
-            return ::null;
+            return &null_obj;
         }
         return hsh.at(hash_key);
     }
@@ -237,7 +237,7 @@ auto index_expression::eval(environment_ptr env) const -> object_ptr
 
 auto integer_literal::eval(environment_ptr /*env*/) const -> object_ptr
 {
-    return std::make_shared<integer_object>(value);
+    return make<integer_object>(value);
 }
 
 auto program::eval(environment_ptr env) const -> object_ptr
@@ -262,7 +262,7 @@ auto let_statement::eval(environment_ptr env) const -> object_ptr
         return val;
     }
     env->set(name->value, val);
-    return null;
+    return &null_obj;
 }
 
 auto return_statement::eval(environment_ptr env) const -> object_ptr
@@ -275,7 +275,7 @@ auto return_statement::eval(environment_ptr env) const -> object_ptr
         evaluated->is_return_value = true;
         return evaluated;
     }
-    return null;
+    return &null_obj;
 }
 
 auto expression_statement::eval(environment_ptr env) const -> object_ptr
@@ -283,7 +283,7 @@ auto expression_statement::eval(environment_ptr env) const -> object_ptr
     if (expr) {
         return expr->eval(env);
     }
-    return null;
+    return &null_obj;
 }
 
 auto block_statement::eval(environment_ptr env) const -> object_ptr
@@ -300,7 +300,7 @@ auto block_statement::eval(environment_ptr env) const -> object_ptr
 
 auto string_literal::eval(environment_ptr /*env*/) const -> object_ptr
 {
-    return std::make_shared<string_object>(value);
+    return make<string_object>(value);
 }
 
 auto unary_expression::eval(environment_ptr env) const -> object_ptr
@@ -315,10 +315,10 @@ auto unary_expression::eval(environment_ptr env) const -> object_ptr
             if (!evaluated_value->is(object::object_type::integer)) {
                 return make_error("unknown operator: -{}", evaluated_value->type());
             }
-            return std::make_shared<integer_object>(-evaluated_value->as<integer_object>()->value);
+            return make<integer_object>(-evaluated_value->as<integer_object>()->value);
         case exclamation:
             if (!evaluated_value->is(object::object_type::boolean)) {
-                return false_object;
+                return &false_obj;
             }
             return native_bool_to_object(!evaluated_value->as<boolean_object>()->value);
         default:
@@ -350,12 +350,12 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          using enum object::object_type;
          if (maybe_string_or_array->is(string)) {
              const auto& str = maybe_string_or_array->as<string_object>()->value;
-             return std::make_shared<integer_object>(str.size());
+             return make<integer_object>(str.size());
          }
          if (maybe_string_or_array->is(array)) {
              const auto& arr = maybe_string_or_array->as<array_object>()->elements;
 
-             return std::make_shared<integer_object>(arr.size());
+             return make<integer_object>(arr.size());
          }
          return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
      }},
@@ -376,7 +376,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
              first = false;
          }
          fmt::print("\n");
-         return ::null;
+         return &null_obj;
      }},
     {"first",
      {"arr"},
@@ -390,16 +390,16 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (maybe_string_or_array->is(string)) {
              const auto& str = maybe_string_or_array->as<string_object>()->value;
              if (!str.empty()) {
-                 return std::make_shared<string_object>(str.substr(0, 1));
+                 return make<string_object>(str.substr(0, 1));
              }
-             return ::null;
+             return &null_obj;
          }
          if (maybe_string_or_array->is(array)) {
              const auto& arr = maybe_string_or_array->as<array_object>()->elements;
              if (!arr.empty()) {
                  return arr.front();
              }
-             return ::null;
+             return &null_obj;
          }
          return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
      }},
@@ -415,16 +415,16 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (maybe_string_or_array->is(string)) {
              const auto& str = maybe_string_or_array->as<string_object>()->value;
              if (!str.empty()) {
-                 return std::make_shared<string_object>(str.substr(str.length() - 1, 1));
+                 return make<string_object>(str.substr(str.length() - 1, 1));
              }
-             return ::null;
+             return &null_obj;
          }
          if (maybe_string_or_array->is(array)) {
              const auto& arr = maybe_string_or_array->as<array_object>()->elements;
              if (!arr.empty()) {
                  return arr.back();
              }
-             return ::null;
+             return &null_obj;
          }
          return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
      }},
@@ -440,18 +440,18 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (maybe_string_or_array->is(string)) {
              const auto& str = maybe_string_or_array->as<string_object>()->value;
              if (str.size() > 1) {
-                 return std::make_shared<string_object>(str.substr(1));
+                 return make<string_object>(str.substr(1));
              }
-             return ::null;
+             return &null_obj;
          }
          if (maybe_string_or_array->is(array)) {
              const auto& arr = maybe_string_or_array->as<array_object>()->elements;
              if (arr.size() > 1) {
                  array_object::array rest;
                  std::copy(arr.cbegin() + 1, arr.cend(), std::back_inserter(rest));
-                 return std::make_shared<array_object>(std::move(rest));
+                 return make<array_object>(std::move(rest));
              }
-             return ::null;
+             return &null_obj;
          }
          return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
      }},
@@ -468,12 +468,12 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
          if (lhs->is(array)) {
              auto copy = lhs->as<array_object>()->elements;
              copy.push_back(rhs);
-             return std::make_shared<array_object>(std::move(copy));
+             return make<array_object>(std::move(copy));
          }
          if (lhs->is(string) && rhs->is(string)) {
              auto copy = lhs->as<string_object>()->value;
              copy.append(rhs->as<string_object>()->value);
-             return std::make_shared<string_object>(std::move(copy));
+             return make<string_object>(std::move(copy));
          }
          return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
      }},
@@ -481,7 +481,7 @@ const std::vector<builtin_function_expression> builtin_function_expression::buil
 
 auto callable_expression::eval(environment_ptr env) const -> object_ptr
 {
-    return std::make_shared<function_object>(this, env);
+    return make<function_object>(this, env);
 }
 
 namespace
@@ -561,35 +561,29 @@ auto check_program(std::string_view input) -> parsed_program
     auto prgrm = prsr.parse_program();
     INFO("while parsing: `", input, "`");
     CHECK(check_no_parse_errors(prsr));
-    return {std::move(prgrm), std::move(prsr)};
+    return {prgrm, std::move(prsr)};
 }
 
 auto run(std::string_view input) -> object_ptr
 {
     auto [prgrm, _] = check_program(input);
-    auto env = std::make_shared<environment>();
+    environment env;
     for (const auto& builtin : builtin_function_expression::builtins) {
-        env->set(builtin.name, std::make_shared<function_object>(&builtin, environment_ptr {}));
+        env.set(builtin.name, make<function_object>(&builtin, environment_ptr {}));
     }
-    auto result = prgrm->eval(env);
-    env->break_cycle();
+    auto result = prgrm->eval(&env);
     return result;
 }
 
 auto run_multi(std::deque<std::string>& inputs) -> object_ptr
 {
-    auto globals = std::make_shared<environment>();
-    auto statements = std::vector<statement_ptr>();
+    environment env;
     object_ptr result;
     while (!inputs.empty()) {
         auto [prgrm, _] = check_program(inputs.front());
-        result = prgrm->eval(globals);
-        for (auto& stmt : prgrm->statements) {
-            statements.push_back(std::move(stmt));
-        }
+        result = prgrm->eval(&env);
         inputs.pop_front();
     }
-    globals->break_cycle();
     return result;
 }
 

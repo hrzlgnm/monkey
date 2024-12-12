@@ -9,12 +9,12 @@
 #include "symbol_table.hpp"
 
 using constants = std::vector<object_ptr>;
-using constants_ptr = std::shared_ptr<constants>;
+using constants_ptr = constants*;
 
 struct bytecode
 {
-    instructions instrs {};
-    constants_ptr consts;
+    instructions instrs;
+    constants_ptr consts {};
 };
 
 struct emitted_instruction
@@ -33,18 +33,18 @@ struct compilation_scope
 struct compiler
 {
     auto compile(const program_ptr& program) -> void;
-    static auto create() -> compiler;
+    [[nodiscard]] static auto create() -> compiler;
 
-    static inline auto create_with_state(constants_ptr constants, symbol_table_ptr symbols) -> compiler
+    [[nodiscard]] static auto create_with_state(constants_ptr constants, symbol_table_ptr symbols) -> compiler
     {
-        return compiler {std::move(constants), std::move(symbols)};
+        return compiler {constants, std::move(symbols)};
     }
 
-    auto add_constant(object_ptr&& obj) -> size_t;
-    auto add_instructions(instructions&& ins) -> size_t;
+    [[nodiscard]] auto add_constant(object_ptr obj) -> size_t;
+    [[nodiscard]] auto add_instructions(instructions&& ins) -> size_t;
     auto emit(opcodes opcode, operands&& operands = {}) -> size_t;
 
-    inline auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, std::vector {operand}); }
+    auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, std::vector {operand}); }
 
     [[nodiscard]] auto last_instruction_is(opcodes opcode) const -> bool;
     auto remove_last_pop() -> void;
@@ -64,9 +64,9 @@ struct compiler
     [[nodiscard]] auto consts() const -> constants_ptr;
 
   private:
-    constants_ptr m_consts;
+    constants_ptr m_consts {};
     symbol_table_ptr m_symbols;
     std::vector<compilation_scope> m_scopes;
     size_t m_scope_index {0};
-    compiler(constants_ptr&& consts, symbol_table_ptr symbols);
+    compiler(constants_ptr consts, symbol_table_ptr symbols);
 };
