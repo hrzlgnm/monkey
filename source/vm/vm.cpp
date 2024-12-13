@@ -48,10 +48,10 @@ auto vm::run() -> void
                 pop();
                 break;
             case opcodes::tru:
-                push(native_bool_to_object(true));
+                push(native_true());
                 break;
             case opcodes::fals:
-                push(native_bool_to_object(false));
+                push(native_false());
                 break;
             case opcodes::bang:
                 exec_bang();
@@ -96,13 +96,13 @@ auto vm::run() -> void
                 auto num_elements = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
 
-                auto hsh = build_hash(m_sp - num_elements, m_sp);
+                auto* hsh = build_hash(m_sp - num_elements, m_sp);
                 m_sp -= num_elements;
                 push(hsh);
             } break;
             case opcodes::index: {
-                auto index = pop();
-                auto left = pop();
+                const auto* index = pop();
+                const auto* left = pop();
                 exec_index(left, index);
             } break;
             case opcodes::call: {
@@ -111,7 +111,7 @@ auto vm::run() -> void
                 exec_call(num_args);
             } break;
             case opcodes::return_value: {
-                auto return_value = pop();
+                const auto* return_value = pop();
                 auto frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(return_value);
@@ -148,7 +148,7 @@ auto vm::run() -> void
             case opcodes::get_free: {
                 auto free_index = code.at(instr_ptr + 1UL);
                 current_frame().ip += 1;
-                auto current_closure = current_frame().cl;
+                const auto* current_closure = current_frame().cl;
                 push(current_closure->free[free_index]);
             } break;
             case opcodes::current_closure: {
@@ -186,8 +186,8 @@ auto vm::last_popped() const -> const object*
 
 auto vm::exec_binary_op(opcodes opcode) -> void
 {
-    auto right = pop();
-    auto left = pop();
+    const auto* right = pop();
+    const auto* left = pop();
     using enum object::object_type;
     if (left->is(integer) && right->is(integer)) {
         auto left_value = left->as<integer_object>()->value;
@@ -284,10 +284,10 @@ auto vm::exec_bang() -> void
         return;
     }
     if (operand->is(null)) {
-        push(native_bool_to_object(/*val=*/true));
+        push(native_true());
         return;
     }
-    push(native_bool_to_object(/*val=*/false));
+    push(native_false());
 }
 
 auto vm::exec_minus() -> void
@@ -337,7 +337,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<array_object>()->elements.size()) - 1;
         if (idx < 0 || idx > max) {
-            push(::native_null());
+            push(native_null());
             return;
         }
         push(left->as<array_object>()->elements.at(static_cast<size_t>(idx)));
@@ -347,7 +347,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<string_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
-            push(::native_null());
+            push(native_null());
             return;
         }
         push(make<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
@@ -372,7 +372,7 @@ auto vm::exec_call(size_t num_args) -> void
         }
         frame frm {.cl = clsr, .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
         m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
-        push_frame(std::move(frm));
+        push_frame(frm);
         return;
     }
     if (callee->is(builtin)) {
@@ -381,7 +381,7 @@ auto vm::exec_call(size_t num_args) -> void
         for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
             args.push_back(m_stack[idx]);
         }
-        auto result = builtin->body(std::move(args));
+        const auto* result = builtin->body(std::move(args));
         push(result);
         return;
     }
@@ -390,12 +390,12 @@ auto vm::exec_call(size_t num_args) -> void
 
 auto vm::current_frame() -> frame&
 {
-    return m_frames[m_frame_index - 1];
+    return m_frames.at(m_frame_index - 1);
 }
 
-auto vm::push_frame(frame&& frm) -> void
+auto vm::push_frame(frame frm) -> void
 {
-    m_frames[m_frame_index] = std::move(frm);
+    m_frames.at(m_frame_index) = frm;
     m_frame_index++;
 }
 
@@ -439,10 +439,10 @@ using parsed_program = std::pair<program*, parser>;
 auto check_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
-    auto prgrm = prsr.parse_program();
+    auto* prgrm = prsr.parse_program();
     INFO("while parsing: `", input, "`");
     CHECK(check_no_parse_errors(prsr));
-    return {std::move(prgrm), std::move(prsr)};
+    return {prgrm, std::move(prsr)};
 }
 
 struct error

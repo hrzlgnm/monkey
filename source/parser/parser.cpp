@@ -295,7 +295,7 @@ auto parser::parse_function_parameters() -> std::vector<std::string>
         return parameters;
     }
     next_token();
-    auto param = parse_identifier();
+    auto* param = parse_identifier();
     parameters.push_back(param->value);
     while (peek_token_is(comma)) {
         next_token();
@@ -312,11 +312,11 @@ auto parser::parse_function_parameters() -> std::vector<std::string>
 auto parser::parse_block_statement() -> block_statement*
 {
     using enum token_type;
-    auto block = make<block_statement>();
+    auto* block = make<block_statement>();
     next_token();
     while (!current_token_is(rsquirly) && !current_token_is(eof)) {
-        auto stmt = parse_statement();
-        if (stmt) {
+        auto* stmt = parse_statement();
+        if (stmt != nullptr) {
             block->statements.push_back(std::move(stmt));
         }
         next_token();
@@ -335,7 +335,7 @@ auto parser::parse_call_expression(expression* function) -> expression*
 
 auto parser::parse_binary_expression(expression* left) -> expression*
 {
-    auto bin_expr = make<binary_expression>();
+    auto* bin_expr = make<binary_expression>();
     bin_expr->op = m_current_token.type;
     bin_expr->left = left;
 
@@ -377,7 +377,7 @@ auto parser::parse_expression_list(token_type end) -> std::vector<const expressi
 
 auto parser::parse_array_expression() -> expression*
 {
-    array_expression* array_expr = make<array_expression>();
+    auto* array_expr = make<array_expression>();
     array_expr->elements = parse_expression_list(token_type::rbracket);
     return array_expr;
 }
@@ -398,17 +398,17 @@ auto parser::parse_index_expression(expression* left) -> expression*
 
 auto parser::parse_hash_literal() -> expression*
 {
-    auto hash = make<hash_literal_expression>();
+    auto* hash = make<hash_literal_expression>();
     using enum token_type;
     while (!peek_token_is(rsquirly)) {
         next_token();
-        auto key = parse_expression(lowest);
+        auto* key = parse_expression(lowest);
         if (!get(colon)) {
             return {};
         }
         next_token();
-        auto value = parse_expression(lowest);
-        hash->pairs.emplace_back(std::move(key), std::move(value));
+        auto* value = parse_expression(lowest);
+        hash->pairs.emplace_back(key, value);
         if (!peek_token_is(comma)) {
             break;
         }

@@ -59,7 +59,7 @@ struct vm
     [[nodiscard]] auto build_hash(size_t start, size_t end) const -> object*;
 
     auto current_frame() -> frame&;
-    auto push_frame(frame&& frm) -> void;
+    auto push_frame(frame frm) -> void;
     auto pop_frame() -> frame&;
     auto push_closure(uint16_t const_idx, uint8_t num_free) -> void;
 

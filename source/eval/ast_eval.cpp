@@ -209,7 +209,7 @@ auto index_expression::eval(environment* env) const -> const object*
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
-            return ::native_null();
+            return native_null();
         }
         return arr.at(static_cast<size_t>(index));
     }
@@ -219,7 +219,7 @@ auto index_expression::eval(environment* env) const -> const object*
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(str.size() - 1);
         if (index < 0 || index > max) {
-            return ::native_null();
+            return native_null();
         }
         return make<string_object>(str.substr(static_cast<size_t>(index), 1));
     }
@@ -231,7 +231,7 @@ auto index_expression::eval(environment* env) const -> const object*
         }
         const auto hash_key = evaluated_index->as<hashable_object>()->hash_key();
         if (!hsh.contains(hash_key)) {
-            return ::native_null();
+            return native_null();
         }
         return hsh.at(hash_key);
     }
@@ -379,7 +379,7 @@ const builtin_function_expression builtin_puts {{"puts"},
                                                         first = false;
                                                     }
                                                     fmt::print("\n");
-                                                    return ::native_null();
+                                                    return native_null();
                                                 }};
 const builtin_function_expression builtin_first {
     "first",
@@ -396,14 +396,14 @@ const builtin_function_expression builtin_first {
             if (!str.empty()) {
                 return make<string_object>(str.substr(0, 1));
             }
-            return ::native_null();
+            return native_null();
         }
         if (maybe_string_or_array->is(array)) {
             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
             if (!arr.empty()) {
                 return arr.front();
             }
-            return ::native_null();
+            return native_null();
         }
         return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
     }};
@@ -422,14 +422,14 @@ const builtin_function_expression builtin_last {
             if (!str.empty()) {
                 return make<string_object>(str.substr(str.length() - 1, 1));
             }
-            return ::native_null();
+            return native_null();
         }
         if (maybe_string_or_array->is(array)) {
             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
             if (!arr.empty()) {
                 return arr.back();
             }
-            return ::native_null();
+            return native_null();
         }
         return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
     }};
@@ -448,7 +448,7 @@ const builtin_function_expression builtin_rest {
             if (str.size() > 1) {
                 return make<string_object>(str.substr(1));
             }
-            return ::native_null();
+            return native_null();
         }
         if (maybe_string_or_array->is(array)) {
             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
@@ -457,7 +457,7 @@ const builtin_function_expression builtin_rest {
                 std::copy(arr.cbegin() + 1, arr.cend(), std::back_inserter(rest));
                 return make<array_object>(std::move(rest));
             }
-            return ::native_null();
+            return native_null();
         }
         return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
     }};
