@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iterator>
@@ -15,26 +16,26 @@
 
 auto compiler::create() -> compiler
 {
-    auto symbols = symbol_table::create();
+    auto* symbols = symbol_table::create();
     for (size_t idx = 0; const auto& builtin : builtin_function_expression::builtins) {
-        symbols->define_builtin(idx++, builtin.name);
+        symbols->define_builtin(idx++, builtin->name);
     }
-    return {make<constants>(), std::move(symbols)};
+    return {make<constants>(), symbols};
 }
 
-compiler::compiler(constants_ptr consts, symbol_table_ptr symbols)
+compiler::compiler(constants* consts, symbol_table* symbols)
     : m_consts {consts}
-    , m_symbols {std::move(symbols)}
+    , m_symbols {symbols}
     , m_scopes {1}
 {
 }
 
-auto compiler::compile(const program_ptr& program) -> void
+auto compiler::compile(const program* program) -> void
 {
     program->compile(*this);
 }
 
-auto compiler::add_constant(object_ptr obj) -> size_t
+auto compiler::add_constant(object* obj) -> size_t
 {
     m_consts->push_back(obj);
     return m_consts->size() - 1;
@@ -44,7 +45,7 @@ auto compiler::add_instructions(instructions&& ins) -> size_t
 {
     auto& scope = m_scopes[m_scope_index];
     auto pos = scope.instrs.size();
-    std::copy(ins.begin(), ins.end(), std::back_inserter(scope.instrs));
+    std::ranges::copy(ins, std::back_inserter(scope.instrs));
     return pos;
 }
 
@@ -174,7 +175,7 @@ auto compiler::number_symbol_definitions() const -> size_t
     return m_symbols->num_definitions();
 }
 
-auto compiler::consts() const -> constants_ptr
+auto compiler::consts() const -> constants*
 {
     return m_consts;
 }
@@ -205,7 +206,7 @@ auto check_no_parse_errors(const parser& prsr) -> bool
     return prsr.errors().empty();
 }
 
-using parsed_program = std::pair<program_ptr, parser>;
+using parsed_program = std::pair<program*, parser>;
 
 auto check_program(std::string_view input) -> parsed_program
 {

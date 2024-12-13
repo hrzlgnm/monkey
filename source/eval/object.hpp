@@ -12,7 +12,7 @@
 #include <compiler/symbol_table.hpp>
 #include <fmt/core.h>
 
-#include "environment_fwd.hpp"
+#include "eval/environment.hpp"
 
 // helper type for std::visit
 template<typename... T>
@@ -22,9 +22,6 @@ struct overloaded : T...
 };
 template<class... T>
 overloaded(T...) -> overloaded<T...>;
-
-struct object;
-using object_ptr = object*;
 
 struct object
 {
@@ -43,18 +40,18 @@ struct object
         builtin,
     };
     object() = default;
+    virtual ~object() = default;
     object(const object&) = delete;
     object(object&&) = delete;
     auto operator=(const object&) -> object& = delete;
     auto operator=(object&&) -> object& = delete;
-    virtual ~object() = default;
 
     [[nodiscard]] auto is(object_type obj_type) const -> bool { return type() == obj_type; }
 
     template<typename T>
-    [[nodiscard]] auto as() -> T*
+    [[nodiscard]] auto as() const -> const T*
     {
-        return static_cast<T*>(this);
+        return static_cast<const T*>(this);
     }
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
@@ -65,8 +62,10 @@ struct object
 
     [[nodiscard]] virtual auto type() const -> object_type = 0;
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
-    [[nodiscard]] virtual auto equals_to(const object_ptr& other) const -> bool = 0;
-    bool is_return_value {};
+
+    [[nodiscard]] virtual auto equals_to(const object* /*other*/) const -> bool { return false; };
+
+    mutable bool is_return_value {};
 };
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;
@@ -93,7 +92,7 @@ struct integer_object : hashable_object
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
-    [[nodiscard]] auto equals_to(const object_ptr& other) const -> bool override
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
         return other->is(type()) && other->as<integer_object>()->value == value;
     }
@@ -116,7 +115,7 @@ struct boolean_object : hashable_object
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
-    [[nodiscard]] auto equals_to(const object_ptr& other) const -> bool override
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
         return other->is(type()) && other->as<boolean_object>()->value == value;
     }
@@ -124,15 +123,15 @@ struct boolean_object : hashable_object
     bool value {};
 };
 
-static boolean_object false_obj {false};
-static boolean_object true_obj {true};
+auto native_true() -> const object*;
+auto native_false() -> const object*;
 
-inline auto native_bool_to_object(bool val) -> object_ptr
+inline auto native_bool_to_object(bool val) -> const object*
 {
     if (val) {
-        return &true_obj;
+        return native_true();
     }
-    return &false_obj;
+    return native_false();
 }
 
 struct string_object : hashable_object
@@ -148,7 +147,7 @@ struct string_object : hashable_object
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
-    [[nodiscard]] auto equals_to(const object_ptr& other) const -> bool override
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
         return other->is(type()) && other->as<string_object>()->value == value;
     }
@@ -158,18 +157,16 @@ struct string_object : hashable_object
 
 struct null_object : object
 {
-    null_object() = default;
-
     [[nodiscard]] auto is_truthy() const -> bool override { return false; }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::null; }
 
     [[nodiscard]] auto inspect() const -> std::string override { return "null"; }
 
-    [[nodiscard]] auto equals_to(const object_ptr& other) const -> bool override { return other->is(type()); }
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override { return other->is(type()); }
 };
 
-static null_object null_obj;
+auto native_null() -> const object*;
 
 struct error_object : object
 {
@@ -182,7 +179,7 @@ struct error_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "ERROR: " + message; }
 
-    [[nodiscard]] auto equals_to(const object_ptr& other) const -> bool override
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
         return other->is(type()) && other->as<error_object>()->message == message;
     }
@@ -191,14 +188,14 @@ struct error_object : object
 };
 
 template<typename... T>
-auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object_ptr
+auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object*
 {
     return make<error_object>(fmt::format(fmt, std::forward<T>(args)...));
 }
 
 struct array_object : object
 {
-    using array = std::vector<object_ptr>;
+    using array = std::vector<const object*>;
 
     explicit array_object(array&& arr)
         : elements {std::move(arr)}
@@ -209,7 +206,7 @@ struct array_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "todo"; }
 
-    [[nodiscard]] auto equals_to(const object_ptr& other) const -> bool override
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
         // FIXME:
         return other->is(type()) && other->as<array_object>()->elements.size() == elements.size();
@@ -220,7 +217,7 @@ struct array_object : object
 
 struct hash_object : object
 {
-    using hash = std::unordered_map<hashable_object::hash_key_type, object_ptr>;
+    using hash = std::unordered_map<hashable_object::hash_key_type, const object*>;
 
     explicit hash_object(hash&& hsh)
         : pairs {std::move(hsh)}
@@ -231,7 +228,7 @@ struct hash_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "todo"; }
 
-    [[nodiscard]] auto equals_to(const object_ptr& other) const -> bool override
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
         // FIXME:
         return other->is(type()) && other->as<hash_object>()->pairs.size() == pairs.size();
@@ -244,7 +241,7 @@ struct callable_expression;
 
 struct function_object : object
 {
-    explicit function_object(const callable_expression* expr, environment_ptr env)
+    function_object(const callable_expression* expr, environment* env)
         : callable {expr}
         , closure_env {env}
     {
@@ -254,16 +251,12 @@ struct function_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "todo"; }
 
-    [[nodiscard]] auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
-
-    const callable_expression* callable;
-    environment_ptr closure_env;
+    const callable_expression* callable {};
+    environment* closure_env {};
 };
 
 struct compiled_function_object : object
 {
-    using ptr = compiled_function_object*;
-
     compiled_function_object(instructions&& instr, size_t locals, size_t args)
         : instrs {std::move(instr)}
         , num_locals {locals}
@@ -275,8 +268,6 @@ struct compiled_function_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "fn<compiled>(...) {...}"; }
 
-    [[nodiscard]] auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
-
     instructions instrs;
     size_t num_locals {};
     size_t num_arguments {};
@@ -284,9 +275,7 @@ struct compiled_function_object : object
 
 struct closure_object : object
 {
-    using ptr = closure_object*;
-
-    explicit closure_object(compiled_function_object::ptr cmpld, std::vector<object_ptr> frees = {})
+    explicit closure_object(const compiled_function_object* cmpld, std::vector<const object*> frees = {})
         : fn {cmpld}
         , free {std::move(frees)}
     {
@@ -296,10 +285,8 @@ struct closure_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "closure{...}"; }
 
-    [[nodiscard]] auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
-
-    compiled_function_object::ptr fn;
-    std::vector<object_ptr> free;
+    const compiled_function_object* fn {};
+    std::vector<const object*> free;
 };
 
 struct builtin_function_expression;
@@ -315,7 +302,5 @@ struct builtin_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override;
 
-    [[nodiscard]] auto equals_to(const object_ptr& /*other*/) const -> bool override { return false; }
-
-    const builtin_function_expression* builtin;
+    const builtin_function_expression* builtin {};
 };

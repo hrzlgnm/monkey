@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include <chungus.hpp>
 #include <fmt/ostream.h>
 
 template<typename Value>
@@ -36,26 +37,22 @@ auto operator==(const symbol& lhs, const symbol& rhs) -> bool;
 auto operator<<(std::ostream& ost, const symbol& sym) -> std::ostream&;
 
 struct symbol_table;
-using symbol_table_ptr = std::shared_ptr<symbol_table>;
 
 struct symbol_table : std::enable_shared_from_this<symbol_table>
 {
-    static auto create() -> symbol_table_ptr { return std::make_shared<symbol_table>(); }
+    static auto create() -> symbol_table* { return make<symbol_table>(); }
 
-    static auto create_enclosed(symbol_table_ptr outer) -> symbol_table_ptr
-    {
-        return std::make_shared<symbol_table>(std::move(outer));
-    }
+    static auto create_enclosed(symbol_table* outer) -> symbol_table* { return make<symbol_table>(outer); }
 
-    explicit symbol_table(symbol_table_ptr outer = {});
+    explicit symbol_table(symbol_table* outer = {});
     auto define(const std::string& name) -> symbol;
     auto define_builtin(size_t index, const std::string& name) -> symbol;
     auto define_function_name(const std::string& name) -> symbol;
     auto resolve(const std::string& name) -> std::optional<symbol>;
 
-    auto is_global() const -> bool { return !m_parent; }
+    auto is_global() const -> bool { return m_parent == nullptr; }
 
-    auto parent() const -> symbol_table_ptr { return m_parent; }
+    auto parent() const -> symbol_table* { return m_parent; }
 
     auto num_definitions() const -> size_t { return m_defs; }
 
@@ -63,7 +60,7 @@ struct symbol_table : std::enable_shared_from_this<symbol_table>
 
   private:
     auto define_free(const symbol& sym) -> symbol;
-    symbol_table_ptr m_parent;
+    symbol_table* m_parent {};
     string_map<symbol> m_store;
     size_t m_defs {};
     std::vector<symbol> m_free;

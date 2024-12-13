@@ -1,6 +1,5 @@
 #pragma once
 
-#include <eval/environment_fwd.hpp>
 #include <eval/object.hpp>
 
 struct compiler;
@@ -8,15 +7,13 @@ struct compiler;
 struct expression
 {
     expression() = default;
-    expression(const expression&) = default;
-    expression(expression&&) = default;
-    auto operator=(const expression&) -> expression& = default;
-    auto operator=(expression&&) -> expression& = default;
     virtual ~expression() = default;
+    expression(const expression&) = delete;
+    expression(expression&&) = delete;
+    auto operator=(const expression&) -> expression& = delete;
+    auto operator=(expression&&) -> expression& = delete;
 
     [[nodiscard]] virtual auto string() const -> std::string = 0;
-    [[nodiscard]] virtual auto eval(environment_ptr) const -> object_ptr = 0;
+    [[nodiscard]] virtual auto eval(environment*) const -> const object* = 0;
     virtual inline auto compile(compiler& /*comp*/) const -> void = 0;
 };
-
-using expression_ptr = expression*;

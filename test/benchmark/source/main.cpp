@@ -39,8 +39,8 @@ fibonacci(35);
 
     auto lxr = lexer {input};
     auto prsr = parser {lxr};
-    auto prgrm = prsr.parse_program();
-    object_ptr result;
+    auto* prgrm = prsr.parse_program();
+    const object* result = nullptr;
     std::chrono::duration<double> duration {};
     if (engine_vm) {
         auto cmplr = compiler::create();

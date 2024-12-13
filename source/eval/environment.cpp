@@ -4,7 +4,7 @@
 
 #include "object.hpp"
 
-environment::environment(environment_ptr parent_env)
+environment::environment(environment* parent_env)
     : m_parent(parent_env)
 {
     if (m_parent == this) {
@@ -12,22 +12,17 @@ environment::environment(environment_ptr parent_env)
     }
 }
 
-auto environment::break_cycle() -> void
-{
-    m_store.clear();
-}
-
-auto environment::get(const std::string& name) const -> object_ptr
+auto environment::get(const std::string& name) const -> const object*
 {
     for (const auto* ptr = this; ptr != nullptr; ptr = ptr->m_parent) {
         if (const auto itr = ptr->m_store.find(name); itr != ptr->m_store.end()) {
             return itr->second;
         }
     }
-    return &null_obj;
+    return native_null();
 }
 
-auto environment::set(const std::string& name, object_ptr val) -> void
+auto environment::set(const std::string& name, const object* val) -> void
 {
     m_store[name] = val;
 }

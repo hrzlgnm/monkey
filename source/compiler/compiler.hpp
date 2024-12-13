@@ -8,13 +8,12 @@
 
 #include "symbol_table.hpp"
 
-using constants = std::vector<object_ptr>;
-using constants_ptr = constants*;
+using constants = std::vector<const object*>;
 
 struct bytecode
 {
     instructions instrs;
-    constants_ptr consts {};
+    const constants* consts {};
 };
 
 struct emitted_instruction
@@ -32,15 +31,15 @@ struct compilation_scope
 
 struct compiler
 {
-    auto compile(const program_ptr& program) -> void;
+    auto compile(const program* program) -> void;
     [[nodiscard]] static auto create() -> compiler;
 
-    [[nodiscard]] static auto create_with_state(constants_ptr constants, symbol_table_ptr symbols) -> compiler
+    [[nodiscard]] static auto create_with_state(constants* constants, symbol_table* symbols) -> compiler
     {
         return compiler {constants, std::move(symbols)};
     }
 
-    [[nodiscard]] auto add_constant(object_ptr obj) -> size_t;
+    [[nodiscard]] auto add_constant(object* obj) -> size_t;
     [[nodiscard]] auto add_instructions(instructions&& ins) -> size_t;
     auto emit(opcodes opcode, operands&& operands = {}) -> size_t;
 
@@ -61,12 +60,12 @@ struct compiler
     [[nodiscard]] auto resolve_symbol(const std::string& name) const -> std::optional<symbol>;
     [[nodiscard]] auto free_symbols() const -> std::vector<symbol>;
     [[nodiscard]] auto number_symbol_definitions() const -> size_t;
-    [[nodiscard]] auto consts() const -> constants_ptr;
+    [[nodiscard]] auto consts() const -> constants*;
 
   private:
-    constants_ptr m_consts {};
-    symbol_table_ptr m_symbols;
+    constants* m_consts {};
+    symbol_table* m_symbols;
     std::vector<compilation_scope> m_scopes;
     size_t m_scope_index {0};
-    compiler(constants_ptr consts, symbol_table_ptr symbols);
+    compiler(constants* consts, symbol_table* symbols);
 };

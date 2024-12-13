@@ -17,6 +17,10 @@
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
 
+#include "eval/object.hpp"
+
+namespace
+{
 constexpr auto prompt = ">> ";
 
 constexpr auto monkey_face = R"r(
@@ -33,13 +37,13 @@ constexpr auto monkey_face = R"r(
             '-----'
 )r";
 
-static auto monkey_business()
+auto monkey_business()
 {
     std::cerr << monkey_face;
     std::cerr << "Woops! We ran into some monkey business here!\n";
 }
 
-static auto print_parse_errors(const std::vector<std::string>& errors)
+auto print_parse_errors(const std::vector<std::string>& errors)
 {
     monkey_business();
     std::cerr << "  parser errors: \n";
@@ -73,7 +77,7 @@ struct command_line_args
     exit(exit_code);
 }
 
-static auto parse_command_line(std::string_view program, int argc, char** argv) -> command_line_args
+auto parse_command_line(std::string_view program, int argc, char** argv) -> command_line_args
 {
     command_line_args opts {};
     for (std::string_view arg : std::span(argv, static_cast<size_t>(argc))) {
@@ -106,7 +110,7 @@ static auto parse_command_line(std::string_view program, int argc, char** argv) 
     return opts;
 }
 
-static auto run_file(const command_line_args& opts) -> int
+auto run_file(const command_line_args& opts) -> int
 {
     std::ifstream ifs(std::string {opts.file});
     if (!ifs) {
@@ -116,7 +120,7 @@ static auto run_file(const command_line_args& opts) -> int
     std::string contents {(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
     auto lxr = lexer {contents};
     auto prsr = parser {lxr};
-    auto prgrm = prsr.parse_program();
+    auto* prgrm = prsr.parse_program();
     if (!prsr.errors().empty()) {
         print_parse_errors(prsr.errors());
         return 1;
@@ -126,16 +130,16 @@ static auto run_file(const command_line_args& opts) -> int
         cmplr.compile(prgrm);
         auto machine = vm::create(cmplr.byte_code());
         machine.run();
-        auto result = machine.last_popped();
+        const auto* result = machine.last_popped();
         if (!result->is(object::object_type::null)) {
             std::cout << result->inspect() << "\n";
         }
     } else {
-        auto global_env = make<environment>();
+        auto* global_env = make<environment>();
         for (const auto& builtin : builtin_function_expression::builtins) {
-            global_env->set(builtin.name, make<function_object>(&builtin, environment_ptr {}));
+            global_env->set(builtin->name, make<function_object>(builtin, nullptr));
         }
-        auto result = prgrm->eval(global_env);
+        const auto* result = prgrm->eval(global_env);
         if (!result->is(object::object_type::null)) {
             std::cout << result->inspect() << "\n";
         }
@@ -143,15 +147,15 @@ static auto run_file(const command_line_args& opts) -> int
     return 0;
 }
 
-static auto run_repl(const command_line_args& opts) -> int
+auto run_repl(const command_line_args& opts) -> int
 {
-    auto global_env = make<environment>();
-    auto symbols = symbol_table::create();
+    auto* global_env = make<environment>();
+    auto* symbols = symbol_table::create();
     constants consts;
     constants globals(globals_size);
     for (auto idx = 0UL; const auto& builtin : builtin_function_expression::builtins) {
-        global_env->set(builtin.name, make<function_object>(&builtin, environment_ptr {}));
-        symbols->define_builtin(idx, builtin.name);
+        global_env->set(builtin->name, make<function_object>(builtin, nullptr));
+        symbols->define_builtin(idx, builtin->name);
         idx++;
     }
     auto input = std::string {};
@@ -159,7 +163,7 @@ static auto run_repl(const command_line_args& opts) -> int
     while (getline(std::cin, input)) {
         auto lxr = lexer {input};
         auto prsr = parser {lxr};
-        auto prgrm = prsr.parse_program();
+        auto* prgrm = prsr.parse_program();
         if (!prsr.errors().empty()) {
             print_parse_errors(prsr.errors());
             continue;
@@ -169,12 +173,12 @@ static auto run_repl(const command_line_args& opts) -> int
             cmplr.compile(prgrm);
             auto machine = vm::create_with_state(cmplr.byte_code(), &globals);
             machine.run();
-            auto result = machine.last_popped();
+            const auto* result = machine.last_popped();
             if (!result->is(object::object_type::null)) {
                 std::cout << result->inspect() << "\n";
             }
         } else {
-            auto result = prgrm->eval(global_env);
+            const auto* result = prgrm->eval(global_env);
             if (!result->is(object::object_type::null)) {
                 std::cout << result->inspect() << "\n";
             }
@@ -186,6 +190,7 @@ static auto run_repl(const command_line_args& opts) -> int
     }
     return 0;
 }
+}  // namespace
 
 auto main(int argc, char* argv[]) -> int
 {
