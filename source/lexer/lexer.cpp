@@ -160,7 +160,7 @@ auto lexer::read_identifier_or_keyword() -> token
     auto end = m_position;
     const auto count = end - position;
     const auto identifier_or_keyword = m_input.substr(position, count);
-    const auto* const itr =
+    const auto itr =
         std::find_if(keyword_tokens.cbegin(),
                      keyword_tokens.cend(),
                      [&identifier_or_keyword](auto pair) -> bool { return pair.first == identifier_or_keyword; });
