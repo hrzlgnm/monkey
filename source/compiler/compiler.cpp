@@ -41,11 +41,11 @@ auto compiler::add_constant(object* obj) -> size_t
     return m_consts->size() - 1;
 }
 
-auto compiler::add_instructions(instructions&& ins) -> size_t
+auto compiler::add_instructions(const instructions& ins) -> size_t
 {
     auto& scope = m_scopes[m_scope_index];
     auto pos = scope.instrs.size();
-    std::ranges::copy(ins, std::back_inserter(scope.instrs));
+    std::copy(ins.cbegin(), ins.cend(), std::back_inserter(scope.instrs));
     return pos;
 }
 

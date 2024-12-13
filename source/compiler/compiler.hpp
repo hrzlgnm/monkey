@@ -36,11 +36,11 @@ struct compiler
 
     [[nodiscard]] static auto create_with_state(constants* constants, symbol_table* symbols) -> compiler
     {
-        return compiler {constants, std::move(symbols)};
+        return compiler {constants, symbols};
     }
 
     [[nodiscard]] auto add_constant(object* obj) -> size_t;
-    [[nodiscard]] auto add_instructions(instructions&& ins) -> size_t;
+    [[nodiscard]] auto add_instructions(const instructions& ins) -> size_t;
     auto emit(opcodes opcode, operands&& operands = {}) -> size_t;
 
     auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, std::vector {operand}); }

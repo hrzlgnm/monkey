@@ -334,8 +334,10 @@ auto builtin_function_expression::call(environment* /*closure_env*/,
                                        const std::vector<const expression*>& arguments) const -> const object*
 {
     array_object::array args;
-    std::ranges::transform(
-        arguments, std::back_inserter(args), [caller_env](const expression* expr) { return expr->eval(caller_env); });
+    std::transform(arguments.cbegin(),
+                   arguments.cend(),
+                   std::back_inserter(args),
+                   [caller_env](const expression* expr) { return expr->eval(caller_env); });
     return body(std::move(args));
 }
 
