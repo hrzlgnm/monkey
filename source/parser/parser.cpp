@@ -1,10 +1,6 @@
-#include <algorithm>
 #include <cstdint>
-#include <iterator>
-#include <map>
-#include <memory>
+#include <utility>
 #include <variant>
-#include <vector>
 
 #include "parser.hpp"
 
@@ -22,6 +18,7 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <chungus.hpp>
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
 #include <fmt/core.h>
@@ -84,24 +81,24 @@ parser::parser(lexer lxr)
     register_unary(string, [this] { return parse_string_literal(); });
     register_unary(lbracket, [this] { return parse_array_expression(); });
     register_unary(lsquirly, [this] { return parse_hash_literal(); });
-    register_binary(plus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(minus, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(slash, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(asterisk, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(equals, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(not_equals, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(less_than, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(greater_than, [this](expression_ptr left) { return parse_binary_expression(std::move(left)); });
-    register_binary(lparen, [this](expression_ptr left) { return parse_call_expression(std::move(left)); });
-    register_binary(lbracket, [this](expression_ptr left) { return parse_index_expression(std::move(left)); });
+    register_binary(plus, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(minus, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(slash, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(asterisk, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(equals, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(not_equals, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(less_than, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(greater_than, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(lparen, [this](expression* left) { return parse_call_expression(left); });
+    register_binary(lbracket, [this](expression* left) { return parse_index_expression(left); });
 }
 
-auto parser::parse_program() -> program_ptr
+auto parser::parse_program() -> program*
 {
-    auto prog = std::make_unique<program>();
+    auto* prog = make<program>();
     while (m_current_token.type != token_type::eof) {
-        auto stmt = parse_statement();
-        if (stmt) {
+        auto* stmt = parse_statement();
+        if (stmt != nullptr) {
             prog->statements.push_back(std::move(stmt));
         }
         next_token();
@@ -120,7 +117,7 @@ auto parser::next_token() -> void
     m_peek_token = m_lxr.next_token();
 }
 
-auto parser::parse_statement() -> statement_ptr
+auto parser::parse_statement() -> statement*
 {
     using enum token_type;
     switch (m_current_token.type) {
@@ -133,10 +130,10 @@ auto parser::parse_statement() -> statement_ptr
     }
 }
 
-auto parser::parse_let_statement() -> statement_ptr
+auto parser::parse_let_statement() -> statement*
 {
     using enum token_type;
-    auto stmt = std::make_unique<let_statement>();
+    auto* stmt = make<let_statement>();
     if (!get(ident)) {
         return {};
     }
@@ -148,8 +145,8 @@ auto parser::parse_let_statement() -> statement_ptr
 
     next_token();
     stmt->value = parse_expression(lowest);
-    if (auto* func_expr = dynamic_cast<function_expression*>(stmt->value.get()); func_expr != nullptr) {
-        func_expr->name = stmt->name->value;
+    if (auto* func_expr = dynamic_cast<const function_expression*>(stmt->value); func_expr != nullptr) {
+        const_cast<function_expression*>(func_expr)->name = stmt->name->value;
     }
 
     if (peek_token_is(semicolon)) {
@@ -158,10 +155,10 @@ auto parser::parse_let_statement() -> statement_ptr
     return stmt;
 }
 
-auto parser::parse_return_statement() -> statement_ptr
+auto parser::parse_return_statement() -> statement*
 {
     using enum token_type;
-    auto stmt = std::make_unique<return_statement>();
+    auto stmt = make<return_statement>();
 
     next_token();
     stmt->value = parse_expression(lowest);
@@ -172,9 +169,9 @@ auto parser::parse_return_statement() -> statement_ptr
     return stmt;
 }
 
-auto parser::parse_expression_statement() -> statement_ptr
+auto parser::parse_expression_statement() -> statement*
 {
-    auto expr_stmt = std::make_unique<expression_statement>();
+    auto expr_stmt = make<expression_statement>();
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -182,14 +179,14 @@ auto parser::parse_expression_statement() -> statement_ptr
     return expr_stmt;
 }
 
-auto parser::parse_expression(int precedence) -> expression_ptr
+auto parser::parse_expression(int precedence) -> expression*
 {
     auto unary = m_unary_parsers[m_current_token.type];
     if (!unary) {
         no_unary_expression_error(m_current_token.type);
         return {};
     }
-    auto left_expr = unary();
+    auto* left_expr = unary();
     while (!peek_token_is(token_type::semicolon) && precedence < peek_precedence()) {
         auto binary = m_binary_parsers[m_peek_token.type];
         if (!binary) {
@@ -197,19 +194,19 @@ auto parser::parse_expression(int precedence) -> expression_ptr
         }
         next_token();
 
-        left_expr = binary(std::move(left_expr));
+        left_expr = binary(left_expr);
     }
     return left_expr;
 }
 
-auto parser::parse_identifier() const -> identifier_ptr
+auto parser::parse_identifier() const -> identifier*
 {
-    return std::make_unique<identifier>(std::string {m_current_token.literal});
+    return make<identifier>(std::string(m_current_token.literal));
 }
 
-auto parser::parse_integer_literal() -> expression_ptr
+auto parser::parse_integer_literal() -> expression*
 {
-    auto lit = std::make_unique<integer_literal>();
+    auto* lit = make<integer_literal>();
     try {
         lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
@@ -219,9 +216,9 @@ auto parser::parse_integer_literal() -> expression_ptr
     return lit;
 }
 
-auto parser::parse_unary_expression() -> expression_ptr
+auto parser::parse_unary_expression() -> expression*
 {
-    auto unary = std::make_unique<unary_expression>();
+    auto unary = make<unary_expression>();
     unary->op = m_current_token.type;
 
     next_token();
@@ -229,12 +226,12 @@ auto parser::parse_unary_expression() -> expression_ptr
     return unary;
 }
 
-auto parser::parse_boolean() -> expression_ptr
+auto parser::parse_boolean() -> expression*
 {
-    return std::make_unique<boolean>(current_token_is(token_type::tru));
+    return make<boolean>(current_token_is(token_type::tru));
 }
 
-auto parser::parse_grouped_expression() -> expression_ptr
+auto parser::parse_grouped_expression() -> expression*
 {
     next_token();
     auto exp = parse_expression(lowest);
@@ -244,10 +241,10 @@ auto parser::parse_grouped_expression() -> expression_ptr
     return exp;
 }
 
-auto parser::parse_if_expression() -> expression_ptr
+auto parser::parse_if_expression() -> expression*
 {
     using enum token_type;
-    auto expr = std::make_unique<if_expression>();
+    auto* expr = make<if_expression>();
     if (!get(lparen)) {
         return {};
     }
@@ -275,7 +272,7 @@ auto parser::parse_if_expression() -> expression_ptr
     return expr;
 }
 
-auto parser::parse_function_expression() -> expression_ptr
+auto parser::parse_function_expression() -> expression*
 {
     using enum token_type;
     if (!get(lparen)) {
@@ -285,8 +282,8 @@ auto parser::parse_function_expression() -> expression_ptr
     if (!get(lsquirly)) {
         return {};
     }
-    auto body = parse_block_statement();
-    return std::make_unique<function_expression>(std::move(parameters), std::move(body));
+    auto* body = parse_block_statement();
+    return make<function_expression>(std::move(parameters), body);
 }
 
 auto parser::parse_function_parameters() -> std::vector<std::string>
@@ -298,7 +295,7 @@ auto parser::parse_function_parameters() -> std::vector<std::string>
         return parameters;
     }
     next_token();
-    auto param = parse_identifier();
+    auto* param = parse_identifier();
     parameters.push_back(param->value);
     while (peek_token_is(comma)) {
         next_token();
@@ -312,14 +309,14 @@ auto parser::parse_function_parameters() -> std::vector<std::string>
     return parameters;
 }
 
-auto parser::parse_block_statement() -> block_statement_ptr
+auto parser::parse_block_statement() -> block_statement*
 {
     using enum token_type;
-    auto block = std::make_unique<block_statement>();
+    auto* block = make<block_statement>();
     next_token();
     while (!current_token_is(rsquirly) && !current_token_is(eof)) {
-        auto stmt = parse_statement();
-        if (stmt) {
+        auto* stmt = parse_statement();
+        if (stmt != nullptr) {
             block->statements.push_back(std::move(stmt));
         }
         next_token();
@@ -328,19 +325,19 @@ auto parser::parse_block_statement() -> block_statement_ptr
     return block;
 }
 
-auto parser::parse_call_expression(expression_ptr function) -> expression_ptr
+auto parser::parse_call_expression(expression* function) -> expression*
 {
-    auto call = std::make_unique<call_expression>();
-    call->function = std::move(function);
+    auto* call = make<call_expression>();
+    call->function = function;
     call->arguments = parse_expression_list(token_type::rparen);
     return call;
 }
 
-auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
+auto parser::parse_binary_expression(expression* left) -> expression*
 {
-    auto bin_expr = std::make_unique<binary_expression>();
+    auto* bin_expr = make<binary_expression>();
     bin_expr->op = m_current_token.type;
-    bin_expr->left = std::move(left);
+    bin_expr->left = left;
 
     auto precedence = current_precedence();
     next_token();
@@ -349,15 +346,15 @@ auto parser::parse_binary_expression(expression_ptr left) -> expression_ptr
     return bin_expr;
 }
 
-auto parser::parse_string_literal() const -> expression_ptr
+auto parser::parse_string_literal() const -> expression*
 {
-    return std::make_unique<string_literal>(std::string {m_current_token.literal});
+    return make<string_literal>(std::string {m_current_token.literal});
 }
 
-auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr>
+auto parser::parse_expression_list(token_type end) -> std::vector<const expression*>
 {
     using enum token_type;
-    auto list = std::vector<expression_ptr>();
+    auto list = std::vector<const expression*>();
     if (peek_token_is(end)) {
         next_token();
         return list;
@@ -378,17 +375,17 @@ auto parser::parse_expression_list(token_type end) -> std::vector<expression_ptr
     return list;
 }
 
-auto parser::parse_array_expression() -> expression_ptr
+auto parser::parse_array_expression() -> expression*
 {
-    auto array_expr = std::make_unique<array_expression>();
+    auto* array_expr = make<array_expression>();
     array_expr->elements = parse_expression_list(token_type::rbracket);
     return array_expr;
 }
 
-auto parser::parse_index_expression(expression_ptr left) -> expression_ptr
+auto parser::parse_index_expression(expression* left) -> expression*
 {
-    auto index_expr = std::make_unique<index_expression>();
-    index_expr->left = std::move(left);
+    auto* index_expr = make<index_expression>();
+    index_expr->left = left;
     next_token();
     index_expr->index = parse_expression(lowest);
 
@@ -399,19 +396,19 @@ auto parser::parse_index_expression(expression_ptr left) -> expression_ptr
     return index_expr;
 }
 
-auto parser::parse_hash_literal() -> expression_ptr
+auto parser::parse_hash_literal() -> expression*
 {
-    auto hash = std::make_unique<hash_literal_expression>();
+    auto* hash = make<hash_literal_expression>();
     using enum token_type;
     while (!peek_token_is(rsquirly)) {
         next_token();
-        auto key = parse_expression(lowest);
+        auto* key = parse_expression(lowest);
         if (!get(colon)) {
             return {};
         }
         next_token();
-        auto value = parse_expression(lowest);
-        hash->pairs.emplace_back(std::move(key), std::move(value));
+        auto* value = parse_expression(lowest);
+        hash->pairs.emplace_back(key, value);
         if (!peek_token_is(comma)) {
             break;
         }
@@ -485,7 +482,7 @@ auto check_no_parse_errors(const parser& prsr) -> bool
     return prsr.errors().empty();
 }
 
-using parsed_program = std::pair<program_ptr, parser>;
+using parsed_program = std::pair<program*, parser>;
 
 auto check_program(std::string_view input) -> parsed_program
 {
@@ -496,41 +493,41 @@ auto check_program(std::string_view input) -> parsed_program
     return {std::move(prgrm), std::move(prsr)};
 }
 
-auto require_boolean_literal(const expression_ptr& expr, bool value) -> void
+auto require_boolean_literal(const expression* expr, bool value) -> void
 {
-    auto* bool_expr = dynamic_cast<boolean*>(expr.get());
-    INFO("expected boolean, got:", expr.get()->string());
+    auto* bool_expr = dynamic_cast<const boolean*>(expr);
+    INFO("expected boolean, got:", expr->string());
     REQUIRE(bool_expr);
     REQUIRE_EQ(bool_expr->value, value);
 }
 
-auto require_identifier(const expression_ptr& expr, const std::string& value) -> void
+auto require_identifier(const expression* expr, const std::string& value) -> void
 {
-    auto* ident = dynamic_cast<identifier*>(expr.get());
-    INFO("expected identifier, got:", expr.get()->string());
+    auto* ident = dynamic_cast<const identifier*>(expr);
+    INFO("expected identifier, got:", expr->string());
     REQUIRE(ident);
     REQUIRE_EQ(ident->value, value);
 }
 
-auto require_string_literal(const expression_ptr& expr, const std::string& value) -> void
+auto require_string_literal(const expression* expr, const std::string& value) -> void
 {
-    auto* string_lit = dynamic_cast<string_literal*>(expr.get());
-    INFO("expected string_literal, got:", expr.get()->string());
+    auto* string_lit = dynamic_cast<const string_literal*>(expr);
+    INFO("expected string_literal, got:", expr->string());
     REQUIRE(string_lit);
     REQUIRE_EQ(string_lit->value, value);
 }
 
-auto require_integer_literal(const expression_ptr& expr, int64_t value) -> void
+auto require_integer_literal(const expression* expr, int64_t value) -> void
 {
-    auto* integer_lit = dynamic_cast<integer_literal*>(expr.get());
-    INFO("expected integer_literal, got:", expr.get()->string());
+    auto* integer_lit = dynamic_cast<const integer_literal*>(expr);
+    INFO("expected integer_literal, got:", expr->string());
     REQUIRE(integer_lit);
 
     REQUIRE_EQ(integer_lit->value, value);
     REQUIRE_EQ(integer_lit->string(), std::to_string(value));
 }
 
-auto require_literal_expression(const expression_ptr& expr, const expected_value_type& expected) -> void
+auto require_literal_expression(const expression* expr, const expected_value_type& expected) -> void
 {
     std::visit(
         overloaded {
@@ -541,12 +538,12 @@ auto require_literal_expression(const expression_ptr& expr, const expected_value
         expected);
 }
 
-auto require_binary_expression(const expression_ptr& expr,
+auto require_binary_expression(const expression* expr,
                                const expected_value_type& left,
                                const token_type oprtr,
                                const expected_value_type& right) -> void
 {
-    auto* binary = dynamic_cast<binary_expression*>(expr.get());
+    auto* binary = dynamic_cast<const binary_expression*>(expr);
     INFO("expected binary expression, got: ", expr->string());
     REQUIRE(binary);
     require_literal_expression(binary->left, left);
@@ -554,12 +551,12 @@ auto require_binary_expression(const expression_ptr& expr,
     require_literal_expression(binary->right, right);
 }
 
-auto require_expression_statement(const program_ptr& prgrm) -> expression_statement*
+auto require_expression_statement(const program* prgrm) -> const expression_statement*
 {
     INFO("expected one statement, got: ", prgrm->statements.size());
     REQUIRE_EQ(prgrm->statements.size(), 1);
-    auto* stmt = prgrm->statements[0].get();
-    auto* expr_stmt = dynamic_cast<expression_statement*>(stmt);
+    auto* stmt = prgrm->statements[0];
+    auto* expr_stmt = dynamic_cast<const expression_statement*>(stmt);
     INFO("expected expression statement, got: ", stmt->string());
     REQUIRE(expr_stmt);
     INFO("expected an expression statement with an expression");
@@ -568,18 +565,18 @@ auto require_expression_statement(const program_ptr& prgrm) -> expression_statem
 }
 
 template<typename E>
-auto require_expression(const program_ptr& prgrm) -> E*
+auto require_expression(const program* prgrm) -> const E*
 {
     auto* expr_stmt = require_expression_statement(prgrm);
-    auto expr = dynamic_cast<E*>(expr_stmt->expr.get());
+    auto* expr = dynamic_cast<const E*>(expr_stmt->expr);
     INFO("expected expression");
     REQUIRE(expr);
     return expr;
 }
 
-auto require_let_statement(statement* stmt, const std::string& expected_identifier) -> let_statement*
+auto require_let_statement(const statement* stmt, const std::string& expected_identifier) -> const let_statement*
 {
-    auto* let_stmt = dynamic_cast<let_statement*>(stmt);
+    auto* let_stmt = dynamic_cast<const let_statement*>(stmt);
     INFO("expected let statement, got: ", stmt->string());
     REQUIRE(let_stmt);
     REQUIRE_EQ(let_stmt->name->value, expected_identifier);
@@ -600,7 +597,7 @@ let foobar = 838383;
     REQUIRE_EQ(program->statements.size(), 3);
     auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar"};
     for (size_t i = 0; i < 3; ++i) {
-        require_let_statement(program->statements[i].get(), expected_identifiers[i]);
+        require_let_statement(program->statements[i], expected_identifiers[i]);
     }
 }
 
@@ -621,7 +618,7 @@ TEST_CASE("letStatements")
 
     for (const auto& [input, expected_identifier, expected_value] : tests) {
         auto [prgrm, _] = check_program(input);
-        auto* let_stmt = require_let_statement(prgrm->statements[0].get(), expected_identifier);
+        auto* let_stmt = require_let_statement(prgrm->statements[0], expected_identifier);
         require_literal_expression(let_stmt->value, expected_value);
     }
 }
@@ -652,8 +649,8 @@ return 993322;
     REQUIRE_EQ(prgrm->statements.size(), 3);
     std::array expected_return_values {5, 10, 993322};
     for (size_t i = 0; i < 3; ++i) {
-        auto* stmt = prgrm->statements[i].get();
-        auto* ret_stmt = dynamic_cast<return_statement*>(stmt);
+        auto* stmt = prgrm->statements[i];
+        auto* ret_stmt = dynamic_cast<const return_statement*>(stmt);
         REQUIRE(ret_stmt);
         require_literal_expression(ret_stmt->value, expected_return_values.at(i));
     }
@@ -662,15 +659,15 @@ return 993322;
 TEST_CASE("string")
 {
     using enum token_type;
-    auto name = std::make_unique<identifier>("myVar");
-    auto value = std::make_unique<identifier>("anotherVar");
+    auto name = make<identifier>("myVar");
+    auto value = make<identifier>("anotherVar");
 
     program prgrm;
 
-    auto let_stmt = std::make_unique<let_statement>();
-    let_stmt->name = std::move(name);
-    let_stmt->value = std::move(value);
-    prgrm.statements.push_back(std::move(let_stmt));
+    auto let_stmt = make<let_statement>();
+    let_stmt->name = name;
+    let_stmt->value = value;
+    prgrm.statements.push_back(let_stmt);
 
     REQUIRE_EQ(prgrm.string(), "let myVar = anotherVar;");
 }
@@ -710,7 +707,7 @@ TEST_CASE("unaryExpressions")
 
     for (const auto& [input, op, val] : tests) {
         auto [prgrm, _] = check_program(input);
-        auto* unary = require_expression<unary_expression>(prgrm);
+        auto unary = require_expression<unary_expression>(prgrm);
         REQUIRE(unary);
         REQUIRE_EQ(op, unary->op);
 
@@ -884,7 +881,7 @@ TEST_CASE("ifExpression")
     REQUIRE(if_expr->consequence);
     REQUIRE_EQ(if_expr->consequence->statements.size(), 1);
 
-    auto* consequence = dynamic_cast<expression_statement*>(if_expr->consequence->statements[0].get());
+    auto* consequence = dynamic_cast<const expression_statement*>(if_expr->consequence->statements[0]);
     REQUIRE(consequence);
     require_identifier(consequence->expr, "x");
     CHECK_FALSE(if_expr->alternative);
@@ -900,11 +897,11 @@ TEST_CASE("ifElseExpression")
     REQUIRE(if_expr->consequence);
     REQUIRE_EQ(if_expr->consequence->statements.size(), 1);
 
-    auto* consequence = dynamic_cast<expression_statement*>(if_expr->consequence->statements[0].get());
+    auto* consequence = dynamic_cast<const expression_statement*>(if_expr->consequence->statements[0]);
     REQUIRE(consequence);
     require_identifier(consequence->expr, "x");
 
-    auto* alternative = dynamic_cast<expression_statement*>(if_expr->alternative->statements[0].get());
+    auto* alternative = dynamic_cast<const expression_statement*>(if_expr->alternative->statements[0]);
     REQUIRE(alternative);
     require_identifier(alternative->expr, "y");
 }
@@ -920,10 +917,10 @@ TEST_CASE("functionLiteral")
     REQUIRE_EQ(fn_expr->parameters[0], "x");
     REQUIRE_EQ(fn_expr->parameters[1], "y");
 
-    auto* block = dynamic_cast<block_statement*>(fn_expr->body.get());
+    auto* block = dynamic_cast<const block_statement*>(fn_expr->body);
     REQUIRE_EQ(block->statements.size(), 1);
 
-    auto* body_stmt = dynamic_cast<expression_statement*>(block->statements.at(0).get());
+    auto* body_stmt = dynamic_cast<const expression_statement*>(block->statements.at(0));
     REQUIRE(body_stmt);
     require_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
@@ -932,8 +929,8 @@ TEST_CASE("functionLiteralWithName")
 {
     const auto* input = R"(let myFunction = fn() { };)";
     auto [prgrm, _] = check_program(input);
-    auto* let = require_let_statement(prgrm->statements[0].get(), "myFunction");
-    auto* fnexpr = dynamic_cast<function_expression*>(let->value.get());
+    auto* let = require_let_statement(prgrm->statements[0], "myFunction");
+    auto* fnexpr = dynamic_cast<const function_expression*>(let->value);
     REQUIRE(fnexpr);
     REQUIRE_EQ(fnexpr->name, "myFunction");
 }

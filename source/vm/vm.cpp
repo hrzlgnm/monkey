@@ -1,6 +1,5 @@
 #include <array>
 #include <cstdint>
-#include <memory>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -15,10 +14,10 @@
 #include <fmt/core.h>
 #include <parser/parser.hpp>
 
-vm::vm(frames&& frames, constants_ptr&& consts, constants_ptr globals)
-    : m_constans {std::move(consts)}
-    , m_globals {std::move(globals)}
-    , m_frames {std::move(frames)}
+vm::vm(frames frames, const constants* consts, constants* globals)
+    : m_constans {consts}
+    , m_globals {globals}
+    , m_frames {frames}
 {
 }
 
@@ -26,7 +25,7 @@ auto vm::run() -> void
 {
     for (; current_frame().ip < static_cast<ssize_type>(current_frame().cl->fn->instrs.size()); current_frame().ip++) {
         const auto instr_ptr = static_cast<size_t>(current_frame().ip);
-        auto& code = current_frame().cl->fn->instrs;
+        const auto& code = current_frame().cl->fn->instrs;
         const auto op_code = static_cast<opcodes>(code.at(instr_ptr));
         switch (op_code) {
             case opcodes::constant: {
@@ -49,10 +48,10 @@ auto vm::run() -> void
                 pop();
                 break;
             case opcodes::tru:
-                push(true_object);
+                push(native_true());
                 break;
             case opcodes::fals:
-                push(false_object);
+                push(native_false());
                 break;
             case opcodes::bang:
                 exec_bang();
@@ -74,7 +73,7 @@ auto vm::run() -> void
 
             } break;
             case opcodes::null:
-                push(null);
+                push(native_null());
                 break;
             case opcodes::set_global: {
                 auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -97,13 +96,13 @@ auto vm::run() -> void
                 auto num_elements = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
 
-                auto hsh = build_hash(m_sp - num_elements, m_sp);
+                auto* hsh = build_hash(m_sp - num_elements, m_sp);
                 m_sp -= num_elements;
                 push(hsh);
             } break;
             case opcodes::index: {
-                auto index = pop();
-                auto left = pop();
+                const auto* index = pop();
+                const auto* left = pop();
                 exec_index(left, index);
             } break;
             case opcodes::call: {
@@ -112,7 +111,7 @@ auto vm::run() -> void
                 exec_call(num_args);
             } break;
             case opcodes::return_value: {
-                auto return_value = pop();
+                const auto* return_value = pop();
                 auto frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(return_value);
@@ -120,7 +119,7 @@ auto vm::run() -> void
             case opcodes::ret: {
                 auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(null);
+                push(native_null());
             } break;
             case opcodes::set_local: {
                 auto local_index = code.at(instr_ptr + 1UL);
@@ -137,8 +136,8 @@ auto vm::run() -> void
             case opcodes::get_builtin: {
                 auto builtin_index = code.at(instr_ptr + 1UL);
                 current_frame().ip += 1;
-                const auto& builtin = builtin_function_expression::builtins[builtin_index];
-                push(std::make_shared<builtin_object>(&builtin));
+                const auto* const builtin = builtin_function_expression::builtins[builtin_index];
+                push(make<builtin_object>(builtin));
             } break;
             case opcodes::closure: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -149,11 +148,11 @@ auto vm::run() -> void
             case opcodes::get_free: {
                 auto free_index = code.at(instr_ptr + 1UL);
                 current_frame().ip += 1;
-                auto current_closure = current_frame().cl;
+                const auto* current_closure = current_frame().cl;
                 push(current_closure->free[free_index]);
             } break;
             case opcodes::current_closure: {
-                push({current_frame().cl});
+                push(current_frame().cl);
             } break;
             default:
                 throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
@@ -161,7 +160,7 @@ auto vm::run() -> void
     }
 }
 
-auto vm::push(const object_ptr& obj) -> void
+auto vm::push(const object* obj) -> void
 {
     if (m_sp >= stack_size) {
         throw std::runtime_error("stack overflow");
@@ -170,41 +169,41 @@ auto vm::push(const object_ptr& obj) -> void
     m_sp++;
 }
 
-auto vm::pop() -> object_ptr
+auto vm::pop() -> const object*
 {
     if (m_sp == 0) {
         throw std::runtime_error("stack empty");
     }
-    auto result = m_stack[m_sp - 1];
+    const auto* const result = m_stack[m_sp - 1];
     m_sp--;
     return result;
 }
 
-auto vm::last_popped() const -> object_ptr
+auto vm::last_popped() const -> const object*
 {
     return m_stack[m_sp];
 }
 
 auto vm::exec_binary_op(opcodes opcode) -> void
 {
-    auto right = pop();
-    auto left = pop();
+    const auto* right = pop();
+    const auto* left = pop();
     using enum object::object_type;
     if (left->is(integer) && right->is(integer)) {
         auto left_value = left->as<integer_object>()->value;
         auto right_value = right->as<integer_object>()->value;
         switch (opcode) {
             case opcodes::sub:
-                push(std::make_shared<integer_object>(left_value - right_value));
+                push(make<integer_object>(left_value - right_value));
                 break;
             case opcodes::mul:
-                push(std::make_shared<integer_object>(left_value * right_value));
+                push(make<integer_object>(left_value * right_value));
                 break;
             case opcodes::div:
-                push(std::make_shared<integer_object>(left_value / right_value));
+                push(make<integer_object>(left_value / right_value));
                 break;
             case opcodes::add:
-                push(std::make_shared<integer_object>(left_value + right_value));
+                push(make<integer_object>(left_value + right_value));
                 break;
             default:
                 throw std::runtime_error(fmt::format("unknown integer operator"));
@@ -216,7 +215,7 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         const auto& right_value = right->as<string_object>()->value;
         switch (opcode) {
             case opcodes::add:
-                push(std::make_shared<string_object>(left_value + right_value));
+                push(make<string_object>(left_value + right_value));
                 break;
             default:
                 throw std::runtime_error(fmt::format("unknown string {} string operator", opcode));
@@ -227,8 +226,10 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         fmt::format("unsupported types for binary operation: {} {} {}", left->type(), opcode, right->type()));
 }
 
+namespace
+{
 template<typename ValueType>
-auto exec_value_cmp(opcodes opcode, const ValueType& lhs, const ValueType& rhs) -> object_ptr
+auto exec_value_cmp(opcodes opcode, const ValueType& lhs, const ValueType& rhs) -> const object*
 {
     using enum opcodes;
     switch (opcode) {
@@ -243,10 +244,12 @@ auto exec_value_cmp(opcodes opcode, const ValueType& lhs, const ValueType& rhs) 
     }
 }
 
+}  // namespace
+
 auto vm::exec_cmp(opcodes opcode) -> void
 {
-    auto right = pop();
-    auto left = pop();
+    const auto* right = pop();
+    const auto* left = pop();
     using enum object::object_type;
     if (left->is(integer) && right->is(integer)) {
         push(exec_value_cmp(opcode, left->as<integer_object>()->value, right->as<integer_object>()->value));
@@ -259,10 +262,14 @@ auto vm::exec_cmp(opcodes opcode) -> void
     }
 
     switch (opcode) {
-        case opcodes::equal:
-            return push(native_bool_to_object(left->equals_to(right)));
-        case opcodes::not_equal:
-            return push(native_bool_to_object(!left->equals_to(right)));
+        case opcodes::equal: {
+            push(native_bool_to_object(left->equals_to(right)));
+            return;
+        }
+        case opcodes::not_equal: {
+            push(native_bool_to_object(!left->equals_to(right)));
+            return;
+        }
         default:
             throw std::runtime_error(fmt::format("unknown operator {} ({} {})", opcode, left->type(), right->type()));
     }
@@ -271,92 +278,101 @@ auto vm::exec_cmp(opcodes opcode) -> void
 auto vm::exec_bang() -> void
 {
     using enum object::object_type;
-    auto operand = pop();
+    const auto* operand = pop();
     if (operand->is(boolean)) {
-        return push(native_bool_to_object(!operand->as<boolean_object>()->value));
+        push(native_bool_to_object(!operand->as<boolean_object>()->value));
+        return;
     }
     if (operand->is(null)) {
-        return push(true_object);
+        push(native_true());
+        return;
     }
-    push(false_object);
+    push(native_false());
 }
 
 auto vm::exec_minus() -> void
 {
-    auto operand = pop();
+    const auto* operand = pop();
     if (!operand->is(object::object_type::integer)) {
         throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
     }
-    push(std::make_shared<integer_object>(-operand->as<integer_object>()->value));
+    push(make<integer_object>(-operand->as<integer_object>()->value));
 }
 
-auto vm::build_array(size_t start, size_t end) const -> object_ptr
+auto vm::build_array(size_t start, size_t end) const -> object*
 {
     array_object::array arr;
     for (auto idx = start; idx < end; idx++) {
         arr.push_back(m_stack.at(idx));
     }
-    return std::make_shared<array_object>(std::move(arr));
+    return make<array_object>(std::move(arr));
 }
 
-auto vm::build_hash(size_t start, size_t end) const -> object_ptr
+auto vm::build_hash(size_t start, size_t end) const -> object*
 {
     hash_object::hash hsh;
     for (auto idx = start; idx < end; idx += 2) {
-        auto key = m_stack[idx];
-        auto val = m_stack[idx + 1];
+        const auto* key = m_stack[idx];
+        const auto* val = m_stack[idx + 1];
         hsh[key->as<hashable_object>()->hash_key()] = val;
     }
-    return std::make_shared<hash_object>(std::move(hsh));
+    return make<hash_object>(std::move(hsh));
 }
 
-auto exec_hash(const hash_object::hash& hsh, const hashable_object::hash_key_type& key) -> object_ptr
+namespace
+{
+auto exec_hash(const hash_object::hash& hsh, const hashable_object::hash_key_type& key) -> const object*
 {
     if (!hsh.contains(key)) {
-        return null;
+        return native_null();
     }
     return hsh.at(key);
 }
+}  // namespace
 
-auto vm::exec_index(const object_ptr& left, const object_ptr& index) -> void
+auto vm::exec_index(const object* left, const object* index) -> void
 {
     using enum object::object_type;
     if (left->is(array) && index->is(integer)) {
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<array_object>()->elements.size()) - 1;
         if (idx < 0 || idx > max) {
-            return push(::null);
+            push(native_null());
+            return;
         }
-        return push(left->as<array_object>()->elements.at(static_cast<size_t>(idx)));
+        push(left->as<array_object>()->elements.at(static_cast<size_t>(idx)));
+        return;
     }
     if (left->is(string) && index->is(integer)) {
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<string_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
-            return push(::null);
+            push(native_null());
+            return;
         }
-        return push(
-            std::make_shared<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
+        push(make<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
+        return;
     }
     if (left->is(hash) && index->is_hashable()) {
-        return push(exec_hash(left->as<hash_object>()->pairs, index->as<hashable_object>()->hash_key()));
+        push(exec_hash(left->as<hash_object>()->pairs, index->as<hashable_object>()->hash_key()));
+        return;
     }
     push(make_error("invalid index operation: {}[{}]", left->type(), index->type()));
 }
 
 auto vm::exec_call(size_t num_args) -> void
 {
-    auto callee = m_stack[m_sp - 1 - num_args];
+    const auto* callee = m_stack[m_sp - 1 - num_args];
     using enum object::object_type;
     if (callee->is(closure)) {
-        const auto clsr = callee->as<closure_object>();
+        const auto* const clsr = callee->as<closure_object>();
         if (num_args != clsr->fn->num_arguments) {
             throw std::runtime_error(
                 fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
         }
-        frame frm {clsr, -1, static_cast<ssize_type>(m_sp - num_args)};
+        frame frm {.cl = clsr, .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
         m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
-        push_frame(std::move(frm));
+        push_frame(frm);
         return;
     }
     if (callee->is(builtin)) {
@@ -365,7 +381,7 @@ auto vm::exec_call(size_t num_args) -> void
         for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
             args.push_back(m_stack[idx]);
         }
-        auto result = builtin->body(std::move(args));
+        const auto* result = builtin->body(std::move(args));
         push(result);
         return;
     }
@@ -374,12 +390,12 @@ auto vm::exec_call(size_t num_args) -> void
 
 auto vm::current_frame() -> frame&
 {
-    return m_frames[m_frame_index - 1];
+    return m_frames.at(m_frame_index - 1);
 }
 
-auto vm::push_frame(frame&& frm) -> void
+auto vm::push_frame(frame frm) -> void
 {
-    m_frames[m_frame_index] = std::move(frm);
+    m_frames.at(m_frame_index) = frm;
     m_frame_index++;
 }
 
@@ -391,7 +407,7 @@ auto vm::pop_frame() -> frame&
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 {
-    auto constant = m_constans->at(const_idx);
+    const auto* constant = m_constans->at(const_idx);
     if (!constant->is(object::object_type::compiled_function)) {
         throw std::runtime_error("not a function");
     }
@@ -400,7 +416,7 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
         free.push_back(m_stack.at(m_sp - num_free + i));
     }
     m_sp -= num_free;
-    push(std::make_shared<closure_object>(constant->as<compiled_function_object>(), free));
+    push(make<closure_object>(constant->as<compiled_function_object>(), free));
 }
 
 namespace
@@ -418,15 +434,15 @@ auto check_no_parse_errors(const parser& prsr) -> bool
     return prsr.errors().empty();
 }
 
-using parsed_program = std::pair<program_ptr, parser>;
+using parsed_program = std::pair<program*, parser>;
 
 auto check_program(std::string_view input) -> parsed_program
 {
     auto prsr = parser {lexer {input}};
-    auto prgrm = prsr.parse_program();
+    auto* prgrm = prsr.parse_program();
     INFO("while parsing: `", input, "`");
     CHECK(check_no_parse_errors(prsr));
-    return {std::move(prgrm), std::move(prsr)};
+    return {prgrm, std::move(prsr)};
 }
 
 struct error
@@ -438,7 +454,7 @@ using hash = std::unordered_map<hashable_object::hash_key_type, int64_t>;
 using null_type = std::monostate;
 const null_type null_value {};
 
-auto require_is(const bool expected, const object_ptr& actual_obj, std::string_view input) -> void
+auto require_is(const bool expected, const object*& actual_obj, std::string_view input) -> void
 {
     INFO(input,
          " expected: boolean with: ",
@@ -453,7 +469,7 @@ auto require_is(const bool expected, const object_ptr& actual_obj, std::string_v
     REQUIRE(actual == expected);
 }
 
-auto require_is(const int64_t expected, const object_ptr& actual_obj, std::string_view input) -> void
+auto require_is(const int64_t expected, const object*& actual_obj, std::string_view input) -> void
 {
     INFO(input,
          " expected: integer with: ",
@@ -468,7 +484,7 @@ auto require_is(const int64_t expected, const object_ptr& actual_obj, std::strin
     REQUIRE(actual == expected);
 }
 
-auto require_is(const std::string& expected, const object_ptr& actual_obj, std::string_view input) -> void
+auto require_is(const std::string& expected, const object*& actual_obj, std::string_view input) -> void
 {
     INFO(input,
          " expected: string with: ",
@@ -483,7 +499,7 @@ auto require_is(const std::string& expected, const object_ptr& actual_obj, std::
     REQUIRE(actual == expected);
 }
 
-auto require_is(const error& expected, const object_ptr& actual_obj, std::string_view input) -> void
+auto require_is(const error& expected, const object*& actual_obj, std::string_view input) -> void
 {
     INFO(input,
          " expected: error with: ",
@@ -498,7 +514,7 @@ auto require_is(const error& expected, const object_ptr& actual_obj, std::string
     REQUIRE(actual == expected.message);
 }
 
-auto require_array_object(const std::vector<int>& expected, const object_ptr& actual, std::string_view input) -> void
+auto require_array_object(const std::vector<int>& expected, const object*& actual, std::string_view input) -> void
 {
     INFO(input,
          " expected: array with: ",
@@ -517,7 +533,7 @@ auto require_array_object(const std::vector<int>& expected, const object_ptr& ac
     }
 }
 
-auto require_hash_object(const hash& expected, const object_ptr& actual, std::string_view input) -> void
+auto require_hash_object(const hash& expected, const object*& actual, std::string_view input) -> void
 {
     INFO(input,
          " expected: hash with: ",
@@ -540,7 +556,7 @@ struct vt
 };
 
 template<typename... T>
-auto require_eq(const std::variant<T...>& expected, const object_ptr& actual, std::string_view input) -> void
+auto require_eq(const std::variant<T...>& expected, const object*& actual, std::string_view input) -> void
 {
     using enum object::object_type;
     std::visit(

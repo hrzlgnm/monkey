@@ -34,7 +34,7 @@ auto operator<<(std::ostream& ost, const symbol& sym) -> std::ostream&
     return ost << fmt::format("symbol{{{}, {}, {}}}", sym.name, sym.scope, sym.index);
 }
 
-symbol_table::symbol_table(symbol_table_ptr outer)
+symbol_table::symbol_table(symbol_table* outer)
     : m_parent(std::move(outer))
 {
 }

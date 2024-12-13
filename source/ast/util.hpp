@@ -8,7 +8,7 @@
 #include <fmt/format.h>
 
 template<typename Expression>
-auto join(const std::vector<std::unique_ptr<Expression>>& nodes, std::string_view sep = {}) -> std::string
+auto join(const std::vector<Expression*>& nodes, std::string_view sep = {}) -> std::string
 {
     auto strs = std::vector<std::string>();
     std::transform(

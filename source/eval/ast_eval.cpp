@@ -1,6 +1,6 @@
+#include <algorithm>
 #include <cstdint>
 #include <deque>
-#include <memory>
 #include <variant>
 
 #include <ast/array_expression.hpp>
@@ -16,39 +16,41 @@
 #include <ast/program.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <chungus.hpp>
 #include <doctest/doctest.h>
 #include <lexer/token_type.hpp>
 #include <parser/parser.hpp>
 
-#include "code/code.hpp"
 #include "environment.hpp"
 #include "object.hpp"
 
-auto array_expression::eval(environment_ptr env) const -> object_ptr
+auto array_expression::eval(environment* env) const -> const object*
 {
     array_object::array arr;
     for (const auto& element : elements) {
-        auto evaluated = element->eval(env);
+        auto* evaluated = element->eval(env);
         if (evaluated->is_error()) {
             return evaluated;
         }
-        arr.push_back(std::move(evaluated));
+        arr.push_back(evaluated);
     }
-    return std::make_shared<array_object>(std::move(arr));
+    return make<array_object>(std::move(arr));
 }
 
-auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> object_ptr
+namespace
+{
+auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> const object*
 {
     using enum token_type;
     switch (oper) {
         case plus:
-            return std::make_shared<integer_object>(left + right);
+            return make<integer_object>(left + right);
         case asterisk:
-            return std::make_shared<integer_object>(left * right);
+            return make<integer_object>(left * right);
         case minus:
-            return std::make_shared<integer_object>(left - right);
+            return make<integer_object>(left - right);
         case slash:
-            return std::make_shared<integer_object>(left / right);
+            return make<integer_object>(left / right);
         case less_than:
             return native_bool_to_object(left < right);
         case greater_than:
@@ -62,12 +64,12 @@ auto apply_integer_binary_operator(token_type oper, const int64_t left, const in
     }
 }
 
-auto apply_string_binary_operator(token_type oper, const std::string& left, const std::string& right) -> object_ptr
+auto apply_string_binary_operator(token_type oper, const std::string& left, const std::string& right) -> const object*
 {
     using enum token_type;
     switch (oper) {
         case plus:
-            return std::make_shared<string_object>(left + right);
+            return make<string_object>(left + right);
         case less_than:
             return native_bool_to_object(left < right);
         case greater_than:
@@ -80,15 +82,16 @@ auto apply_string_binary_operator(token_type oper, const std::string& left, cons
             return {};
     }
 }
+}  // namespace
 
-auto binary_expression::eval(environment_ptr env) const -> object_ptr
+auto binary_expression::eval(environment* env) const -> const object*
 {
-    auto evaluated_left = left->eval(env);
+    const auto* evaluated_left = left->eval(env);
     if (evaluated_left->is_error()) {
         return evaluated_left;
     }
 
-    auto evaluated_right = right->eval(env);
+    const auto* evaluated_right = right->eval(env);
     if (evaluated_right->is_error()) {
         return evaluated_right;
     }
@@ -98,35 +101,35 @@ auto binary_expression::eval(environment_ptr env) const -> object_ptr
 
     using enum object::object_type;
     if (evaluated_left->is(string) && evaluated_right->is(string)) {
-        auto res = apply_string_binary_operator(
+        const auto* res = apply_string_binary_operator(
             op, evaluated_left->as<string_object>()->value, evaluated_right->as<string_object>()->value);
-        if (res) {
+        if (res != nullptr) {
             return res;
         }
     }
     if (evaluated_left->is(integer) && evaluated_right->is(integer)) {
-        auto res = apply_integer_binary_operator(
+        const auto* res = apply_integer_binary_operator(
             op, evaluated_left->as<integer_object>()->value, evaluated_right->as<integer_object>()->value);
-        if (res) {
+        if (res != nullptr) {
             return res;
         }
     }
     return make_error("unknown operator: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
 }
 
-auto boolean::eval(environment_ptr /*env*/) const -> object_ptr
+auto boolean::eval(environment* /*env*/) const -> const object*
 {
     return native_bool_to_object(value);
 }
 
-auto function_expression::call(environment_ptr closure_env,
-                               environment_ptr caller_env,
-                               const std::vector<expression_ptr>& arguments) const -> object_ptr
+auto function_expression::call(environment* closure_env,
+                               environment* caller_env,
+                               const std::vector<const expression*>& arguments) const -> const object*
 {
-    auto locals = std::make_shared<environment>(closure_env);
+    auto* locals = make<environment>(closure_env);
     for (auto arg_itr = arguments.begin(); const auto& parameter : parameters) {
         if (arg_itr != arguments.end()) {
-            const auto& arg = *(arg_itr++);
+            const expression* arg = *(arg_itr++);
             locals->set(parameter, arg->eval(caller_env));
         } else {
             locals->set(parameter, {});
@@ -135,68 +138,68 @@ auto function_expression::call(environment_ptr closure_env,
     return body->eval(locals);
 }
 
-auto call_expression::eval(environment_ptr env) const -> object_ptr
+auto call_expression::eval(environment* env) const -> const object*
 {
-    auto evaluated = function->eval(env);
+    const auto* evaluated = function->eval(env);
     if (evaluated->is_error()) {
         return evaluated;
     }
-    auto fn = evaluated->as<function_object>();
+    const auto* fn = evaluated->as<function_object>();
     return fn->callable->call(fn->closure_env, env, arguments);
 }
 
-auto hash_literal_expression::eval(environment_ptr env) const -> object_ptr
+auto hash_literal_expression::eval(environment* env) const -> const object*
 {
     hash_object::hash result;
 
     for (const auto& [key, value] : pairs) {
-        auto eval_key = key->eval(env);
+        const auto* eval_key = key->eval(env);
         if (eval_key->is_error()) {
             return eval_key;
         }
         if (!eval_key->is_hashable()) {
             return make_error("unusable as hash key {}", eval_key->type());
         }
-        auto eval_val = value->eval(env);
+        const auto* eval_val = value->eval(env);
         if (eval_val->is_error()) {
             return eval_val;
         }
         result.insert({eval_key->as<hashable_object>()->hash_key(), eval_val});
     }
-    return std::make_shared<hash_object>(std::move(result));
+    return make<hash_object>(std::move(result));
 }
 
-auto identifier::eval(environment_ptr env) const -> object_ptr
+auto identifier::eval(environment* env) const -> const object*
 {
-    auto val = env->get(value);
+    const auto* val = env->get(value);
     if (val->is(object::object_type::null)) {
         return make_error("identifier not found: {}", value);
     }
     return val;
 }
 
-auto if_expression::eval(environment_ptr env) const -> object_ptr
+auto if_expression::eval(environment* env) const -> const object*
 {
-    auto evaluated_condition = condition->eval(env);
+    const auto* evaluated_condition = condition->eval(env);
     if (evaluated_condition->is_error()) {
         return evaluated_condition;
     }
     if (evaluated_condition->is_truthy()) {
         return consequence->eval(env);
     }
-    if (alternative) {
+    if (alternative != nullptr) {
         return alternative->eval(env);
     }
-    return null;
+    return native_null();
 }
 
-auto index_expression::eval(environment_ptr env) const -> object_ptr
+auto index_expression::eval(environment* env) const -> const object*
 {
-    auto evaluated_left = left->eval(env);
+    const auto* evaluated_left = left->eval(env);
     if (evaluated_left->is_error()) {
         return evaluated_left;
     }
-    auto evaluated_index = index->eval(env);
+    const auto* evaluated_index = index->eval(env);
     if (evaluated_index->is_error()) {
         return evaluated_index;
     }
@@ -206,7 +209,7 @@ auto index_expression::eval(environment_ptr env) const -> object_ptr
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
-            return ::null;
+            return native_null();
         }
         return arr.at(static_cast<size_t>(index));
     }
@@ -216,9 +219,9 @@ auto index_expression::eval(environment_ptr env) const -> object_ptr
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(str.size() - 1);
         if (index < 0 || index > max) {
-            return ::null;
+            return native_null();
         }
-        return std::make_shared<string_object>(str.substr(static_cast<size_t>(index), 1));
+        return make<string_object>(str.substr(static_cast<size_t>(index), 1));
     }
 
     if (evaluated_left->is(hash)) {
@@ -228,22 +231,22 @@ auto index_expression::eval(environment_ptr env) const -> object_ptr
         }
         const auto hash_key = evaluated_index->as<hashable_object>()->hash_key();
         if (!hsh.contains(hash_key)) {
-            return ::null;
+            return native_null();
         }
         return hsh.at(hash_key);
     }
     return make_error("index operator not supported: {}", evaluated_left->type());
 }
 
-auto integer_literal::eval(environment_ptr /*env*/) const -> object_ptr
+auto integer_literal::eval(environment* /*env*/) const -> object*
 {
-    return std::make_shared<integer_object>(value);
+    return make<integer_object>(value);
 }
 
-auto program::eval(environment_ptr env) const -> object_ptr
+auto program::eval(environment* env) const -> const object*
 {
-    object_ptr result;
-    for (const auto& statement : statements) {
+    const object* result = nullptr;
+    for (const auto* statement : statements) {
         result = statement->eval(env);
         if (result->is_return_value) {
             return result;
@@ -255,40 +258,40 @@ auto program::eval(environment_ptr env) const -> object_ptr
     return result;
 }
 
-auto let_statement::eval(environment_ptr env) const -> object_ptr
+auto let_statement::eval(environment* env) const -> const object*
 {
-    auto val = value->eval(env);
+    const auto* val = value->eval(env);
     if (val->is_error()) {
         return val;
     }
     env->set(name->value, val);
-    return null;
+    return native_null();
 }
 
-auto return_statement::eval(environment_ptr env) const -> object_ptr
+auto return_statement::eval(environment* env) const -> const object*
 {
-    if (value) {
-        auto evaluated = value->eval(env);
+    if (value != nullptr) {
+        const auto* evaluated = value->eval(env);
         if (evaluated->is_error()) {
             return evaluated;
         }
         evaluated->is_return_value = true;
         return evaluated;
     }
-    return null;
+    return native_null();
 }
 
-auto expression_statement::eval(environment_ptr env) const -> object_ptr
+auto expression_statement::eval(environment* env) const -> const object*
 {
-    if (expr) {
+    if (expr != nullptr) {
         return expr->eval(env);
     }
-    return null;
+    return native_null();
 }
 
-auto block_statement::eval(environment_ptr env) const -> object_ptr
+auto block_statement::eval(environment* env) const -> const object*
 {
-    object_ptr result;
+    const object* result = nullptr;
     for (const auto& stmt : statements) {
         result = stmt->eval(env);
         if (result->is_return_value || result->is_error()) {
@@ -298,15 +301,15 @@ auto block_statement::eval(environment_ptr env) const -> object_ptr
     return result;
 }
 
-auto string_literal::eval(environment_ptr /*env*/) const -> object_ptr
+auto string_literal::eval(environment* /*env*/) const -> const object*
 {
-    return std::make_shared<string_object>(value);
+    return make<string_object>(value);
 }
 
-auto unary_expression::eval(environment_ptr env) const -> object_ptr
+auto unary_expression::eval(environment* env) const -> const object*
 {
     using enum token_type;
-    auto evaluated_value = right->eval(env);
+    const auto* evaluated_value = right->eval(env);
     if (evaluated_value->is_error()) {
         return evaluated_value;
     }
@@ -315,10 +318,10 @@ auto unary_expression::eval(environment_ptr env) const -> object_ptr
             if (!evaluated_value->is(object::object_type::integer)) {
                 return make_error("unknown operator: -{}", evaluated_value->type());
             }
-            return std::make_shared<integer_object>(-evaluated_value->as<integer_object>()->value);
+            return make<integer_object>(-evaluated_value->as<integer_object>()->value);
         case exclamation:
             if (!evaluated_value->is(object::object_type::boolean)) {
-                return false_object;
+                return native_bool_to_object(/*val=*/false);
             }
             return native_bool_to_object(!evaluated_value->as<boolean_object>()->value);
         default:
@@ -326,167 +329,175 @@ auto unary_expression::eval(environment_ptr env) const -> object_ptr
     }
 }
 
-auto builtin_function_expression::call(environment_ptr /*closure_env*/,
-                                       environment_ptr caller_env,
-                                       const std::vector<expression_ptr>& arguments) const -> object_ptr
+auto builtin_function_expression::call(environment* /*closure_env*/,
+                                       environment* caller_env,
+                                       const std::vector<const expression*>& arguments) const -> const object*
 {
     array_object::array args;
     std::transform(arguments.cbegin(),
                    arguments.cend(),
                    std::back_inserter(args),
-                   [&caller_env](const expression_ptr& expr) { return expr->eval(caller_env); });
+                   [caller_env](const expression* expr) { return expr->eval(caller_env); });
     return body(std::move(args));
-}
-
-const std::vector<builtin_function_expression> builtin_function_expression::builtins {
-    {"len",
-     {"val"},
-     [](const array_object::array& arguments) -> object_ptr
-     {
-         if (arguments.size() != 1) {
-             return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
-         }
-         const auto& maybe_string_or_array = arguments.at(0);
-         using enum object::object_type;
-         if (maybe_string_or_array->is(string)) {
-             const auto& str = maybe_string_or_array->as<string_object>()->value;
-             return std::make_shared<integer_object>(str.size());
-         }
-         if (maybe_string_or_array->is(array)) {
-             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
-
-             return std::make_shared<integer_object>(arr.size());
-         }
-         return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
-     }},
-    {"puts",
-     {"str"},
-     [](const array_object::array& arguments) -> object_ptr
-     {
-         using enum object::object_type;
-         for (bool first = true; const auto& arg : arguments) {
-             if (!first) {
-                 fmt::print(" ");
-             }
-             if (arg->is(string)) {
-                 fmt::print("{}", arg->as<string_object>()->value);
-             } else {
-                 fmt::print("{}", arg->inspect());
-             }
-             first = false;
-         }
-         fmt::print("\n");
-         return ::null;
-     }},
-    {"first",
-     {"arr"},
-     [](const array_object::array& arguments) -> object_ptr
-     {
-         if (arguments.size() != 1) {
-             return make_error("wrong number of arguments to first(): expected=1, got={}", arguments.size());
-         }
-         const auto& maybe_string_or_array = arguments.at(0);
-         using enum object::object_type;
-         if (maybe_string_or_array->is(string)) {
-             const auto& str = maybe_string_or_array->as<string_object>()->value;
-             if (!str.empty()) {
-                 return std::make_shared<string_object>(str.substr(0, 1));
-             }
-             return ::null;
-         }
-         if (maybe_string_or_array->is(array)) {
-             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
-             if (!arr.empty()) {
-                 return arr.front();
-             }
-             return ::null;
-         }
-         return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
-     }},
-    {"last",
-     {"arr"},
-     [](const array_object::array& arguments) -> object_ptr
-     {
-         if (arguments.size() != 1) {
-             return make_error("wrong number of arguments to last(): expected=1, got={}", arguments.size());
-         }
-         const auto& maybe_string_or_array = arguments.at(0);
-         using enum object::object_type;
-         if (maybe_string_or_array->is(string)) {
-             const auto& str = maybe_string_or_array->as<string_object>()->value;
-             if (!str.empty()) {
-                 return std::make_shared<string_object>(str.substr(str.length() - 1, 1));
-             }
-             return ::null;
-         }
-         if (maybe_string_or_array->is(array)) {
-             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
-             if (!arr.empty()) {
-                 return arr.back();
-             }
-             return ::null;
-         }
-         return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
-     }},
-    {"rest",
-     {"arr"},
-     [](const array_object::array& arguments) -> object_ptr
-     {
-         if (arguments.size() != 1) {
-             return make_error("wrong number of arguments to rest(): expected=1, got={}", arguments.size());
-         }
-         const auto& maybe_string_or_array = arguments.at(0);
-         using enum object::object_type;
-         if (maybe_string_or_array->is(string)) {
-             const auto& str = maybe_string_or_array->as<string_object>()->value;
-             if (str.size() > 1) {
-                 return std::make_shared<string_object>(str.substr(1));
-             }
-             return ::null;
-         }
-         if (maybe_string_or_array->is(array)) {
-             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
-             if (arr.size() > 1) {
-                 array_object::array rest;
-                 std::copy(arr.cbegin() + 1, arr.cend(), std::back_inserter(rest));
-                 return std::make_shared<array_object>(std::move(rest));
-             }
-             return ::null;
-         }
-         return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
-     }},
-    {"push",
-     {"arr", "val"},
-     [](const array_object::array& arguments) -> object_ptr
-     {
-         if (arguments.size() != 2) {
-             return make_error("wrong number of arguments to push(): expected=2, got={}", arguments.size());
-         }
-         const auto& lhs = arguments[0];
-         const auto& rhs = arguments[1];
-         using enum object::object_type;
-         if (lhs->is(array)) {
-             auto copy = lhs->as<array_object>()->elements;
-             copy.push_back(rhs);
-             return std::make_shared<array_object>(std::move(copy));
-         }
-         if (lhs->is(string) && rhs->is(string)) {
-             auto copy = lhs->as<string_object>()->value;
-             copy.append(rhs->as<string_object>()->value);
-             return std::make_shared<string_object>(std::move(copy));
-         }
-         return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
-     }},
-};
-
-auto callable_expression::eval(environment_ptr env) const -> object_ptr
-{
-    return std::make_shared<function_object>(this, env);
 }
 
 namespace
 {
+const builtin_function_expression builtin_len {
+    "len",
+    {"val"},
+    [](const array_object::array& arguments) -> const object*
+    {
+        if (arguments.size() != 1) {
+            return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
+        }
+        const auto& maybe_string_or_array = arguments.at(0);
+        using enum object::object_type;
+        if (maybe_string_or_array->is(string)) {
+            const auto& str = maybe_string_or_array->as<string_object>()->value;
+            return make<integer_object>(str.size());
+        }
+        if (maybe_string_or_array->is(array)) {
+            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
 
+            return make<integer_object>(arr.size());
+        }
+        return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
+    }};
+const builtin_function_expression builtin_puts {{"puts"},
+                                                {"str"},
+                                                [](const array_object::array& arguments) -> const object*
+                                                {
+                                                    using enum object::object_type;
+                                                    for (bool first = true; const auto& arg : arguments) {
+                                                        if (!first) {
+                                                            fmt::print(" ");
+                                                        }
+                                                        if (arg->is(string)) {
+                                                            fmt::print("{}", arg->as<string_object>()->value);
+                                                        } else {
+                                                            fmt::print("{}", arg->inspect());
+                                                        }
+                                                        first = false;
+                                                    }
+                                                    fmt::print("\n");
+                                                    return native_null();
+                                                }};
+const builtin_function_expression builtin_first {
+    "first",
+    {"arr"},
+    [](const array_object::array& arguments) -> const object*
+    {
+        if (arguments.size() != 1) {
+            return make_error("wrong number of arguments to first(): expected=1, got={}", arguments.size());
+        }
+        const auto& maybe_string_or_array = arguments.at(0);
+        using enum object::object_type;
+        if (maybe_string_or_array->is(string)) {
+            const auto& str = maybe_string_or_array->as<string_object>()->value;
+            if (!str.empty()) {
+                return make<string_object>(str.substr(0, 1));
+            }
+            return native_null();
+        }
+        if (maybe_string_or_array->is(array)) {
+            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+            if (!arr.empty()) {
+                return arr.front();
+            }
+            return native_null();
+        }
+        return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
+    }};
+const builtin_function_expression builtin_last {
+    "last",
+    {"arr"},
+    [](const array_object::array& arguments) -> const object*
+    {
+        if (arguments.size() != 1) {
+            return make_error("wrong number of arguments to last(): expected=1, got={}", arguments.size());
+        }
+        const auto& maybe_string_or_array = arguments.at(0);
+        using enum object::object_type;
+        if (maybe_string_or_array->is(string)) {
+            const auto& str = maybe_string_or_array->as<string_object>()->value;
+            if (!str.empty()) {
+                return make<string_object>(str.substr(str.length() - 1, 1));
+            }
+            return native_null();
+        }
+        if (maybe_string_or_array->is(array)) {
+            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+            if (!arr.empty()) {
+                return arr.back();
+            }
+            return native_null();
+        }
+        return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
+    }};
+const builtin_function_expression builtin_rest {
+    "rest",
+    {"arr"},
+    [](const array_object::array& arguments) -> const object*
+    {
+        if (arguments.size() != 1) {
+            return make_error("wrong number of arguments to rest(): expected=1, got={}", arguments.size());
+        }
+        const auto& maybe_string_or_array = arguments.at(0);
+        using enum object::object_type;
+        if (maybe_string_or_array->is(string)) {
+            const auto& str = maybe_string_or_array->as<string_object>()->value;
+            if (str.size() > 1) {
+                return make<string_object>(str.substr(1));
+            }
+            return native_null();
+        }
+        if (maybe_string_or_array->is(array)) {
+            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+            if (arr.size() > 1) {
+                array_object::array rest;
+                std::copy(arr.cbegin() + 1, arr.cend(), std::back_inserter(rest));
+                return make<array_object>(std::move(rest));
+            }
+            return native_null();
+        }
+        return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
+    }};
+const builtin_function_expression builtin_push {
+    "push",
+    {"arr", "val"},
+    [](const array_object::array& arguments) -> const object*
+    {
+        if (arguments.size() != 2) {
+            return make_error("wrong number of arguments to push(): expected=2, got={}", arguments.size());
+        }
+        const auto& lhs = arguments[0];
+        const auto& rhs = arguments[1];
+        using enum object::object_type;
+        if (lhs->is(array)) {
+            auto copy = lhs->as<array_object>()->elements;
+            copy.push_back(rhs);
+            return make<array_object>(std::move(copy));
+        }
+        if (lhs->is(string) && rhs->is(string)) {
+            auto copy = lhs->as<string_object>()->value;
+            copy.append(rhs->as<string_object>()->value);
+            return make<string_object>(std::move(copy));
+        }
+        return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
+    }};
+}  // namespace
+
+const std::vector<const builtin_function_expression*> builtin_function_expression::builtins {
+    &builtin_len, &builtin_puts, &builtin_first, &builtin_last, &builtin_rest, &builtin_push};
+
+auto callable_expression::eval(environment* env) const -> const object*
+{
+    return make<function_object>(this, env);
+}
+
+namespace
+{
 struct error
 {
     std::string message;
@@ -497,7 +508,7 @@ using null_type = std::monostate;
 const null_type null_value {};
 
 // NOLINTBEGIN(*)
-auto require_eq(const object_ptr& obj, const int64_t expected, std::string_view input) -> void
+auto require_eq(const object* obj, const int64_t expected, std::string_view input) -> void
 {
     INFO(input, " expected: integer ", " with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::integer));
@@ -505,7 +516,7 @@ auto require_eq(const object_ptr& obj, const int64_t expected, std::string_view 
     REQUIRE(actual == expected);
 }
 
-auto require_eq(const object_ptr& obj, const bool expected, std::string_view input) -> void
+auto require_eq(const object* obj, const bool expected, std::string_view input) -> void
 {
     INFO(input, " expected: boolean ", " with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::boolean));
@@ -513,7 +524,7 @@ auto require_eq(const object_ptr& obj, const bool expected, std::string_view inp
     REQUIRE(actual == expected);
 }
 
-auto require_eq(const object_ptr& obj, const std::string& expected, std::string_view input) -> void
+auto require_eq(const object* obj, const std::string& expected, std::string_view input) -> void
 {
     INFO(input, " expected: string with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::string));
@@ -521,7 +532,7 @@ auto require_eq(const object_ptr& obj, const std::string& expected, std::string_
     REQUIRE(actual == expected);
 }
 
-auto require_array_eq(const object_ptr& obj, const array& expected, std::string_view input) -> void
+auto require_array_eq(const object* obj, const array& expected, std::string_view input) -> void
 {
     INFO(input, " expected: array with: ", expected.size(), "elements got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::array));
@@ -538,7 +549,7 @@ auto require_array_eq(const object_ptr& obj, const array& expected, std::string_
     }
 }
 
-auto require_error_eq(const object_ptr& obj, const std::string& expected, std::string_view input) -> void
+auto require_error_eq(const object* obj, const std::string& expected, std::string_view input) -> void
 {
     INFO(input, " expected: error with message: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::error));
@@ -553,7 +564,7 @@ auto check_no_parse_errors(const parser& prsr) -> bool
     return prsr.errors().empty();
 }
 
-using parsed_program = std::pair<program_ptr, parser>;
+using parsed_program = std::pair<program*, parser>;
 
 auto check_program(std::string_view input) -> parsed_program
 {
@@ -561,35 +572,29 @@ auto check_program(std::string_view input) -> parsed_program
     auto prgrm = prsr.parse_program();
     INFO("while parsing: `", input, "`");
     CHECK(check_no_parse_errors(prsr));
-    return {std::move(prgrm), std::move(prsr)};
+    return {prgrm, std::move(prsr)};
 }
 
-auto run(std::string_view input) -> object_ptr
+auto run(std::string_view input) -> const object*
 {
     auto [prgrm, _] = check_program(input);
-    auto env = std::make_shared<environment>();
+    environment env;
     for (const auto& builtin : builtin_function_expression::builtins) {
-        env->set(builtin.name, std::make_shared<function_object>(&builtin, environment_ptr {}));
+        env.set(builtin->name, make<function_object>(builtin, nullptr));
     }
-    auto result = prgrm->eval(env);
-    env->break_cycle();
+    auto result = prgrm->eval(&env);
     return result;
 }
 
-auto run_multi(std::deque<std::string>& inputs) -> object_ptr
+auto run_multi(std::deque<std::string>& inputs) -> const object*
 {
-    auto globals = std::make_shared<environment>();
-    auto statements = std::vector<statement_ptr>();
-    object_ptr result;
+    environment env;
+    const object* result = nullptr;
     while (!inputs.empty()) {
         auto [prgrm, _] = check_program(inputs.front());
-        result = prgrm->eval(globals);
-        for (auto& stmt : prgrm->statements) {
-            statements.push_back(std::move(stmt));
-        }
+        result = prgrm->eval(&env);
         inputs.pop_front();
     }
-    globals->break_cycle();
     return result;
 }
 

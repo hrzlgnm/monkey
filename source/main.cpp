@@ -1,21 +1,26 @@
+#include <cstdint>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <memory>
 #include <span>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <ast/builtin_function_expression.hpp>
+#include <chungus.hpp>
 #include <compiler/compiler.hpp>
 #include <eval/environment.hpp>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
 
+#include "eval/object.hpp"
+
+namespace
+{
 constexpr auto prompt = ">> ";
 
 constexpr auto monkey_face = R"r(
@@ -47,7 +52,7 @@ auto print_parse_errors(const std::vector<std::string>& errors)
     }
 }
 
-enum class engine
+enum class engine : std::uint8_t
 {
     vm,
     eval,
@@ -115,7 +120,7 @@ auto run_file(const command_line_args& opts) -> int
     std::string contents {(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
     auto lxr = lexer {contents};
     auto prsr = parser {lxr};
-    auto prgrm = prsr.parse_program();
+    auto* prgrm = prsr.parse_program();
     if (!prsr.errors().empty()) {
         print_parse_errors(prsr.errors());
         return 1;
@@ -125,70 +130,67 @@ auto run_file(const command_line_args& opts) -> int
         cmplr.compile(prgrm);
         auto machine = vm::create(cmplr.byte_code());
         machine.run();
-        auto result = machine.last_popped();
+        const auto* result = machine.last_popped();
         if (!result->is(object::object_type::null)) {
             std::cout << result->inspect() << "\n";
         }
     } else {
-        auto global_env = std::make_shared<environment>();
+        auto* global_env = make<environment>();
         for (const auto& builtin : builtin_function_expression::builtins) {
-            global_env->set(builtin.name, std::make_shared<function_object>(&builtin, environment_ptr {}));
+            global_env->set(builtin->name, make<function_object>(builtin, nullptr));
         }
-        auto result = prgrm->eval(global_env);
+        const auto* result = prgrm->eval(global_env);
         if (!result->is(object::object_type::null)) {
             std::cout << result->inspect() << "\n";
         }
-        global_env->break_cycle();
     }
     return 0;
 }
 
 auto run_repl(const command_line_args& opts) -> int
 {
-    auto global_env = std::make_shared<environment>();
-    auto symbols = symbol_table::create();
-    auto consts = std::make_shared<constants>();
-    auto globals = std::make_shared<constants>(globals_size);
+    auto* global_env = make<environment>();
+    auto* symbols = symbol_table::create();
+    constants consts;
+    constants globals(globals_size);
     for (auto idx = 0UL; const auto& builtin : builtin_function_expression::builtins) {
-        global_env->set(builtin.name, std::make_shared<function_object>(&builtin, environment_ptr {}));
-        symbols->define_builtin(idx, builtin.name);
+        global_env->set(builtin->name, make<function_object>(builtin, nullptr));
+        symbols->define_builtin(idx, builtin->name);
         idx++;
     }
-    auto cache = std::vector<statement_ptr>();
     auto input = std::string {};
     std::cout << prompt;
     while (getline(std::cin, input)) {
         auto lxr = lexer {input};
         auto prsr = parser {lxr};
-        auto prgrm = prsr.parse_program();
+        auto* prgrm = prsr.parse_program();
         if (!prsr.errors().empty()) {
             print_parse_errors(prsr.errors());
             continue;
         }
         if (opts.mode == engine::vm) {
-            auto cmplr = compiler::create_with_state(consts, symbols);
+            auto cmplr = compiler::create_with_state(&consts, symbols);
             cmplr.compile(prgrm);
-            auto machine = vm::create_with_state(cmplr.byte_code(), globals);
+            auto machine = vm::create_with_state(cmplr.byte_code(), &globals);
             machine.run();
-            auto result = machine.last_popped();
+            const auto* result = machine.last_popped();
             if (!result->is(object::object_type::null)) {
                 std::cout << result->inspect() << "\n";
             }
         } else {
-            auto result = prgrm->eval(global_env);
+            const auto* result = prgrm->eval(global_env);
             if (!result->is(object::object_type::null)) {
                 std::cout << result->inspect() << "\n";
             }
         }
-        std::move(prgrm->statements.begin(), prgrm->statements.end(), std::back_inserter(cache));
         if (opts.debug_env) {
             global_env->debug();
         }
         std::cout << prompt;
     }
-    global_env->break_cycle();
     return 0;
 }
+}  // namespace
 
 auto main(int argc, char* argv[]) -> int
 {

@@ -39,6 +39,7 @@ target_sources(monkey_lib
     source/ast/statements.cpp
     source/ast/string_literal.cpp
     source/ast/unary_expression.cpp
+    source/chungus.hpp
     source/code/code.cpp
     source/compiler/ast_compile.cpp
     source/compiler/compiler.cpp

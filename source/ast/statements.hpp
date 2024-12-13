@@ -5,43 +5,40 @@
 #include "identifier.hpp"
 
 using statement = expression;
-using statement_ptr = expression_ptr;
 
 struct let_statement : statement
 {
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
     auto compile(compiler& comp) const -> void override;
 
-    identifier_ptr name {};
-    expression_ptr value {};
+    const identifier* name {};
+    const expression* value {};
 };
 
 struct return_statement : statement
 {
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
     auto compile(compiler& comp) const -> void override;
 
-    expression_ptr value {};
+    const expression* value {};
 };
 
 struct expression_statement : statement
 {
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
     auto compile(compiler& comp) const -> void override;
 
-    expression_ptr expr {};
+    const expression* expr {};
 };
 
 struct block_statement : statement
 {
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
     auto compile(compiler& comp) const -> void override;
 
-    std::vector<statement_ptr> statements {};
+    std::vector<const statement*> statements;
 };
-
-using block_statement_ptr = std::unique_ptr<block_statement>;

@@ -15,37 +15,37 @@ class parser final
 {
   public:
     explicit parser(lexer lxr);
-    auto parse_program() -> program_ptr;
+    auto parse_program() -> program*;
     auto errors() const -> const std::vector<std::string>&;
 
   private:
-    using binary_parser = std::function<expression_ptr(expression_ptr)>;
-    using unary_parser = std::function<expression_ptr()>;
+    using binary_parser = std::function<expression*(expression*)>;
+    using unary_parser = std::function<expression*()>;
 
     auto next_token() -> void;
-    auto parse_statement() -> statement_ptr;
-    auto parse_let_statement() -> statement_ptr;
-    auto parse_return_statement() -> statement_ptr;
-    auto parse_expression_statement() -> statement_ptr;
+    auto parse_statement() -> statement*;
+    auto parse_let_statement() -> statement*;
+    auto parse_return_statement() -> statement*;
+    auto parse_expression_statement() -> statement*;
 
-    auto parse_expression(int precedence) -> expression_ptr;
-    auto parse_identifier() const -> identifier_ptr;
-    auto parse_integer_literal() -> expression_ptr;
-    auto parse_unary_expression() -> expression_ptr;
-    auto parse_binary_expression(expression_ptr left) -> expression_ptr;
-    auto parse_boolean() -> expression_ptr;
-    auto parse_grouped_expression() -> expression_ptr;
-    auto parse_if_expression() -> expression_ptr;
-    auto parse_function_expression() -> expression_ptr;
+    auto parse_expression(int precedence) -> expression*;
+    auto parse_identifier() const -> identifier*;
+    auto parse_integer_literal() -> expression*;
+    auto parse_unary_expression() -> expression*;
+    auto parse_binary_expression(expression* left) -> expression*;
+    auto parse_boolean() -> expression*;
+    auto parse_grouped_expression() -> expression*;
+    auto parse_if_expression() -> expression*;
+    auto parse_function_expression() -> expression*;
     auto parse_function_parameters() -> std::vector<std::string>;
-    auto parse_block_statement() -> block_statement_ptr;
-    auto parse_call_expression(expression_ptr function) -> expression_ptr;
-    auto parse_string_literal() const -> expression_ptr;
-    auto parse_array_expression() -> expression_ptr;
-    auto parse_index_expression(expression_ptr left) -> expression_ptr;
-    auto parse_hash_literal() -> expression_ptr;
+    auto parse_block_statement() -> block_statement*;
+    auto parse_call_expression(expression* function) -> expression*;
+    auto parse_string_literal() const -> expression*;
+    auto parse_array_expression() -> expression*;
+    auto parse_index_expression(expression* left) -> expression*;
+    auto parse_hash_literal() -> expression*;
 
-    auto parse_expression_list(token_type end) -> std::vector<expression_ptr>;
+    auto parse_expression_list(token_type end) -> std::vector<const expression*>;
     auto get(token_type type) -> bool;
     auto current_token_is(token_type type) const -> bool;
     auto peek_token_is(token_type type) const -> bool;

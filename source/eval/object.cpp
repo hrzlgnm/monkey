@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <string>
 
 #include "object.hpp"
@@ -56,4 +55,26 @@ auto integer_object::hash_key() const -> hash_key_type
 auto builtin_object::inspect() const -> std::string
 {
     return fmt::format("builtin {}(){{...}}", builtin->name);
+}
+
+namespace
+{
+const boolean_object false_obj {/*val=*/false};
+const boolean_object true_obj {/*val=*/true};
+const null_object null_obj;
+}  // namespace
+
+auto native_true() -> const object*
+{
+    return &true_obj;
+}
+
+auto native_false() -> const object*
+{
+    return &false_obj;
+}
+
+auto native_null() -> const object*
+{
+    return &null_obj;
 }

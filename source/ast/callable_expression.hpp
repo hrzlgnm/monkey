@@ -5,18 +5,13 @@
 
 struct callable_expression : expression
 {
-    callable_expression(callable_expression&&) = delete;
-    auto operator=(callable_expression&&) -> callable_expression& = default;
-    callable_expression(const callable_expression&) = default;
-    auto operator=(const callable_expression&) -> callable_expression& = default;
-    explicit callable_expression(std::vector<std::string>&& params);
-    ~callable_expression() override = default;
+    explicit callable_expression(std::vector<std::string> params);
 
-    [[nodiscard]] auto eval(environment_ptr env) const -> object_ptr override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] virtual auto call(environment_ptr closure_env,
-                                    environment_ptr caller_env,
-                                    const std::vector<expression_ptr>& arguments) const -> object_ptr = 0;
+    [[nodiscard]] virtual auto call(environment* closure_env,
+                                    environment* caller_env,
+                                    const std::vector<const expression*>& arguments) const -> const object* = 0;
 
     std::vector<std::string> parameters;
 };

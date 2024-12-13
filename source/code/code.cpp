@@ -136,6 +136,8 @@ auto lookup(opcodes opcode) -> std::optional<definition>
     return definitions.at(opcode);
 }
 
+namespace
+{
 auto fmt_instruction(const definition& def, const operands& operands) -> std::string
 {
     auto count = def.operand_widths.size();
@@ -144,7 +146,7 @@ auto fmt_instruction(const definition& def, const operands& operands) -> std::st
     }
     switch (count) {
         case 0:
-            return def.name;
+            return std::string(def.name);
         case 1:
             return fmt::format("{} {}", def.name, operands.at(0));
         case 2:
@@ -153,6 +155,8 @@ auto fmt_instruction(const definition& def, const operands& operands) -> std::st
             return fmt::format("ERROR: unhandled operand count for {}", def.name);
     }
 }
+
+}  // namespace
 
 auto to_string(const instructions& code) -> std::string
 {

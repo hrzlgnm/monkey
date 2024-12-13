@@ -4,27 +4,25 @@
 
 #include "object.hpp"
 
-environment::environment(environment_ptr parent_env)
-    : m_parent(std::move(parent_env))
+environment::environment(environment* parent_env)
+    : m_parent(parent_env)
 {
+    if (m_parent == this) {
+        abort();
+    }
 }
 
-auto environment::break_cycle() -> void
+auto environment::get(const std::string& name) const -> const object*
 {
-    m_store.clear();
-}
-
-auto environment::get(const std::string& name) const -> object_ptr
-{
-    for (auto ptr = shared_from_this(); ptr; ptr = ptr->m_parent) {
+    for (const auto* ptr = this; ptr != nullptr; ptr = ptr->m_parent) {
         if (const auto itr = ptr->m_store.find(name); itr != ptr->m_store.end()) {
             return itr->second;
         }
     }
-    return null;
+    return native_null();
 }
 
-auto environment::set(const std::string& name, const object_ptr& val) -> void
+auto environment::set(const std::string& name, const object* val) -> void
 {
     m_store[name] = val;
 }

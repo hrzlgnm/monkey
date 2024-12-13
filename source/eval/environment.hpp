@@ -1,21 +1,18 @@
 #pragma once
 
-#include <memory>
 #include <unordered_map>
 
-#include "environment_fwd.hpp"
-#include "object.hpp"
+struct object;
 
-struct environment : std::enable_shared_from_this<environment>
+struct environment
 {
-    explicit environment(environment_ptr parent_env = {});
+    explicit environment(environment* parent_env = nullptr);
 
     auto debug() const -> void;
-    auto break_cycle() -> void;
-    auto get(const std::string& name) const -> object_ptr;
-    auto set(const std::string& name, const object_ptr& val) -> void;
+    auto get(const std::string& name) const -> const object*;
+    auto set(const std::string& name, const object* val) -> void;
 
   private:
-    std::unordered_map<std::string, object_ptr> m_store;
-    environment_ptr m_parent;
+    std::unordered_map<std::string, const object*> m_store;
+    environment* m_parent {};
 };
