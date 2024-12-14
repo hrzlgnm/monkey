@@ -20,6 +20,7 @@
 #include <doctest/doctest.h>
 #include <fmt/ranges.h>
 #include <lexer/token_type.hpp>
+#include <overloaded.hpp>
 #include <parser/parser.hpp>
 
 #include "environment.hpp"

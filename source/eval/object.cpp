@@ -8,6 +8,7 @@
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <overloaded.hpp>
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
 {
@@ -80,8 +81,6 @@ auto array_object::inspect() const -> std::string
     return strm.str();
 }
 
-namespace
-{
 auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> std::ostream&
 {
     std::visit(
@@ -93,8 +92,6 @@ auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> 
         t);
     return strm;
 }
-
-}  // namespace
 
 auto hash_object::inspect() const -> std::string
 {

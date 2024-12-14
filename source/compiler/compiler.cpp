@@ -10,6 +10,7 @@
 #include <code/code.hpp>
 #include <doctest/doctest.h>
 #include <fmt/ranges.h>
+#include <overloaded.hpp>
 #include <parser/parser.hpp>
 
 #include "eval/object.hpp"

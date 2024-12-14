@@ -15,15 +15,6 @@
 
 #include "eval/environment.hpp"
 
-// helper type for std::visit
-template<typename... T>
-struct overloaded : T...
-{
-    using T::operator()...;
-};
-template<class... T>
-overloaded(T...) -> overloaded<T...>;
-
 struct object
 {
     enum class object_type : std::uint8_t
@@ -84,6 +75,8 @@ struct hashable_object : object
 
     [[nodiscard]] virtual auto hash_key() const -> hash_key_type = 0;
 };
+
+auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> std::ostream&;
 
 struct integer_object : hashable_object
 {
