@@ -57,6 +57,11 @@ auto builtin_object::inspect() const -> std::string
     return fmt::format("builtin {}(){{...}}", builtin->name);
 }
 
+auto function_object::inspect() const -> std::string
+{
+    return callable->string();
+}
+
 namespace
 {
 const boolean_object false_obj {/*val=*/false};
