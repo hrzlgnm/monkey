@@ -322,10 +322,7 @@ auto unary_expression::eval(environment* env) const -> const object*
             }
             return make<integer_object>(-evaluated_value->as<integer_object>()->value);
         case exclamation:
-            if (!evaluated_value->is(object::object_type::boolean)) {
-                return native_bool_to_object(!evaluated_value->is_truthy());
-            }
-            return native_bool_to_object(!evaluated_value->as<boolean_object>()->value);
+            return native_bool_to_object(!evaluated_value->is_truthy());
         default:
             return make_error("unknown operator: {}{}", op, evaluated_value->type());
     }
