@@ -66,17 +66,17 @@ auto function_object::inspect() const -> std::string
 
 auto array_object::inspect() const -> std::string
 {
-    std::stringstream str;
-    str << "[";
+    std::stringstream strm;
+    strm << "[";
     for (bool first = true; const auto* const element : elements) {
         if (!first) {
-            str << ", ";
+            strm << ", ";
         }
-        str << fmt::format("{}", element->inspect());
+        strm << fmt::format("{}", element->inspect());
         first = false;
     }
-    str << "]";
-    return str.str();
+    strm << "]";
+    return strm.str();
 }
 
 namespace
@@ -97,18 +97,18 @@ auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> 
 
 auto hash_object::inspect() const -> std::string
 {
-    std::stringstream str;
-    str << "{";
+    std::stringstream strm;
+    strm << "{";
     for (bool first = true; const auto& [key, value] : pairs) {
         if (!first) {
-            str << ", ";
+            strm << ", ";
         }
-        str << key;
-        str << ": " << value->inspect();
+        strm << key;
+        strm << ": " << value->inspect();
         first = false;
     }
-    str << "}";
-    return str.str();
+    strm << "}";
+    return strm.str();
 }
 
 namespace
