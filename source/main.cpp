@@ -81,11 +81,11 @@ auto parse_command_line(std::string_view program, int argc, char** argv) -> comm
 {
     command_line_args opts {};
     for (std::string_view arg : std::span(argv, static_cast<size_t>(argc))) {
-        if (arg.at(0) == '-' && arg.size() == 1) {
+        if (arg[0] == '-' && arg.size() == 1) {
             show_usage(program, fmt::format("invalid option {}", arg));
         }
-        if (arg.at(0) == '-' && arg.size() > 1) {
-            switch (arg.at(1)) {
+        if (arg[0] == '-' && arg.size() > 1) {
+            switch (arg[1]) {
                 case 'i':
                     opts.mode = engine::eval;
                     break;

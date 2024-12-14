@@ -652,7 +652,7 @@ return 993322;
         auto* stmt = prgrm->statements[i];
         auto* ret_stmt = dynamic_cast<const return_statement*>(stmt);
         REQUIRE(ret_stmt);
-        require_literal_expression(ret_stmt->value, expected_return_values.at(i));
+        require_literal_expression(ret_stmt->value, expected_return_values[i]);
     }
 }
 
@@ -920,7 +920,7 @@ TEST_CASE("functionLiteral")
     auto* block = dynamic_cast<const block_statement*>(fn_expr->body);
     REQUIRE_EQ(block->statements.size(), 1);
 
-    auto* body_stmt = dynamic_cast<const expression_statement*>(block->statements.at(0));
+    auto* body_stmt = dynamic_cast<const expression_statement*>(block->statements[0]);
     REQUIRE(body_stmt);
     require_binary_expression(body_stmt->expr, "x", token_type::plus, "y");
 }
@@ -1005,8 +1005,8 @@ TEST_CASE("hashLiteralStringKeys")
     std::array keys {"one", "two", "three"};
     std::array values {1, 2, 3};
     for (auto idx = 0UL; const auto& [k, v] : hash_lit->pairs) {
-        require_string_literal(k, keys.at(idx));
-        require_integer_literal(v, values.at(idx));
+        require_string_literal(k, keys[idx]);
+        require_integer_literal(v, values[idx]);
         idx++;
     }
 }
@@ -1027,8 +1027,8 @@ TEST_CASE("hashLiteralWithExpression")
     std::array expected {
         test {0, token_type::plus, 1}, test {10, token_type::minus, 8}, test {15, token_type::slash, 5}};
     for (size_t idx = 0; const auto& [k, v] : hash_lit->pairs) {
-        require_string_literal(k, keys.at(idx));
-        require_binary_expression(v, expected.at(idx).left, expected.at(idx).oper, expected.at(idx).right);
+        require_string_literal(k, keys[idx]);
+        require_binary_expression(v, expected[idx].left, expected[idx].oper, expected[idx].right);
         idx++;
     }
 }

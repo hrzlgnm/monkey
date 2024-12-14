@@ -189,8 +189,8 @@ TEST_CASE("resolve")
             SUBCASE("resolveFree")
             {
                 REQUIRE_EQ(nested->free().size(), 2);
-                CHECK_EQ(nested->free().at(0).name, "c");
-                CHECK_EQ(nested->free().at(1).name, "d");
+                CHECK_EQ(nested->free()[0].name, "c");
+                CHECK_EQ(nested->free()[1].name, "d");
             }
         }
     }

@@ -26,7 +26,7 @@ auto vm::run() -> void
     for (; current_frame().ip < static_cast<ssize_type>(current_frame().cl->fn->instrs.size()); current_frame().ip++) {
         const auto instr_ptr = static_cast<size_t>(current_frame().ip);
         const auto& code = current_frame().cl->fn->instrs;
-        const auto op_code = static_cast<opcodes>(code.at(instr_ptr));
+        const auto op_code = static_cast<opcodes>(code[instr_ptr]);
         switch (op_code) {
             case opcodes::constant: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -106,7 +106,7 @@ auto vm::run() -> void
                 exec_index(left, index);
             } break;
             case opcodes::call: {
-                auto num_args = code.at(instr_ptr + 1UL);
+                auto num_args = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
                 exec_call(num_args);
             } break;
@@ -122,31 +122,31 @@ auto vm::run() -> void
                 push(native_null());
             } break;
             case opcodes::set_local: {
-                auto local_index = code.at(instr_ptr + 1UL);
+                auto local_index = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
                 auto& frame = current_frame();
                 m_stack[static_cast<size_t>(frame.base_ptr) + local_index] = pop();
             } break;
             case opcodes::get_local: {
-                auto local_index = code.at(instr_ptr + 1UL);
+                auto local_index = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
                 auto& frame = current_frame();
                 push(m_stack[static_cast<size_t>(frame.base_ptr) + local_index]);
             } break;
             case opcodes::get_builtin: {
-                auto builtin_index = code.at(instr_ptr + 1UL);
+                auto builtin_index = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
                 const auto* const builtin = builtin_function_expression::builtins[builtin_index];
                 push(make<builtin_object>(builtin));
             } break;
             case opcodes::closure: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
-                auto num_free = code.at(instr_ptr + 3UL);
+                auto num_free = code[instr_ptr + 3UL];
                 current_frame().ip += 3;
                 push_closure(const_idx, num_free);
             } break;
             case opcodes::get_free: {
-                auto free_index = code.at(instr_ptr + 1UL);
+                auto free_index = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
                 const auto* current_closure = current_frame().cl;
                 push(current_closure->free[free_index]);
@@ -303,7 +303,7 @@ auto vm::build_array(size_t start, size_t end) const -> object*
 {
     array_object::array arr;
     for (auto idx = start; idx < end; idx++) {
-        arr.push_back(m_stack.at(idx));
+        arr.push_back(m_stack[idx]);
     }
     return make<array_object>(std::move(arr));
 }
@@ -340,7 +340,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
             push(native_null());
             return;
         }
-        push(left->as<array_object>()->elements.at(static_cast<size_t>(idx)));
+        push(left->as<array_object>()->elements[static_cast<size_t>(idx)]);
         return;
     }
     if (left->is(string) && index->is(integer)) {
@@ -390,19 +390,19 @@ auto vm::exec_call(size_t num_args) -> void
 
 auto vm::current_frame() -> frame&
 {
-    return m_frames.at(m_frame_index - 1);
+    return m_frames[m_frame_index - 1];
 }
 
 auto vm::push_frame(frame frm) -> void
 {
-    m_frames.at(m_frame_index) = frm;
+    m_frames[m_frame_index] = frm;
     m_frame_index++;
 }
 
 auto vm::pop_frame() -> frame&
 {
     m_frame_index--;
-    return m_frames.at(m_frame_index);
+    return m_frames[m_frame_index];
 }
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
@@ -413,7 +413,7 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
     }
     array_object::array free;
     for (auto i = 0UL; i < num_free; i++) {
-        free.push_back(m_stack.at(m_sp - num_free + i));
+        free.push_back(m_stack[m_sp - num_free + i]);
     }
     m_sp -= num_free;
     push(make<closure_object>(constant->as<compiled_function_object>(), free));
@@ -528,7 +528,7 @@ auto require_array_object(const std::vector<int>& expected, const object*& actua
     const auto& actual_arr = actual->as<array_object>()->elements;
     REQUIRE_EQ(actual_arr.size(), expected.size());
     for (auto idx = 0UL; const auto& elem : expected) {
-        REQUIRE_EQ(elem, actual_arr.at(idx)->as<integer_object>()->value);
+        REQUIRE_EQ(elem, actual_arr[idx]->as<integer_object>()->value);
         ++idx;
     }
 }
