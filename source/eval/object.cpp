@@ -8,6 +8,8 @@
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <fmt/ranges.h>
+#include <overloaded.hpp>
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
 {
@@ -57,7 +59,7 @@ auto integer_object::hash_key() const -> hash_key_type
 
 auto builtin_object::inspect() const -> std::string
 {
-    return fmt::format("builtin {}(){{...}}", builtin->name);
+    return fmt::format("builtin {}({}){{...}}", builtin->name, fmt::join(builtin->parameters, ", "));
 }
 
 auto function_object::inspect() const -> std::string
@@ -80,8 +82,6 @@ auto array_object::inspect() const -> std::string
     return strm.str();
 }
 
-namespace
-{
 auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> std::ostream&
 {
     std::visit(
@@ -93,8 +93,6 @@ auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> 
         t);
     return strm;
 }
-
-}  // namespace
 
 auto hash_object::inspect() const -> std::string
 {

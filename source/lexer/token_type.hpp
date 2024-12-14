@@ -1,10 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <ostream>
 
 #include <fmt/ostream.h>
 
-enum class token_type
+enum class token_type : std::uint8_t
 {
     // special tokens
     illegal,
@@ -56,3 +57,8 @@ enum class token_type
 };
 
 auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&;
+
+template<>
+struct fmt::formatter<token_type> : ostream_formatter
+{
+};

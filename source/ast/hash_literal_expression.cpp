@@ -4,6 +4,7 @@
 #include "hash_literal_expression.hpp"
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 auto hash_literal_expression::string() const -> std::string
 {

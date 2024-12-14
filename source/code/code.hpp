@@ -46,6 +46,11 @@ enum class opcodes : uint8_t
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&;
 
+template<>
+struct fmt::formatter<opcodes> : ostream_formatter
+{
+};
+
 using operands = std::vector<size_t>;
 using instructions = std::vector<uint8_t>;
 

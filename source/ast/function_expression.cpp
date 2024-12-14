@@ -1,6 +1,7 @@
 #include "function_expression.hpp"
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 function_expression::function_expression(std::vector<std::string>&& parameters, statement* body)
     : callable_expression(std::move(parameters))
