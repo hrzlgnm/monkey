@@ -366,7 +366,8 @@ const builtin_function_expression builtin_len {
         }
         return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
     }};
-const builtin_function_expression builtin_puts {{"puts"},
+
+const builtin_function_expression builtin_puts {"puts",
                                                 {"str"},
                                                 [](const array_object::array& arguments) -> const object*
                                                 {
