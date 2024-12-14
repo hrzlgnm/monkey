@@ -1,3 +1,4 @@
+#include <ios>
 #include <sstream>
 #include <string>
 
@@ -87,7 +88,7 @@ auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> 
         overloaded {
             [&](int64_t val) { strm << val; },
             [&](const std::string& val) { strm << '"' << val << '"'; },
-            [&](bool val) { strm << val; },
+            [&](bool val) { strm << std::boolalpha << val; },
         },
         t);
     return strm;
