@@ -85,6 +85,8 @@ struct integer_object : hashable_object
     {
     }
 
+    [[nodiscard]] auto is_truthy() const -> bool override { return value != 0; }
+
     [[nodiscard]] auto type() const -> object_type override { return object_type::integer; }
 
     [[nodiscard]] auto inspect() const -> std::string override { return std::to_string(value); }
