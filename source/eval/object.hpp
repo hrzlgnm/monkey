@@ -198,6 +198,8 @@ struct array_object : object
     {
     }
 
+    [[nodiscard]] auto is_truthy() const -> bool override { return !elements.empty(); }
+
     [[nodiscard]] auto type() const -> object_type override { return object_type::array; }
 
     [[nodiscard]] auto inspect() const -> std::string override;
@@ -226,6 +228,8 @@ struct hash_object : object
         : pairs {std::move(hsh)}
     {
     }
+
+    [[nodiscard]] auto is_truthy() const -> bool override { return !pairs.empty(); }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::hash; }
 

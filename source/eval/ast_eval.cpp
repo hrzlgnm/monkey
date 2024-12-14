@@ -703,6 +703,8 @@ TEST_CASE("bangOperator")
         et {"!!false", false},
         et {"!!5", true},
         et {R"(!!"a")", true},
+        et {R"(![])", true},
+        et {R"(!{})", true},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);

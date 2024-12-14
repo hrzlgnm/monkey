@@ -643,6 +643,8 @@ TEST_CASE("booleanExpressions")
         vt<bool> {R"(!"a")", false},
         vt<bool> {R"(!!"a")", true},
         vt<bool> {R"(!0)", true},
+        vt<bool> {R"(![])", true},
+        vt<bool> {R"(!{})", true},
         vt<bool> {R"(!5)", false},
         vt<bool> {R"(!!true)", true},
         vt<bool> {R"(!!false)", false},
