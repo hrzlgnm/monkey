@@ -4,18 +4,15 @@
 
 #include "object.hpp"
 
-environment::environment(environment* parent_env)
-    : m_parent(parent_env)
+environment::environment(environment* outer_env)
+    : outer(outer_env)
 {
-    if (m_parent == this) {
-        abort();
-    }
 }
 
 auto environment::get(const std::string& name) const -> const object*
 {
-    for (const auto* ptr = this; ptr != nullptr; ptr = ptr->m_parent) {
-        if (const auto itr = ptr->m_store.find(name); itr != ptr->m_store.end()) {
+    for (const auto* ptr = this; ptr != nullptr; ptr = ptr->outer) {
+        if (const auto itr = ptr->store.find(name); itr != ptr->store.end()) {
             return itr->second;
         }
     }
@@ -24,12 +21,12 @@ auto environment::get(const std::string& name) const -> const object*
 
 auto environment::set(const std::string& name, const object* val) -> void
 {
-    m_store[name] = val;
+    store[name] = val;
 }
 
 auto environment::debug() const -> void
 {
-    for (const auto& [k, v] : m_store) {
+    for (const auto& [k, v] : store) {
         fmt::print("[{}] = {}\n", k, v->inspect());
     }
 }

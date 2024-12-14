@@ -85,6 +85,8 @@ struct integer_object : hashable_object
     {
     }
 
+    [[nodiscard]] auto is_truthy() const -> bool override { return value != 0; }
+
     [[nodiscard]] auto type() const -> object_type override { return object_type::integer; }
 
     [[nodiscard]] auto inspect() const -> std::string override { return std::to_string(value); }
@@ -124,14 +126,7 @@ struct boolean_object : hashable_object
 
 auto native_true() -> const object*;
 auto native_false() -> const object*;
-
-inline auto native_bool_to_object(bool val) -> const object*
-{
-    if (val) {
-        return native_true();
-    }
-    return native_false();
-}
+auto native_bool_to_object(bool val) -> const object*;
 
 struct string_object : hashable_object
 {
@@ -139,6 +134,8 @@ struct string_object : hashable_object
         : value {std::move(val)}
     {
     }
+
+    [[nodiscard]] auto is_truthy() const -> bool override { return !value.empty(); }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::string; }
 
@@ -201,6 +198,8 @@ struct array_object : object
     {
     }
 
+    [[nodiscard]] auto is_truthy() const -> bool override { return !elements.empty(); }
+
     [[nodiscard]] auto type() const -> object_type override { return object_type::array; }
 
     [[nodiscard]] auto inspect() const -> std::string override;
@@ -229,6 +228,8 @@ struct hash_object : object
         : pairs {std::move(hsh)}
     {
     }
+
+    [[nodiscard]] auto is_truthy() const -> bool override { return !pairs.empty(); }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::hash; }
 

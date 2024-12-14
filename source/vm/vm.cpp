@@ -281,15 +281,7 @@ auto vm::exec_bang() -> void
 {
     using enum object::object_type;
     const auto* operand = pop();
-    if (operand->is(boolean)) {
-        push(native_bool_to_object(!operand->as<boolean_object>()->value));
-        return;
-    }
-    if (operand->is(null)) {
-        push(native_true());
-        return;
-    }
-    push(native_false());
+    push(native_bool_to_object(!operand->is_truthy()));
 }
 
 auto vm::exec_minus() -> void
@@ -647,8 +639,12 @@ TEST_CASE("booleanExpressions")
         vt<bool> {R"(("a" > "b") == false)", true},
         vt<bool> {R"(!true)", false},
         vt<bool> {R"(!false)", true},
+        vt<bool> {R"(!!"")", false},
         vt<bool> {R"(!"a")", false},
         vt<bool> {R"(!!"a")", true},
+        vt<bool> {R"(!0)", true},
+        vt<bool> {R"(![])", true},
+        vt<bool> {R"(!{})", true},
         vt<bool> {R"(!5)", false},
         vt<bool> {R"(!!true)", true},
         vt<bool> {R"(!!false)", false},

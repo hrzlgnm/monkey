@@ -117,6 +117,14 @@ const boolean_object true_obj {/*val=*/true};
 const null_object null_obj;
 }  // namespace
 
+auto native_bool_to_object(bool val) -> const object*
+{
+    if (val) {
+        return &true_obj;
+    }
+    return &false_obj;
+}
+
 auto native_true() -> const object*
 {
     return &true_obj;
