@@ -1,5 +1,6 @@
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -87,7 +88,7 @@ auto make(opcodes opcode, const operands& operands) -> instructions
     instructions instr;
     instr.push_back(static_cast<uint8_t>(opcode));
     for (size_t idx = 0; const auto operand : operands) {
-        auto width = definition.operand_widths.at(idx);
+        auto width = definition.operand_widths[idx];
         switch (width) {
             case 2:
                 write_uint16_big_endian(instr, instr.size(), static_cast<uint16_t>(operand));
@@ -119,7 +120,7 @@ auto read_operands(const definition& def, const instructions& instr) -> std::pai
                 result.first[idx] = read_uint16_big_endian(instr, offset);
                 break;
             case 1:
-                result.first[idx] = instr.at(offset);
+                result.first[idx] = instr[offset];
         }
         offset += width;
         idx++;
@@ -131,7 +132,7 @@ auto read_operands(const definition& def, const instructions& instr) -> std::pai
 auto lookup(opcodes opcode) -> std::optional<definition>
 {
     if (!definitions.contains(opcode)) {
-        return {};
+        return std::nullopt;
     }
     return definitions.at(opcode);
 }
@@ -148,9 +149,9 @@ auto fmt_instruction(const definition& def, const operands& operands) -> std::st
         case 0:
             return std::string(def.name);
         case 1:
-            return fmt::format("{} {}", def.name, operands.at(0));
+            return fmt::format("{} {}", def.name, operands[0]);
         case 2:
-            return fmt::format("{} {} {}", def.name, operands.at(0), operands.at(1));
+            return fmt::format("{} {} {}", def.name, operands[0], operands[1]);
         default:
             return fmt::format("ERROR: unhandled operand count for {}", def.name);
     }

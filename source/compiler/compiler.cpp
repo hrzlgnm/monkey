@@ -96,7 +96,7 @@ auto compiler::replace_instruction(size_t pos, const instructions& instr) -> voi
 auto compiler::change_operand(size_t pos, size_t operand) -> void
 {
     auto& scope = m_scopes[m_scope_index];
-    auto opcode = static_cast<opcodes>(scope.instrs.at(pos));
+    auto opcode = static_cast<opcodes>(scope.instrs[pos]);
     auto instr = make(opcode, operand);
     replace_instruction(pos, instr);
 }

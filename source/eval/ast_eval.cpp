@@ -211,7 +211,7 @@ auto index_expression::eval(environment* env) const -> const object*
         if (index < 0 || index > max) {
             return native_null();
         }
-        return arr.at(static_cast<size_t>(index));
+        return arr[static_cast<size_t>(index)];
     }
 
     if (evaluated_left->is(string) && evaluated_index->is(integer)) {
@@ -351,7 +351,7 @@ const builtin_function_expression builtin_len {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
         }
-        const auto& maybe_string_or_array = arguments.at(0);
+        const auto& maybe_string_or_array = arguments[0];
         using enum object::object_type;
         if (maybe_string_or_array->is(string)) {
             const auto& str = maybe_string_or_array->as<string_object>()->value;
@@ -417,7 +417,7 @@ const builtin_function_expression builtin_last {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to last(): expected=1, got={}", arguments.size());
         }
-        const auto& maybe_string_or_array = arguments.at(0);
+        const auto& maybe_string_or_array = arguments[0];
         using enum object::object_type;
         if (maybe_string_or_array->is(string)) {
             const auto& str = maybe_string_or_array->as<string_object>()->value;
@@ -541,8 +541,8 @@ auto require_array_eq(const object* obj, const array& expected, std::string_view
     for (auto idx = 0UL; const auto& expected_elem : expected) {
         std::visit(
             overloaded {
-                [&](const int64_t exp) { REQUIRE_EQ(exp, actual.at(idx)->as<integer_object>()->value); },
-                [&](const std::string& exp) { REQUIRE_EQ(exp, actual.at(idx)->as<string_object>()->value); },
+                [&](const int64_t exp) { REQUIRE_EQ(exp, actual[idx]->as<integer_object>()->value); },
+                [&](const std::string& exp) { REQUIRE_EQ(exp, actual[idx]->as<string_object>()->value); },
             },
             expected_elem);
         ++idx;

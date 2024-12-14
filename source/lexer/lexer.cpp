@@ -89,9 +89,9 @@ auto lexer::next_token() -> token
         return token {.type = eof, .literal = ""};
     }
     const auto as_uchar = static_cast<unsigned char>(m_byte);
-    const auto char_token_type = char_literal_tokens.at(as_uchar);
+    const auto char_token_type = char_literal_tokens[as_uchar];
     if (char_token_type != illegal) {
-        const auto peek_token_type = char_literal_tokens.at(static_cast<unsigned char>(peek_char()));
+        const auto peek_token_type = char_literal_tokens[static_cast<unsigned char>(peek_char())];
         switch (char_token_type) {
             case assign:
                 if (peek_token_type == assign) {
@@ -108,8 +108,8 @@ auto lexer::next_token() -> token
         }
         return read_char(),
                token {
-                   .type = char_literal_tokens.at(as_uchar),
-                   .literal = std::string_view {&m_input.at(m_position - 1), 1},
+                   .type = char_literal_tokens[as_uchar],
+                   .literal = std::string_view {&m_input[m_position - 1], 1},
                };
     }
     if (m_byte == '"') {
@@ -130,7 +130,7 @@ auto lexer::read_char() -> void
     if (m_read_position >= m_input.size()) {
         m_byte = '\0';
     } else {
-        m_byte = m_input.at(m_read_position);
+        m_byte = m_input[m_read_position];
     }
     m_position = m_read_position;
     m_read_position++;
@@ -148,7 +148,7 @@ auto lexer::peek_char() -> std::string_view::value_type
     if (m_read_position >= m_input.size()) {
         return '\0';
     }
-    return m_input.at(m_read_position);
+    return m_input[m_read_position];
 }
 
 auto lexer::read_identifier_or_keyword() -> token
