@@ -124,14 +124,7 @@ struct boolean_object : hashable_object
 
 auto native_true() -> const object*;
 auto native_false() -> const object*;
-
-inline auto native_bool_to_object(bool val) -> const object*
-{
-    if (val) {
-        return native_true();
-    }
-    return native_false();
-}
+auto native_bool_to_object(bool val) -> const object*;
 
 struct string_object : hashable_object
 {
@@ -139,6 +132,8 @@ struct string_object : hashable_object
         : value {std::move(val)}
     {
     }
+
+    [[nodiscard]] auto is_truthy() const -> bool override { return !value.empty(); }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::string; }
 

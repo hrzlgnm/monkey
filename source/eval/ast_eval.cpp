@@ -323,7 +323,7 @@ auto unary_expression::eval(environment* env) const -> const object*
             return make<integer_object>(-evaluated_value->as<integer_object>()->value);
         case exclamation:
             if (!evaluated_value->is(object::object_type::boolean)) {
-                return native_bool_to_object(/*val=*/false);
+                return native_bool_to_object(!evaluated_value->is_truthy());
             }
             return native_bool_to_object(!evaluated_value->as<boolean_object>()->value);
         default:
@@ -386,6 +386,7 @@ const builtin_function_expression builtin_puts {"puts",
                                                     fmt::print("\n");
                                                     return native_null();
                                                 }};
+
 const builtin_function_expression builtin_first {
     "first",
     {"arr"},
@@ -412,6 +413,7 @@ const builtin_function_expression builtin_first {
         }
         return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
     }};
+
 const builtin_function_expression builtin_last {
     "last",
     {"arr"},
@@ -438,6 +440,7 @@ const builtin_function_expression builtin_last {
         }
         return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
     }};
+
 const builtin_function_expression builtin_rest {
     "rest",
     {"arr"},
@@ -466,6 +469,7 @@ const builtin_function_expression builtin_rest {
         }
         return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
     }};
+
 const builtin_function_expression builtin_push {
     "push",
     {"arr", "val"},
@@ -694,8 +698,10 @@ TEST_CASE("bangOperator")
         et {"!true", false},
         et {"!false", true},
         et {"!false", true},
+        et {"!0", true},
         et {"!5", false},
         et {R"(!"a")", false},
+        et {R"(!"")", true},
         et {"!!true", true},
         et {"!!false", false},
         et {"!!5", true},
