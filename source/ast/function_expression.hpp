@@ -16,5 +16,5 @@ struct function_expression : callable_expression
     auto compile(compiler& comp) const -> void override;
 
     const statement* body {};
-    mutable std::string name;
+    std::string name;
 };

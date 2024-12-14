@@ -144,7 +144,7 @@ struct string_object : hashable_object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::string; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return value; }
+    [[nodiscard]] auto inspect() const -> std::string override { return fmt::format(R"("{}")", value); }
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
