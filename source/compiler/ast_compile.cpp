@@ -83,7 +83,7 @@ auto identifier::compile(compiler& comp) const -> void
     if (!maybe_symbol.has_value()) {
         throw std::runtime_error(fmt::format("undefined variable {}", value));
     }
-    auto symbol = maybe_symbol.value();
+    const auto& symbol = maybe_symbol.value();
     comp.load_symbol(symbol);
 }
 

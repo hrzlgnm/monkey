@@ -28,7 +28,7 @@ auto array_expression::eval(environment* env) const -> const object*
 {
     array_object::array arr;
     for (const auto& element : elements) {
-        auto* evaluated = element->eval(env);
+        const auto* evaluated = element->eval(env);
         if (evaluated->is_error()) {
             return evaluated;
         }

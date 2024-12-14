@@ -174,12 +174,12 @@ auto run_repl(const command_line_args& opts) -> int
             auto machine = vm::create_with_state(cmplr.byte_code(), &globals);
             machine.run();
             const auto* result = machine.last_popped();
-            if (!result->is(object::object_type::null)) {
+            if (result != nullptr && !result->is(object::object_type::null)) {
                 std::cout << result->inspect() << "\n";
             }
         } else {
             const auto* result = prgrm->eval(global_env);
-            if (!result->is(object::object_type::null)) {
+            if (result != nullptr && !result->is(object::object_type::null)) {
                 std::cout << result->inspect() << "\n";
             }
         }

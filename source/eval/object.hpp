@@ -205,7 +205,7 @@ struct array_object : object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::array; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return "todo"; }
+    [[nodiscard]] auto inspect() const -> std::string override;
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
@@ -234,7 +234,7 @@ struct hash_object : object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::hash; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return "todo"; }
+    [[nodiscard]] auto inspect() const -> std::string override;
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {

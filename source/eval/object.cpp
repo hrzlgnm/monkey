@@ -1,3 +1,4 @@
+#include <sstream>
 #include <string>
 
 #include "object.hpp"
@@ -5,6 +6,7 @@
 #include <ast/builtin_function_expression.hpp>
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
 {
@@ -60,6 +62,53 @@ auto builtin_object::inspect() const -> std::string
 auto function_object::inspect() const -> std::string
 {
     return callable->string();
+}
+
+auto array_object::inspect() const -> std::string
+{
+    std::stringstream str;
+    str << "[";
+    for (bool first = true; const auto* const element : elements) {
+        if (!first) {
+            str << ", ";
+        }
+        str << fmt::format("{}", element->inspect());
+        first = false;
+    }
+    str << "]";
+    return str.str();
+}
+
+namespace
+{
+auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> std::ostream&
+{
+    std::visit(
+        overloaded {
+            [&](int64_t val) { strm << val; },
+            [&](const std::string& val) { strm << '"' << val << '"'; },
+            [&](bool val) { strm << val; },
+        },
+        t);
+    return strm;
+}
+
+}  // namespace
+
+auto hash_object::inspect() const -> std::string
+{
+    std::stringstream str;
+    str << "{";
+    for (bool first = true; const auto& [key, value] : pairs) {
+        if (!first) {
+            str << ", ";
+        }
+        str << key;
+        str << ": " << value->inspect();
+        first = false;
+    }
+    str << "}";
+    return str.str();
 }
 
 namespace
