@@ -66,7 +66,7 @@ auto vm::run() -> void
             case opcodes::jump_not_truthy: {
                 auto pos = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
-                auto condition = pop();
+                const auto* condition = pop();
                 if (!condition->is_truthy()) {
                     current_frame().ip = pos - 1;
                 }
@@ -88,7 +88,7 @@ auto vm::run() -> void
             case opcodes::array: {
                 auto num_elements = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
-                auto arr = build_array(m_sp - num_elements, m_sp);
+                auto* arr = build_array(m_sp - num_elements, m_sp);
                 m_sp -= num_elements;
                 push(arr);
             } break;
@@ -583,7 +583,7 @@ auto run(std::array<vt<Expecteds...>, N> tests)
         auto mchn = vm::create(std::move(byte_code));
         mchn.run();
 
-        auto top = mchn.last_popped();
+        const auto* top = mchn.last_popped();
         require_eq(expected, top, input);
     }
 }
@@ -652,7 +652,12 @@ TEST_CASE("booleanExpressions")
         vt<bool> {R"(!!false)", false},
         vt<bool> {R"(!!5)", true},
         vt<bool> {R"(!(if (false) { 5; }))", true},
+        vt<bool> {R"(["a", 1] == ["b", 1])", false},
+        vt<bool> {R"({"a": 1} == {"b": 1})", false},
+        vt<bool> {R"(["a", 1] == ["a", 1])", true},
+        vt<bool> {R"({"a": 1} == {"a": 1})", true},
     };
+
     run(tests);
 }
 

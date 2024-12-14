@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -208,8 +209,15 @@ struct array_object : object
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
-        // FIXME:
-        return other->is(type()) && other->as<array_object>()->elements.size() == elements.size();
+        if (!other->is(type()) || other->as<array_object>()->elements.size() != elements.size()) {
+            return false;
+        }
+        const auto& other_elements = other->as<array_object>()->elements;
+        return std::equal(elements.cbegin(),
+                          elements.cend(),
+                          other_elements.cbegin(),
+                          other_elements.cend(),
+                          [](const object* a, const object* b) { return a->equals_to(b); });
     }
 
     array elements;
@@ -230,8 +238,18 @@ struct hash_object : object
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
-        // FIXME:
-        return other->is(type()) && other->as<hash_object>()->pairs.size() == pairs.size();
+        if (!other->is(type()) || other->as<hash_object>()->pairs.size() != pairs.size()) {
+            return false;
+        }
+        const auto& other_pairs = other->as<hash_object>()->pairs;
+        return std::all_of(pairs.cbegin(),
+                           pairs.cend(),
+                           [other_pairs](const auto& pair)
+                           {
+                               const auto& [key, value] = pair;
+                               auto it = other_pairs.find(key);
+                               return it != other_pairs.cend() && it->second->equals_to(value);
+                           });
     }
 
     hash pairs;
@@ -249,7 +267,7 @@ struct function_object : object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::function; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return "todo"; }
+    [[nodiscard]] auto inspect() const -> std::string override;
 
     const callable_expression* callable {};
     environment* closure_env {};
