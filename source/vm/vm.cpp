@@ -12,6 +12,7 @@
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <parser/parser.hpp>
 
 vm::vm(frames frames, const constants* consts, constants* globals)

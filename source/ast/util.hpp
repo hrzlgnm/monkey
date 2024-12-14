@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 template<typename Expression>
 auto join(const std::vector<Expression*>& nodes, std::string_view sep = {}) -> std::string

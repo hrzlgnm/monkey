@@ -22,6 +22,7 @@
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 #include <lexer/token.hpp>
 
 namespace

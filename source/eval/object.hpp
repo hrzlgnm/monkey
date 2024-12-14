@@ -71,6 +71,11 @@ struct object
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;
 
+template<>
+struct fmt::formatter<object::object_type> : ostream_formatter
+{
+};
+
 struct hashable_object : object
 {
     using hash_key_type = std::variant<int64_t, std::string, bool>;

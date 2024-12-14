@@ -9,6 +9,7 @@
 #include <chungus.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
+#include <fmt/ranges.h>
 #include <parser/parser.hpp>
 
 #include "eval/object.hpp"

@@ -18,6 +18,7 @@
 #include <ast/unary_expression.hpp>
 #include <chungus.hpp>
 #include <doctest/doctest.h>
+#include <fmt/ranges.h>
 #include <lexer/token_type.hpp>
 #include <parser/parser.hpp>
 
