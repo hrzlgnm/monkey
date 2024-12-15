@@ -11,7 +11,6 @@
 #include "code.hpp"
 
 #include <doctest/doctest.h>
-#include <fmt/core.h>
 #include <fmt/format.h>
 
 auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&

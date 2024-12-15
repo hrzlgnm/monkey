@@ -6,7 +6,6 @@
 #include <ast/boolean.hpp>
 #include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
-#include <ast/callable_expression.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
@@ -18,10 +17,10 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
-#include <chungus.hpp>
 #include <code/code.hpp>
 #include <eval/object.hpp>
 #include <fmt/format.h>
+#include <gc.hpp>
 #include <lexer/token_type.hpp>
 
 #include "compiler.hpp"

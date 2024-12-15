@@ -1,3 +1,5 @@
+#include <ostream>
+
 #include "token.hpp"
 
 auto token::operator==(const token& other) const -> bool

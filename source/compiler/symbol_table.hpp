@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 
-#include <chungus.hpp>
 #include <fmt/ostream.h>
+#include <gc.hpp>
 
 template<typename Value>
 using string_map = std::map<std::string, Value, std::less<>>;
@@ -23,6 +23,11 @@ enum class symbol_scope : std::uint8_t
     function,
 };
 auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&;
+
+template<>
+struct fmt::formatter<symbol_scope> : ostream_formatter
+{
+};
 
 struct symbol
 {

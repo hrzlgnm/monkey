@@ -7,11 +7,11 @@
 #include <variant>
 #include <vector>
 
-#include <chungus.hpp>
 #include <code/code.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
 #include <fmt/ostream.h>
+#include <gc.hpp>
 
 struct object
 {

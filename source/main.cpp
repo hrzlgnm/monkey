@@ -11,7 +11,7 @@
 #include <vector>
 
 #include <ast/builtin_function_expression.hpp>
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
@@ -78,7 +78,9 @@ struct command_line_args
         exit_code = EXIT_FAILURE;
     }
     fmt::print("Usage: {} [-d] [-i] [-h] [<file>]\n\n", program);
+    // NOLINTBEGIN(concurrency-mt-unsafe)
     exit(exit_code);
+    // NOLINTEND(concurrency-mt-unsafe)
 }
 
 auto parse_command_line(std::string_view program, int argc, char** argv) -> command_line_args

@@ -1,5 +1,7 @@
 #include <algorithm>
+#include <cstdint>
 #include <ios>
+#include <ostream>
 #include <sstream>
 #include <string>
 #include <variant>
@@ -82,7 +84,7 @@ auto function_object::inspect() const -> std::string
 
 auto array_object::inspect() const -> std::string
 {
-    std::stringstream strm;
+    std::ostringstream strm;
     strm << "[";
     for (bool first = true; const auto* const element : elements) {
         if (!first) {
@@ -122,7 +124,7 @@ auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> 
 
 auto hash_object::inspect() const -> std::string
 {
-    std::stringstream strm;
+    std::ostringstream strm;
     strm << "{";
     for (bool first = true; const auto& [key, value] : pairs) {
         if (!first) {

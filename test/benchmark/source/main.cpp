@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstddef>
 #include <span>
 #include <string_view>
 
@@ -6,6 +7,7 @@
 #include <eval/environment.hpp>
 #include <eval/object.hpp>
 #include <fmt/base.h>
+#include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
 

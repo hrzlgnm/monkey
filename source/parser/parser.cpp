@@ -22,9 +22,9 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
-#include <chungus.hpp>
 #include <doctest/doctest.h>
 #include <fmt/ranges.h>
+#include <gc.hpp>
 #include <lexer/lexer.hpp>
 #include <lexer/token.hpp>
 #include <lexer/token_type.hpp>
