@@ -66,7 +66,7 @@ auto integer_object::hash_key() const -> hash_key_type
 
 auto builtin_object::inspect() const -> std::string
 {
-    return fmt::format("fn<builtin>{}({}){{...}}", builtin->name, fmt::join(builtin->parameters, ", "));
+    return fmt::format("builtin {}({}){{...}}", builtin->name, fmt::join(builtin->parameters, ", "));
 }
 
 auto function_object::inspect() const -> std::string
