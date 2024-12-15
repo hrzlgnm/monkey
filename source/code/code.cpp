@@ -1,9 +1,11 @@
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 #include "code.hpp"
 
@@ -92,7 +94,8 @@ auto make(opcodes opcode, const operands& operands) -> instructions
         auto width = definition.operand_widths[idx];
         switch (width) {
             case 2:
-                write_uint16_big_endian(instr, static_cast<std::uint16_t>(instr.size()), operand);
+                write_uint16_big_endian(
+                    instr, static_cast<std::uint16_t>(instr.size()), static_cast<std::uint16_t>(operand));
                 break;
             case 1:
                 instr.push_back(static_cast<uint8_t>(operand));
