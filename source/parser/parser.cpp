@@ -24,6 +24,7 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 #include <lexer/token.hpp>
+#include <lexer/token_type.hpp>
 #include <overloaded.hpp>
 
 namespace
