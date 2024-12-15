@@ -14,6 +14,7 @@
 #include <chungus.hpp>
 #include <code/code.hpp>
 #include <eval/object.hpp>
+#include <lexer/token_type.hpp>
 
 #include "compiler.hpp"
 #include "symbol_table.hpp"
