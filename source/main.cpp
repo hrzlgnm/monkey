@@ -214,5 +214,4 @@ auto main(int argc, char* argv[]) -> int
         std::cerr << "Caught an exception: " << e.what() << "\n";
         return 1;
     }
-    return 0;
 }
