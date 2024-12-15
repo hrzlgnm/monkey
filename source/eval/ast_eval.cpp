@@ -1094,7 +1094,7 @@ TEST_CASE("hashLiterals")
     for (const auto& [key, value] : expected) {
         REQUIRE(as_hash.contains(key));
         REQUIRE_EQ(value, as_hash.at(key)->as<integer_object>()->value);
-    };
+    }
 }
 
 TEST_CASE("hashIndexExpression")
