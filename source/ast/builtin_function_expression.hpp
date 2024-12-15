@@ -1,6 +1,8 @@
 #pragma once
 
 #include <functional>
+#include <string>
+#include <vector>
 
 #include <eval/object.hpp>
 
