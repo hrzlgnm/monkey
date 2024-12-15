@@ -1,6 +1,10 @@
+#include <functional>
 #include <string>
+#include <vector>
 
 #include "builtin_function_expression.hpp"
+
+#include <fmt/format.h>
 
 #include "eval/object.hpp"
 
@@ -16,5 +20,5 @@ builtin_function_expression::builtin_function_expression(
 
 auto builtin_function_expression::string() const -> std::string
 {
-    return fmt::format("{}(){}", name, "{...}");
+    return fmt::format("{}(){{...}}", name);
 }
