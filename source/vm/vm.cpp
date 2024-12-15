@@ -1016,6 +1016,7 @@ TEST_CASE("callBuiltins")
         vt<int64_t, null_type, std::string, std::vector<int>> {R"(rest([]))", null_value},
         vt<int64_t, null_type, std::string, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
         vt<int64_t, null_type, std::string, std::vector<int>> {R"(last([1, 2, 3]))", 3},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(type([]))", "array"},
     };
     const std::array errortests {
         vt<error> {

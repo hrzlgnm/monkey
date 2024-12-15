@@ -300,7 +300,7 @@ struct closure_object : object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::closure; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return "closure{...}"; }
+    [[nodiscard]] auto inspect() const -> std::string override { return "fn<closure>{...}"; }
 
     const compiled_function_object* fn {};
     std::vector<const object*> free;
@@ -308,12 +308,9 @@ struct closure_object : object
 
 struct builtin_function_expression;
 
-struct builtin_object : object
+struct builtin_object : function_object
 {
-    explicit builtin_object(const builtin_function_expression* bltn)
-        : builtin {bltn}
-    {
-    }
+    explicit builtin_object(const builtin_function_expression* bltn);
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::builtin; }
 

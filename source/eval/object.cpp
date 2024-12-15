@@ -11,6 +11,13 @@
 #include <fmt/ranges.h>
 #include <overloaded.hpp>
 
+builtin_object::builtin_object(const builtin_function_expression* bltn)
+
+    : function_object {bltn, nullptr}
+    , builtin {bltn}
+{
+}
+
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
 {
     using enum object::object_type;
