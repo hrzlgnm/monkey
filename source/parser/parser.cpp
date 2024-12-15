@@ -679,7 +679,7 @@ TEST_CASE("string")
     REQUIRE_EQ(prgrm.string(), "let myVar = anotherVar;");
 }
 
-TEST_CASE("identfierExpression")
+TEST_CASE("identifierExpression")
 {
     const auto* input = "foobar;";
     auto [prgrm, _] = check_program(input);

@@ -34,8 +34,8 @@ struct vm
     static auto create_with_state(bytecode code, constants* globals) -> vm
     {
         auto* main_fn = make<compiled_function_object>(std::move(code.instrs), 0ULL, 0ULL);
-        auto* main_clousre = make<closure_object>(main_fn);
-        const frame main_frame {.cl = main_clousre};
+        auto* main_closure = make<closure_object>(main_fn);
+        const frame main_frame {.cl = main_closure};
         frames frms;
         frms[0] = main_frame;
         return vm {frms, code.consts, globals};
@@ -63,7 +63,7 @@ struct vm
     auto pop_frame() -> frame&;
     auto push_closure(uint16_t const_idx, uint8_t num_free) -> void;
 
-    const constants* m_constans {};
+    const constants* m_constants {};
     constants* m_globals {};
     constants m_stack {stack_size};
     size_t m_sp {0};

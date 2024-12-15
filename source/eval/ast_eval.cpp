@@ -627,7 +627,7 @@ auto run_multi(std::deque<std::string>& inputs) -> const object*
 
 TEST_SUITE_BEGIN("eval");
 
-TEST_CASE("integerExpresssion")
+TEST_CASE("integerExpression")
 {
     struct et
     {
@@ -658,7 +658,7 @@ TEST_CASE("integerExpresssion")
     }
 }
 
-TEST_CASE("booleanExpresssion")
+TEST_CASE("booleanExpression")
 {
     struct et
     {
@@ -763,7 +763,7 @@ TEST_CASE("ifElseExpressions")
     }
 }
 
-TEST_CASE("returnStatemets")
+TEST_CASE("returnStatements")
 {
     struct rt
     {

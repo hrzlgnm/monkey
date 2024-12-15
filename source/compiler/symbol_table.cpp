@@ -233,7 +233,7 @@ TEST_CASE("defineResolveBuiltin")
     }
 }
 
-TEST_CASE("defineAndResolveFunctonName")
+TEST_CASE("defineAndResolveFunctionName")
 {
     using enum symbol_scope;
     auto globals = symbol_table::create();

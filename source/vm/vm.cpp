@@ -22,7 +22,7 @@
 #include <parser/parser.hpp>
 
 vm::vm(frames frames, const constants* consts, constants* globals)
-    : m_constans {consts}
+    : m_constants {consts}
     , m_globals {globals}
     , m_frames {frames}
 {
@@ -38,7 +38,7 @@ auto vm::run() -> void
             case opcodes::constant: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
-                push(m_constans->at(const_idx));
+                push(m_constants->at(const_idx));
             } break;
             case opcodes::sub:  // fallthrough
             case opcodes::mul:  // fallthrough
@@ -406,7 +406,7 @@ auto vm::pop_frame() -> frame&
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 {
-    const auto* constant = m_constans->at(const_idx);
+    const auto* constant = m_constants->at(const_idx);
     if (!constant->is(object::object_type::compiled_function)) {
         throw std::runtime_error("not a function");
     }
@@ -681,7 +681,7 @@ TEST_CASE("conditionals")
     run(tests);
 }
 
-TEST_CASE("globalLetStatemets")
+TEST_CASE("globalLetStatements")
 {
     const std::array tests {
         vt<int64_t> {"let one = 1; one", 1},
@@ -1128,7 +1128,7 @@ TEST_CASE("recursiveFunction")
     run(tests);
 }
 
-TEST_CASE("recuriveFibonnacci")
+TEST_CASE("recursiveFibonacci")
 {
     const std::array tests {
         vt<int64_t> {
