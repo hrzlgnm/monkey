@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <deque>
 #include <sstream>
+#include <string>
+#include <utility>
 #include <variant>
 
 #include <ast/array_expression.hpp>
@@ -355,12 +357,12 @@ const builtin_function_expression builtin_len {
         using enum object::object_type;
         if (maybe_string_or_array->is(string)) {
             const auto& str = maybe_string_or_array->as<string_object>()->value;
-            return make<integer_object>(str.size());
+            return make<integer_object>(static_cast<int64_t>(str.size()));
         }
         if (maybe_string_or_array->is(array)) {
             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
 
-            return make<integer_object>(arr.size());
+            return make<integer_object>(static_cast<int64_t>(arr.size()));
         }
         return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
     }};
