@@ -11,6 +11,13 @@
 #include <fmt/ranges.h>
 #include <overloaded.hpp>
 
+builtin_object::builtin_object(const builtin_function_expression* bltn)
+
+    : function_object {bltn, nullptr}
+    , builtin {bltn}
+{
+}
+
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
 {
     using enum object::object_type;
@@ -59,7 +66,7 @@ auto integer_object::hash_key() const -> hash_key_type
 
 auto builtin_object::inspect() const -> std::string
 {
-    return fmt::format("builtin {}({}){{...}}", builtin->name, fmt::join(builtin->parameters, ", "));
+    return fmt::format("fn<builtin>{}({}){{...}}", builtin->name, fmt::join(builtin->parameters, ", "));
 }
 
 auto function_object::inspect() const -> std::string
