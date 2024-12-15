@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -21,7 +20,7 @@ class chungus
     static auto get_allocation_list() -> std::vector<T*>&
     {
         static std::vector<T*> allocations;
-        static bool registered = []()
+        static const bool registered = []()
         {
             return std::atexit(cleanup);  // Register cleanup at exit
         }();

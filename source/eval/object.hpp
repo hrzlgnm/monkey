@@ -11,9 +11,8 @@
 #include <chungus.hpp>
 #include <code/code.hpp>
 #include <compiler/symbol_table.hpp>
-#include <fmt/core.h>
-
-#include "eval/environment.hpp"
+#include <eval/environment.hpp>
+#include <fmt/ostream.h>
 
 struct object
 {
@@ -48,14 +47,14 @@ struct object
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
 
-    [[nodiscard]] virtual auto is_truthy() const -> bool { return true; }
+    [[nodiscard]] virtual auto is_truthy() const -> bool { return false; }
 
     [[nodiscard]] virtual auto is_hashable() const -> bool { return false; }
 
     [[nodiscard]] virtual auto type() const -> object_type = 0;
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
-    [[nodiscard]] virtual auto equals_to(const object* /*other*/) const -> bool { return false; };
+    [[nodiscard]] virtual auto equals_to(const object* /*other*/) const -> bool { return false; }
 
     mutable bool is_return_value {};
 };
