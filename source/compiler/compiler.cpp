@@ -2,10 +2,14 @@
 #include <array>
 #include <cstddef>
 #include <iterator>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "compiler.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <ast/program.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
 #include <fmt/ranges.h>

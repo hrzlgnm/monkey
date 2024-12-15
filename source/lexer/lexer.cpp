@@ -163,6 +163,8 @@ auto lexer::read_identifier_or_keyword() -> token
     auto end = m_position;
     const auto count = end - position;
     const auto identifier_or_keyword = m_input.substr(position, count);
+    // MSVC compiler will not be happy with a const auto* const itr here
+    // NOLINTBEGIN(*-qualified-auto)
     const auto itr =
         std::find_if(keyword_tokens.cbegin(),
                      keyword_tokens.cend(),
@@ -170,6 +172,7 @@ auto lexer::read_identifier_or_keyword() -> token
     if (itr != keyword_tokens.end()) {
         return token {.type = itr->second, .literal = itr->first};
     }
+    // NOLINTEND(*-qualified-auto)
     return token {.type = token_type::ident, .literal = identifier_or_keyword};
 }
 

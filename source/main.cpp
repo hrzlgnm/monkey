@@ -78,7 +78,9 @@ struct command_line_args
         exit_code = EXIT_FAILURE;
     }
     fmt::print("Usage: {} [-d] [-i] [-h] [<file>]\n\n", program);
+    // NOLINTBEGIN(concurrency-mt-unsafe)
     exit(exit_code);
+    // NOLINTEND(concurrency-mt-unsafe)
 }
 
 auto parse_command_line(std::string_view program, int argc, char** argv) -> command_line_args
