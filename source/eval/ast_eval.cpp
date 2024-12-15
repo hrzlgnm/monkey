@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <sstream>
 #include <variant>
 
 #include <ast/array_expression.hpp>
@@ -490,10 +491,23 @@ const builtin_function_expression builtin_push {
         }
         return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
     }};
+const builtin_function_expression builtin_type {
+    "type",
+    {"val"},
+    [](const array_object::array& arguments) -> const object*
+    {
+        if (arguments.size() != 1) {
+            return make_error("wrong number of arguments to type(): expected=1, got={}", arguments.size());
+        }
+        const auto& val = arguments[0];
+        std::ostringstream strm;
+        strm << val->type();
+        return make<string_object>(strm.str());
+    }};
 }  // namespace
 
 const std::vector<const builtin_function_expression*> builtin_function_expression::builtins {
-    &builtin_len, &builtin_puts, &builtin_first, &builtin_last, &builtin_rest, &builtin_push};
+    &builtin_len, &builtin_puts, &builtin_first, &builtin_last, &builtin_rest, &builtin_push, &builtin_type};
 
 auto callable_expression::eval(environment* env) const -> const object*
 {
@@ -584,7 +598,7 @@ auto run(std::string_view input) -> const object*
     auto [prgrm, _] = check_program(input);
     environment env;
     for (const auto& builtin : builtin_function_expression::builtins) {
-        env.set(builtin->name, make<function_object>(builtin, nullptr));
+        env.set(builtin->name, make<builtin_object>(builtin));
     }
     auto result = prgrm->eval(&env);
     return result;
@@ -931,6 +945,9 @@ TEST_CASE("builtinFunctions")
         bt {R"(push([], "abc"))", array {{"abc"}}},
         bt {R"(push("", "a"))", "a"},
         bt {R"(push("c", "abc"))", "cabc"},
+        bt {R"(type("c"))", "string"},
+        bt {R"(type())", error {"wrong number of arguments to type(): expected=1, got=0"}},
+        bt {R"(type(type))", {"builtin"}},
     };
 
     for (const auto& test : tests) {
