@@ -23,10 +23,11 @@ jobs:
       - name: Checkout
         uses: classabbyamp/treeless-checkout-action@v1
 
-      - name: Lint
+      - name: 📐 Check clang-format
         run: cmake -D FORMAT_COMMAND=clang-format -P cmake/lint.cmake
 
       - name: 📝 Check spelling using typos-action
+        if: always()
         uses: crate-ci/typos@d1c850b2b5d502763520c25fb4a6a1128ad99bd9 # v1.28.3
 
   Build-And-Test:
