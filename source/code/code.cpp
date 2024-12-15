@@ -91,11 +91,13 @@ auto make(opcodes opcode, const operands& operands) -> instructions
         auto width = definition.operand_widths[idx];
         switch (width) {
             case 2:
-                write_uint16_big_endian(instr, instr.size(), static_cast<uint16_t>(operand));
+                write_uint16_big_endian(instr, instr.size(), operand);
                 break;
             case 1:
                 instr.push_back(static_cast<uint8_t>(operand));
                 break;
+            default:
+                throw std::runtime_error(fmt::format("invalid operand width: {}", width));
         }
         idx++;
     }
@@ -121,6 +123,9 @@ auto read_operands(const definition& def, const instructions& instr) -> std::pai
                 break;
             case 1:
                 result.first[idx] = instr[offset];
+                break;
+            default:
+                throw std::runtime_error(fmt::format("invalid operand width: {}", width));
         }
         offset += width;
         idx++;
