@@ -1,4 +1,5 @@
 #include <chrono>
+#include <span>
 #include <string_view>
 
 #include <compiler/compiler.hpp>
