@@ -24,6 +24,11 @@ enum class symbol_scope : std::uint8_t
 };
 auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&;
 
+template<>
+struct fmt::formatter<symbol_scope> : ostream_formatter
+{
+};
+
 struct symbol
 {
     std::string name;

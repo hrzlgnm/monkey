@@ -1,6 +1,9 @@
 #include <algorithm>
 #include <array>
-#include <numeric>
+#include <cctype>
+#include <limits>
+#include <string_view>
+#include <utility>
 
 #include "lexer.hpp"
 

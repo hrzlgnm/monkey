@@ -10,8 +10,6 @@
 
 #include <doctest/doctest.h>
 #include <fmt/format.h>
-#include <fmt/ostream.h>
-#include <gc.hpp>
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {
@@ -35,11 +33,6 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
     }
     return ost;
 }
-
-template<>
-struct fmt::formatter<symbol_scope> : ostream_formatter
-{
-};
 
 auto operator<<(std::ostream& ost, const symbol& sym) -> std::ostream&
 {
