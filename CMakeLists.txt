@@ -55,19 +55,26 @@ target_sources(monkey_lib
 
 target_precompile_headers(monkey_lib
   PRIVATE
-  <array>
-  <algorithm>
-  <cstdint>
-  <deque>
-  <fmt/core.h>
-  <fmt/format.h>
-  <iostream>
-  <map>
-  <memory>
-  <optional>
-  <string>
-  <string_view>
-  <variant>
+    <algorithm>
+    <array>
+    <cstddef>
+    <cstdint>
+    <deque>
+    <fmt/base.h>
+    <fmt/format.h>
+    <fmt/ostream.h>
+    <fmt/ranges.h>
+    <iterator>
+    <map>
+    <memory>
+    <optional>
+    <ostream>
+    <string>
+    <string_view>
+    <utility>
+    <unordered_map>
+    <variant>
+    <vector>
 )
 
 target_include_directories(
