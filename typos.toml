@@ -1,5 +1,7 @@
+[files]
+extend-exclude = ["test/doctest/doctest/doctest.h"]
+
 [default.extend-words]
-SEH = "SEH"
 fals = "fals"
 tru = "tru"
 thr = "thr"
