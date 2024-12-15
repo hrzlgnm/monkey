@@ -56,11 +56,37 @@ auto print_parse_errors(const std::vector<std::string>& errors)
     }
 }
 
+auto show_error(std::string_view error_kind, std::string_view error_message)
+{
+    std::cerr << "Whoops! We ran into some " << error_kind << " error: \n  " << error_message << '\n';
+}
+
+auto print_compile_error(std::string_view error)
+{
+    show_error("compiler", error);
+}
+
+auto print_eval_error(std::string_view error)
+{
+    show_error("evaluation", error);
+}
+
 enum class engine : std::uint8_t
 {
     vm,
     eval,
 };
+
+auto operator<<(std::ostream& strm, engine en) -> std::ostream&
+{
+    switch (en) {
+        case engine::vm:
+            return strm << "vm";
+        case engine::eval:
+            return strm << "eval";
+    }
+    return strm << "unknown";
+}
 
 struct command_line_args
 {
@@ -168,7 +194,8 @@ auto run_file(const command_line_args& opts) -> int
 
 auto run_repl(const command_line_args& opts) -> int
 {
-    std::cout << "Hello " << get_logged_in_user() << ". This is the Monkey programming language.\n";
+    std::cout << "Hello " << get_logged_in_user() << ". This is the Monkey programming languag using engine "
+              << opts.mode << ".\n";
     std::cout << "Feel free to type in commands\n";
     auto* global_env = make<environment>();
     auto* symbols = symbol_table::create();
@@ -202,15 +229,20 @@ auto run_repl(const command_line_args& opts) -> int
                     std::cout << result->inspect() << '\n';
                 }
             } catch (const std::exception& e) {
-                monkey_business();
-                std::cerr << e.what() << '\n';
+                print_compile_error(e.what());
                 show_prompt();
                 continue;
             }
         } else {
-            const auto* result = prgrm->eval(global_env);
-            if (result != nullptr && !result->is(object::object_type::null)) {
-                std::cout << result->inspect() << '\n';
+            try {
+                const auto* result = prgrm->eval(global_env);
+                if (result != nullptr && !result->is(object::object_type::null)) {
+                    std::cout << result->inspect() << '\n';
+                }
+            } catch (const std::exception& e) {
+                print_eval_error(e.what());
+                show_prompt();
+                continue;
             }
         }
         if (opts.debug_env) {
