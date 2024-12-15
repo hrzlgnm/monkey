@@ -1,10 +1,14 @@
 #include <array>
 #include <cstddef>
+#include <map>
+#include <optional>
 #include <ostream>
 #include <string>
+#include <vector>
 
 #include "symbol_table.hpp"
 
+#include <chungus.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
