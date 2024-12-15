@@ -1,3 +1,4 @@
+#include <ostream>
 #include <stdexcept>
 
 #include "token_type.hpp"
