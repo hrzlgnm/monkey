@@ -194,7 +194,7 @@ auto run_file(const command_line_args& opts) -> int
 
 auto run_repl(const command_line_args& opts) -> int
 {
-    std::cout << "Hello " << get_logged_in_user() << ". This is the Monkey programming languag using engine "
+    std::cout << "Hello " << get_logged_in_user() << ". This is the Monkey programming language using engine "
               << opts.mode << ".\n";
     std::cout << "Feel free to type in commands\n";
     auto* global_env = make<environment>();
