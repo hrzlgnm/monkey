@@ -17,7 +17,8 @@ Checks: "*,\
   -bugprone-easily-swappable-parameters,\
   -readability-identifier-length,\
   -hicpp-multiway-paths-covered,\
-  -cppcoreguidelines-owning-memory"
+  -cppcoreguidelines-owning-memory,\"
+  -cppcoreguidelines-pro-bounds-constant-array-index"
 WarningsAsErrors: ""
 CheckOptions:
   - key: "bugprone-argument-comment.StrictMode"

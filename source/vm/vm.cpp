@@ -1,17 +1,20 @@
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "vm.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <chungus.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
@@ -364,7 +367,7 @@ auto vm::exec_call(size_t num_args) -> void
             throw std::runtime_error(
                 fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
         }
-        frame frm {.cl = clsr, .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
+        const frame frm {.cl = clsr, .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
         m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
         push_frame(frm);
         return;
