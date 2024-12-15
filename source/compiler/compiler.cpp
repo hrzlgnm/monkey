@@ -797,7 +797,10 @@ TEST_CASE("letStatementScopes")
             R"(let num = 55; fn() { num };)",
             {
                 55,
-                maker({make(get_global, 0), make(return_value)}),
+                maker({
+                    make(get_global, 0),
+                    make(return_value),
+                }),
             },
             {
                 make(constant, 0),
@@ -813,7 +816,12 @@ TEST_CASE("letStatementScopes")
             })",
             {
                 55,
-                maker({make(constant, 0), make(set_local, 0), make(get_local, 0), make(return_value)}),
+                maker({
+                    make(constant, 0),
+                    make(set_local, 0),
+                    make(get_local, 0),
+                    make(return_value),
+                }),
             },
             {
                 make(closure, {1, 0}),
@@ -874,7 +882,12 @@ TEST_CASE("builtins")
             R"(
             fn() { len([]) }
             )",
-            {maker({make(get_builtin, 0), make(array, 0), make(call, 1), make(return_value)})},
+            {maker({
+                make(get_builtin, 0),
+                make(array, 0),
+                make(call, 1),
+                make(return_value),
+            })},
             {
                 make(closure, {0, 0}),
                 make(pop),
@@ -896,8 +909,17 @@ TEST_CASE("closures")
                 }
             }
             )",
-            {maker({make(get_free, 0), make(get_local, 0), make(add), make(return_value)}),
-             maker({make(get_local, 0), make(closure, {0, 1}), make(return_value)})},
+            {maker({
+                 make(get_free, 0),
+                 make(get_local, 0),
+                 make(add),
+                 make(return_value),
+             }),
+             maker({
+                 make(get_local, 0),
+                 make(closure, {0, 1}),
+                 make(return_value),
+             })},
             {
                 make(closure, {1, 0}),
                 make(pop),
@@ -911,10 +933,25 @@ TEST_CASE("closures")
                     }
                 }
             };)",
-            {maker(
-                 {make(get_free, 0), make(get_free, 1), make(add), make(get_local, 0), make(add), make(return_value)}),
-             maker({make(get_free, 0), make(get_local, 0), make(closure, {0, 2}), make(return_value)}),
-             maker({make(get_local, 0), make(closure, {1, 1}), make(return_value)})},
+            {maker({
+                 make(get_free, 0),
+                 make(get_free, 1),
+                 make(add),
+                 make(get_local, 0),
+                 make(add),
+                 make(return_value),
+             }),
+             maker({
+                 make(get_free, 0),
+                 make(get_local, 0),
+                 make(closure, {0, 2}),
+                 make(return_value),
+             }),
+             maker({
+                 make(get_local, 0),
+                 make(closure, {1, 1}),
+                 make(return_value),
+             })},
             {
                 make(closure, {2, 0}),
                 make(pop),
