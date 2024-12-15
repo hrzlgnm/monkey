@@ -33,7 +33,7 @@ struct vm
 
     static auto create_with_state(bytecode code, constants* globals) -> vm
     {
-        auto* main_fn = make<compiled_function_object>(std::move(code.instrs), 0, 0);
+        auto* main_fn = make<compiled_function_object>(std::move(code.instrs), 0ULL, 0ULL);
         auto* main_clousre = make<closure_object>(main_fn);
         const frame main_frame {.cl = main_clousre};
         frames frms;
