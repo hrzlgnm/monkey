@@ -17,7 +17,7 @@
 #include <parser/parser.hpp>
 
 vm::vm(frames frames, const constants* consts, constants* globals)
-    : constans {consts}
+    : m_constans {consts}
     , m_globals {globals}
     , m_frames {frames}
 {
@@ -33,7 +33,7 @@ auto vm::run() -> void
             case opcodes::constant: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
-                push(constans->at(const_idx));
+                push(m_constans->at(const_idx));
             } break;
             case opcodes::sub:  // fallthrough
             case opcodes::mul:  // fallthrough
@@ -401,7 +401,7 @@ auto vm::pop_frame() -> frame&
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 {
-    const auto* constant = constans->at(const_idx);
+    const auto* constant = m_constans->at(const_idx);
     if (!constant->is(object::object_type::compiled_function)) {
         throw std::runtime_error("not a function");
     }

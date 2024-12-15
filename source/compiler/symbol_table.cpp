@@ -4,7 +4,6 @@
 
 #include <doctest/doctest.h>
 #include <fmt/ostream.h>
-#include <parser/parser.hpp>
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {
