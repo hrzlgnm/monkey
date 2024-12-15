@@ -8,10 +8,10 @@
 
 #include "symbol_table.hpp"
 
-#include <gc.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>
+#include <gc.hpp>
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {

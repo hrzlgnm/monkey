@@ -18,10 +18,10 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
-#include <gc.hpp>
 #include <code/code.hpp>
 #include <eval/object.hpp>
 #include <fmt/format.h>
+#include <gc.hpp>
 #include <lexer/token_type.hpp>
 
 #include "compiler.hpp"

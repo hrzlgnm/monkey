@@ -14,13 +14,13 @@
 
 #include <ast/builtin_function_expression.hpp>
 #include <ast/program.hpp>
-#include <gc.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <gc.hpp>
 #include <lexer/lexer.hpp>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>

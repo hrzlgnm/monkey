@@ -25,10 +25,10 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
-#include <gc.hpp>
 #include <doctest/doctest.h>
 #include <fmt/base.h>
 #include <fmt/ranges.h>
+#include <gc.hpp>
 #include <lexer/token_type.hpp>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
