@@ -152,8 +152,6 @@ struct string_object : hashable_object
 
 struct null_object : object
 {
-    [[nodiscard]] auto is_truthy() const -> bool override { return false; }
-
     [[nodiscard]] auto type() const -> object_type override { return object_type::null; }
 
     [[nodiscard]] auto inspect() const -> std::string override { return "null"; }
