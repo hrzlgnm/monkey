@@ -11,7 +11,7 @@ class chungus
     static void cleanup()
     {
         for (T* obj : get_allocation_list()) {
-            delete obj;  // Properly call destructor
+            delete obj;
         }
         get_allocation_list().clear();
     }
@@ -20,11 +20,8 @@ class chungus
     static auto get_allocation_list() -> std::vector<T*>&
     {
         static std::vector<T*> allocations;
-        static const bool registered = []()
-        {
-            return std::atexit(cleanup);  // Register cleanup at exit
-        }();
-        (void)registered;  // Avoid unused variable warning
+        static const bool registered = []() { return std::atexit(cleanup); }();
+        (void)registered;
         return allocations;
     }
 };
