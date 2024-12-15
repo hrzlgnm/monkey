@@ -1,16 +1,16 @@
 #include <cstdint>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "parser.hpp"
 
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
-#include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
-#include <ast/callable_expression.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
@@ -24,9 +24,8 @@
 #include <ast/unary_expression.hpp>
 #include <chungus.hpp>
 #include <doctest/doctest.h>
-#include <eval/object.hpp>
-#include <fmt/core.h>
 #include <fmt/ranges.h>
+#include <lexer/lexer.hpp>
 #include <lexer/token.hpp>
 #include <lexer/token_type.hpp>
 #include <overloaded.hpp>
@@ -106,7 +105,7 @@ auto parser::parse_program() -> program*
     while (m_current_token.type != token_type::eof) {
         auto* stmt = parse_statement();
         if (stmt != nullptr) {
-            prog->statements.push_back(std::move(stmt));
+            prog->statements.push_back(stmt);
         }
         next_token();
     }
@@ -153,7 +152,9 @@ auto parser::parse_let_statement() -> statement*
     next_token();
     stmt->value = parse_expression(lowest);
     if (const auto* func_expr = dynamic_cast<const function_expression*>(stmt->value); func_expr != nullptr) {
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-const-cast)
         const_cast<function_expression*>(func_expr)->name = stmt->name->value;
+        // NOLINTEND(cppcoreguidelines-pro-type-const-cast)
     }
 
     if (peek_token_is(semicolon)) {

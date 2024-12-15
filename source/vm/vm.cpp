@@ -1,16 +1,19 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "vm.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <ast/program.hpp>
 #include <chungus.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
@@ -18,6 +21,7 @@
 #include <eval/object.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <lexer/lexer.hpp>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
 
@@ -161,8 +165,6 @@ auto vm::run() -> void
             case opcodes::current_closure: {
                 push(current_frame().cl);
             } break;
-            default:
-                throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
         }
     }
 }
