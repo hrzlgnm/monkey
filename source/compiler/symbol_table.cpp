@@ -1,9 +1,11 @@
 #include <array>
 #include <ostream>
+#include <string>
 
 #include "symbol_table.hpp"
 
 #include <doctest/doctest.h>
+#include <fmt/format.h>
 #include <fmt/ostream.h>
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
