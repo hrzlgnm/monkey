@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
@@ -26,6 +27,7 @@
 #include <ast/unary_expression.hpp>
 #include <chungus.hpp>
 #include <doctest/doctest.h>
+#include <fmt/base.h>
 #include <fmt/ranges.h>
 #include <lexer/token_type.hpp>
 #include <overloaded.hpp>
