@@ -1,4 +1,5 @@
 #include <array>
+#include <ostream>
 
 #include "symbol_table.hpp"
 
