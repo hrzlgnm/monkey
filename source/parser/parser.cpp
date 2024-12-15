@@ -7,7 +7,10 @@
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
+#include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
+#include <ast/callable_expression.hpp>
+#include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
 #include <ast/identifier.hpp>
