@@ -265,7 +265,7 @@ TEST_SUITE("code")
         for (auto&& [opcode, operands, expected] : tests) {
             auto actual = make(opcode, operands);
             REQUIRE_EQ(actual, expected);
-        };
+        }
     }
 
     TEST_CASE("instructionsToString")
