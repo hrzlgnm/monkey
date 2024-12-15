@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>

@@ -8,7 +8,7 @@
 
 #include "symbol_table.hpp"
 
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
 #include <fmt/ostream.h>

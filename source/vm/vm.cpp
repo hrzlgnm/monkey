@@ -14,7 +14,7 @@
 
 #include <ast/builtin_function_expression.hpp>
 #include <ast/program.hpp>
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <doctest/doctest.h>

@@ -1,22 +1,22 @@
 #pragma once
+#include <cstdlib>
 #include <utility>
 #include <vector>
 
 template<typename T>
-class chungus
+class gc
 {
   public:
     static void track(T* obj) { get_allocation_list().push_back(obj); }
 
+  private:
     static void cleanup()
     {
         for (T* obj : get_allocation_list()) {
             delete obj;
         }
-        get_allocation_list().clear();
     }
 
-  private:
     static auto get_allocation_list() -> std::vector<T*>&
     {
         static std::vector<T*> allocations;
@@ -30,6 +30,6 @@ template<typename T, typename... Args>
 auto make(Args&&... args) -> T*
 {
     T* p = new T(std::forward<Args>(args)...);
-    chungus<T>::track(p);
+    gc<T>::track(p);
     return p;
 }

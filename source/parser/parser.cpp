@@ -22,7 +22,7 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <doctest/doctest.h>
 #include <fmt/ranges.h>
 #include <lexer/lexer.hpp>

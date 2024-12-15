@@ -7,7 +7,7 @@
 #include <variant>
 #include <vector>
 
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <code/code.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>

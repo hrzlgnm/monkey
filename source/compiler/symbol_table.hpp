@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <fmt/ostream.h>
 
 template<typename Value>

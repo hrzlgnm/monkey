@@ -11,7 +11,7 @@
 #include <vector>
 
 #include <ast/builtin_function_expression.hpp>
-#include <chungus.hpp>
+#include <gc.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
