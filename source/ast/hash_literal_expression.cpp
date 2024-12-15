@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <iterator>
+#include <string>
 #include <vector>
 
 #include "hash_literal_expression.hpp"

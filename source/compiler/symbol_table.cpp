@@ -1,10 +1,17 @@
 #include <array>
+#include <cstddef>
+#include <map>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <vector>
 
 #include "symbol_table.hpp"
 
+#include <chungus.hpp>
 #include <doctest/doctest.h>
+#include <fmt/format.h>
 #include <fmt/ostream.h>
-#include <parser/parser.hpp>
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {
@@ -226,7 +233,7 @@ TEST_CASE("defineResolveBuiltin")
     }
 }
 
-TEST_CASE("defineAndResolveFunctonName")
+TEST_CASE("defineAndResolveFunctionName")
 {
     using enum symbol_scope;
     auto globals = symbol_table::create();

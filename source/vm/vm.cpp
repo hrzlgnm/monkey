@@ -1,23 +1,32 @@
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <variant>
+#include <vector>
 
 #include "vm.hpp"
 
 #include <ast/builtin_function_expression.hpp>
+#include <ast/program.hpp>
+#include <chungus.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <lexer/lexer.hpp>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
 
 vm::vm(frames frames, const constants* consts, constants* globals)
-    : m_constans {consts}
+    : m_constants {consts}
     , m_globals {globals}
     , m_frames {frames}
 {
@@ -33,7 +42,7 @@ auto vm::run() -> void
             case opcodes::constant: {
                 auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
-                push(m_constans->at(const_idx));
+                push(m_constants->at(const_idx));
             } break;
             case opcodes::sub:  // fallthrough
             case opcodes::mul:  // fallthrough
@@ -156,8 +165,6 @@ auto vm::run() -> void
             case opcodes::current_closure: {
                 push(current_frame().cl);
             } break;
-            default:
-                throw std::runtime_error(fmt::format("opcode {} not implemented yet", op_code));
         }
     }
 }
@@ -364,7 +371,7 @@ auto vm::exec_call(size_t num_args) -> void
             throw std::runtime_error(
                 fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
         }
-        frame frm {.cl = clsr, .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
+        const frame frm {.cl = clsr, .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
         m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
         push_frame(frm);
         return;
@@ -401,7 +408,7 @@ auto vm::pop_frame() -> frame&
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 {
-    const auto* constant = m_constans->at(const_idx);
+    const auto* constant = m_constants->at(const_idx);
     if (!constant->is(object::object_type::compiled_function)) {
         throw std::runtime_error("not a function");
     }
@@ -676,7 +683,7 @@ TEST_CASE("conditionals")
     run(tests);
 }
 
-TEST_CASE("globalLetStatemets")
+TEST_CASE("globalLetStatements")
 {
     const std::array tests {
         vt<int64_t> {"let one = 1; one", 1},
@@ -1123,7 +1130,7 @@ TEST_CASE("recursiveFunction")
     run(tests);
 }
 
-TEST_CASE("recuriveFibonnacci")
+TEST_CASE("recursiveFibonacci")
 {
     const std::array tests {
         vt<int64_t> {

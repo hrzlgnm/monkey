@@ -1,24 +1,33 @@
 #include <algorithm>
 #include <cstdint>
 #include <deque>
+#include <iterator>
 #include <sstream>
+#include <string>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include <ast/array_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
 #include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
+#include <ast/callable_expression.hpp>
+#include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
+#include <ast/identifier.hpp>
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
 #include <ast/integer_literal.hpp>
 #include <ast/program.hpp>
+#include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 #include <chungus.hpp>
 #include <doctest/doctest.h>
+#include <fmt/base.h>
 #include <fmt/ranges.h>
 #include <lexer/token_type.hpp>
 #include <overloaded.hpp>
@@ -355,12 +364,12 @@ const builtin_function_expression builtin_len {
         using enum object::object_type;
         if (maybe_string_or_array->is(string)) {
             const auto& str = maybe_string_or_array->as<string_object>()->value;
-            return make<integer_object>(str.size());
+            return make<integer_object>(static_cast<int64_t>(str.size()));
         }
         if (maybe_string_or_array->is(array)) {
             const auto& arr = maybe_string_or_array->as<array_object>()->elements;
 
-            return make<integer_object>(arr.size());
+            return make<integer_object>(static_cast<int64_t>(arr.size()));
         }
         return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
     }};
@@ -618,7 +627,7 @@ auto run_multi(std::deque<std::string>& inputs) -> const object*
 
 TEST_SUITE_BEGIN("eval");
 
-TEST_CASE("integerExpresssion")
+TEST_CASE("integerExpression")
 {
     struct et
     {
@@ -649,7 +658,7 @@ TEST_CASE("integerExpresssion")
     }
 }
 
-TEST_CASE("booleanExpresssion")
+TEST_CASE("booleanExpression")
 {
     struct et
     {
@@ -754,7 +763,7 @@ TEST_CASE("ifElseExpressions")
     }
 }
 
-TEST_CASE("returnStatemets")
+TEST_CASE("returnStatements")
 {
     struct rt
     {
@@ -1085,7 +1094,7 @@ TEST_CASE("hashLiterals")
     for (const auto& [key, value] : expected) {
         REQUIRE(as_hash.contains(key));
         REQUIRE_EQ(value, as_hash.at(key)->as<integer_object>()->value);
-    };
+    }
 }
 
 TEST_CASE("hashIndexExpression")

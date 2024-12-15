@@ -1,4 +1,8 @@
+#include <string>
+
 #include "array_expression.hpp"
+
+#include <fmt/format.h>
 
 #include "util.hpp"
 

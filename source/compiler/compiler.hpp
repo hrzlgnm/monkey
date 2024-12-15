@@ -41,7 +41,7 @@ struct compiler
 
     [[nodiscard]] auto add_constant(object* obj) -> size_t;
     [[nodiscard]] auto add_instructions(const instructions& ins) -> size_t;
-    auto emit(opcodes opcode, operands&& operands = {}) -> size_t;
+    auto emit(opcodes opcode, const operands& operands = {}) -> size_t;
 
     auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, std::vector {operand}); }
 

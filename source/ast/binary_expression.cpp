@@ -1,7 +1,8 @@
+#include <string>
+
 #include "binary_expression.hpp"
 
-#include <fmt/core.h>
-#include <lexer/token_type.hpp>
+#include <fmt/format.h>
 
 auto binary_expression::string() const -> std::string
 {

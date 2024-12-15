@@ -1,13 +1,11 @@
 #include <chrono>
-#include <memory>
 #include <span>
 #include <string_view>
 
 #include <compiler/compiler.hpp>
 #include <eval/environment.hpp>
 #include <eval/object.hpp>
-#include <fmt/ostream.h>
-#include <lexer/lexer.hpp>
+#include <fmt/base.h>
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
 

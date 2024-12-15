@@ -1,3 +1,5 @@
+#include <string>
+
 #include "boolean.hpp"
 
 boolean::boolean(bool val)

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -11,9 +10,8 @@
 #include <chungus.hpp>
 #include <code/code.hpp>
 #include <compiler/symbol_table.hpp>
-#include <fmt/core.h>
-
-#include "eval/environment.hpp"
+#include <eval/environment.hpp>
+#include <fmt/ostream.h>
 
 struct object
 {
@@ -48,14 +46,14 @@ struct object
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
 
-    [[nodiscard]] virtual auto is_truthy() const -> bool { return true; }
+    [[nodiscard]] virtual auto is_truthy() const -> bool { return false; }
 
     [[nodiscard]] virtual auto is_hashable() const -> bool { return false; }
 
     [[nodiscard]] virtual auto type() const -> object_type = 0;
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
-    [[nodiscard]] virtual auto equals_to(const object* /*other*/) const -> bool { return false; };
+    [[nodiscard]] virtual auto equals_to(const object* /*other*/) const -> bool { return false; }
 
     mutable bool is_return_value {};
 };
@@ -143,18 +141,13 @@ struct string_object : hashable_object
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override
-    {
-        return other->is(type()) && other->as<string_object>()->value == value;
-    }
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override;
 
     std::string value;
 };
 
 struct null_object : object
 {
-    [[nodiscard]] auto is_truthy() const -> bool override { return false; }
-
     [[nodiscard]] auto type() const -> object_type override { return object_type::null; }
 
     [[nodiscard]] auto inspect() const -> std::string override { return "null"; }
@@ -204,18 +197,7 @@ struct array_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override
-    {
-        if (!other->is(type()) || other->as<array_object>()->elements.size() != elements.size()) {
-            return false;
-        }
-        const auto& other_elements = other->as<array_object>()->elements;
-        return std::equal(elements.cbegin(),
-                          elements.cend(),
-                          other_elements.cbegin(),
-                          other_elements.cend(),
-                          [](const object* a, const object* b) { return a->equals_to(b); });
-    }
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override;
 
     array elements;
 };
@@ -235,21 +217,7 @@ struct hash_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override
-    {
-        if (!other->is(type()) || other->as<hash_object>()->pairs.size() != pairs.size()) {
-            return false;
-        }
-        const auto& other_pairs = other->as<hash_object>()->pairs;
-        return std::all_of(pairs.cbegin(),
-                           pairs.cend(),
-                           [other_pairs](const auto& pair)
-                           {
-                               const auto& [key, value] = pair;
-                               auto it = other_pairs.find(key);
-                               return it != other_pairs.cend() && it->second->equals_to(value);
-                           });
-    }
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override;
 
     hash pairs;
 };

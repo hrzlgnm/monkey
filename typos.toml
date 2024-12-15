@@ -1,0 +1,5 @@
+[default.extend-words]
+SEH = "SEH"
+fals = "fals"
+tru = "tru"
+thr = "thr"

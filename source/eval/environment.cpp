@@ -2,6 +2,8 @@
 
 #include "environment.hpp"
 
+#include <fmt/base.h>
+
 #include "object.hpp"
 
 environment::environment(environment* outer_env)

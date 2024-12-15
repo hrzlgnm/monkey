@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
@@ -12,7 +13,10 @@
 #include <ast/builtin_function_expression.hpp>
 #include <chungus.hpp>
 #include <compiler/compiler.hpp>
+#include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
+#include <fmt/base.h>
+#include <fmt/format.h>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
@@ -117,7 +121,7 @@ auto run_file(const command_line_args& opts) -> int
         std::cerr << "ERROR: could not open file: " << opts.file << "\n";
         return 1;
     }
-    std::string contents {(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
+    const std::string contents {(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
     auto lxr = lexer {contents};
     auto prsr = parser {lxr};
     auto* prgrm = prsr.parse_program();
@@ -210,5 +214,4 @@ auto main(int argc, char* argv[]) -> int
         std::cerr << "Caught an exception: " << e.what() << "\n";
         return 1;
     }
-    return 0;
 }
