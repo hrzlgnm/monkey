@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
+#include "callable_expression.hpp"
 #include "statements.hpp"
 
 function_expression::function_expression(std::vector<std::string>&& params, const statement* bod)
