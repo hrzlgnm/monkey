@@ -1,3 +1,5 @@
+#include <string>
+
 #include "builtin_function_expression.hpp"
 
 #include "eval/object.hpp"

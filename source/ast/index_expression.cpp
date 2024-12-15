@@ -1,6 +1,8 @@
+#include <string>
+
 #include "index_expression.hpp"
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 auto index_expression::string() const -> std::string
 {

@@ -1,3 +1,5 @@
+#include <string>
+
 #include "identifier.hpp"
 
 identifier::identifier(std::string val)

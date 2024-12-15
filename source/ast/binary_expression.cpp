@@ -1,3 +1,5 @@
+#include <string>
+
 #include "binary_expression.hpp"
 
 #include <fmt/format.h>

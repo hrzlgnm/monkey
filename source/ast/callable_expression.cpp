@@ -1,3 +1,5 @@
+#include <string>
+
 #include "callable_expression.hpp"
 
 #include <fmt/format.h>
