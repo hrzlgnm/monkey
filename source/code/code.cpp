@@ -91,7 +91,7 @@ auto make(opcodes opcode, const operands& operands) -> instructions
         auto width = definition.operand_widths[idx];
         switch (width) {
             case 2:
-                write_uint16_big_endian(instr, instr.size(), operand);
+                write_uint16_big_endian(instr, static_cast<std::uint16_t>(instr.size()), operand);
                 break;
             case 1:
                 instr.push_back(static_cast<uint8_t>(operand));
