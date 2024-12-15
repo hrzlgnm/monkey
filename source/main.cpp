@@ -15,6 +15,7 @@
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
+#include <fmt/base.h>
 #include <fmt/format.h>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
@@ -120,7 +121,7 @@ auto run_file(const command_line_args& opts) -> int
         std::cerr << "ERROR: could not open file: " << opts.file << "\n";
         return 1;
     }
-    std::string contents {(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
+    const std::string contents {(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
     auto lxr = lexer {contents};
     auto prsr = parser {lxr};
     auto* prgrm = prsr.parse_program();
