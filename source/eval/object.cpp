@@ -1,13 +1,14 @@
+#include <algorithm>
 #include <ios>
 #include <sstream>
 #include <string>
+#include <variant>
 
 #include "object.hpp"
 
 #include <ast/builtin_function_expression.hpp>
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
-#include <fmt/ostream.h>
 #include <fmt/ranges.h>
 #include <overloaded.hpp>
 
@@ -54,6 +55,11 @@ auto string_object::hash_key() const -> hash_key_type
     return value;
 }
 
+auto string_object::equals_to(const object* other) const -> bool
+{
+    return other->is(type()) && other->as<string_object>()->value == value;
+}
+
 auto boolean_object::hash_key() const -> hash_key_type
 {
     return value;
@@ -89,6 +95,19 @@ auto array_object::inspect() const -> std::string
     return strm.str();
 }
 
+auto array_object::equals_to(const object* other) const -> bool
+{
+    if (!other->is(type()) || other->as<array_object>()->elements.size() != elements.size()) {
+        return false;
+    }
+    const auto& other_elements = other->as<array_object>()->elements;
+    return std::equal(elements.cbegin(),
+                      elements.cend(),
+                      other_elements.cbegin(),
+                      other_elements.cend(),
+                      [](const object* a, const object* b) { return a->equals_to(b); });
+}
+
 auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> std::ostream&
 {
     std::visit(
@@ -115,6 +134,22 @@ auto hash_object::inspect() const -> std::string
     }
     strm << "}";
     return strm.str();
+}
+
+auto hash_object::equals_to(const object* other) const -> bool
+{
+    if (!other->is(type()) || other->as<hash_object>()->pairs.size() != pairs.size()) {
+        return false;
+    }
+    const auto& other_pairs = other->as<hash_object>()->pairs;
+    return std::all_of(pairs.cbegin(),
+                       pairs.cend(),
+                       [other_pairs](const auto& pair)
+                       {
+                           const auto& [key, value] = pair;
+                           auto it = other_pairs.find(key);
+                           return it != other_pairs.cend() && it->second->equals_to(value);
+                       });
 }
 
 namespace
