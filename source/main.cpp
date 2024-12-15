@@ -182,7 +182,7 @@ auto run_file(const command_line_args& opts) -> int
     } else {
         auto* global_env = make<environment>();
         for (const auto& builtin : builtin_function_expression::builtins) {
-            global_env->set(builtin->name, make<function_object>(builtin, nullptr));
+            global_env->set(builtin->name, make<builtin_object>(builtin));
         }
         const auto* result = prgrm->eval(global_env);
         if (!result->is(object::object_type::null)) {
