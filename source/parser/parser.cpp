@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <variant>
 
@@ -151,7 +152,7 @@ auto parser::parse_let_statement() -> statement*
 
     next_token();
     stmt->value = parse_expression(lowest);
-    if (auto* func_expr = dynamic_cast<const function_expression*>(stmt->value); func_expr != nullptr) {
+    if (const auto* func_expr = dynamic_cast<const function_expression*>(stmt->value); func_expr != nullptr) {
         const_cast<function_expression*>(func_expr)->name = stmt->name->value;
     }
 
@@ -164,7 +165,7 @@ auto parser::parse_let_statement() -> statement*
 auto parser::parse_return_statement() -> statement*
 {
     using enum token_type;
-    auto stmt = make<return_statement>();
+    auto* stmt = make<return_statement>();
 
     next_token();
     stmt->value = parse_expression(lowest);
@@ -177,7 +178,7 @@ auto parser::parse_return_statement() -> statement*
 
 auto parser::parse_expression_statement() -> statement*
 {
-    auto expr_stmt = make<expression_statement>();
+    auto* expr_stmt = make<expression_statement>();
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -224,7 +225,7 @@ auto parser::parse_integer_literal() -> expression*
 
 auto parser::parse_unary_expression() -> expression*
 {
-    auto unary = make<unary_expression>();
+    auto* unary = make<unary_expression>();
     unary->op = m_current_token.type;
 
     next_token();
@@ -240,7 +241,7 @@ auto parser::parse_boolean() -> expression*
 auto parser::parse_grouped_expression() -> expression*
 {
     next_token();
-    auto exp = parse_expression(lowest);
+    auto* exp = parse_expression(lowest);
     if (!get(token_type::rparen)) {
         return {};
     }
@@ -323,7 +324,7 @@ auto parser::parse_block_statement() -> block_statement*
     while (!current_token_is(rsquirly) && !current_token_is(eof)) {
         auto* stmt = parse_statement();
         if (stmt != nullptr) {
-            block->statements.push_back(std::move(stmt));
+            block->statements.push_back(stmt);
         }
         next_token();
     }
