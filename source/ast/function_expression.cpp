@@ -5,7 +5,7 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
-function_expression::function_expression(std::vector<std::string>&& params, statement* bod)
+function_expression::function_expression(std::vector<std::string>&& params, const statement* bod)
     : callable_expression(std::move(params))
     , body {bod}
 {
