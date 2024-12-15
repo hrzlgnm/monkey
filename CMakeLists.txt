@@ -66,7 +66,6 @@ target_precompile_headers(monkey_lib
     <fmt/ranges.h>
     <iterator>
     <map>
-    <memory>
     <optional>
     <ostream>
     <string>
