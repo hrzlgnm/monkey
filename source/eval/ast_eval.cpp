@@ -97,7 +97,7 @@ auto apply_string_binary_operator(token_type oper, const std::string& left, cons
 }
 
 template<typename O>
-auto muliply_sequence(const typename O::value_type& values, int64_t count) -> object*
+auto multiply_sequence(const typename O::value_type& values, int64_t count) -> object*
 {
     typename O::value_type target;
     for (int64_t i = 0; i < count; i++) {
@@ -131,7 +131,7 @@ auto binary_expression::eval(environment* env) const -> const object*
             arr = evaluated_right->as<array_object>();
             integer = evaluated_left->as<integer_object>();
         }
-        return muliply_sequence<array_object>(arr->value, integer->value);
+        return multiply_sequence<array_object>(arr->value, integer->value);
     }
     if ((evaluated_left->is(integer) && evaluated_right->is(string))
         || (evaluated_left->is(string) && evaluated_right->is(integer)) && op == token_type::asterisk)
@@ -145,7 +145,7 @@ auto binary_expression::eval(environment* env) const -> const object*
             str = evaluated_right->as<string_object>();
             integer = evaluated_left->as<integer_object>();
         }
-        return muliply_sequence<string_object>(str->value, integer->value);
+        return multiply_sequence<string_object>(str->value, integer->value);
     }
     if (evaluated_left->type() != evaluated_right->type()) {
         return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());

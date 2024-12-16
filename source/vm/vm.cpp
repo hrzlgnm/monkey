@@ -196,7 +196,7 @@ auto vm::last_popped() const -> const object*
 namespace
 {
 template<typename O>
-auto muliply_sequence(const typename O::value_type& values, int64_t count) -> object*
+auto multiply_sequence(const typename O::value_type& values, int64_t count) -> object*
 {
     typename O::value_type target;
     for (int64_t i = 0; i < count; i++) {
@@ -221,7 +221,7 @@ auto vm::exec_binary_op(opcodes opcode) -> void
             arr = right->as<array_object>();
             integer = left->as<integer_object>();
         }
-        push(muliply_sequence<array_object>(arr->value, integer->value));
+        push(multiply_sequence<array_object>(arr->value, integer->value));
         return;
     }
     if ((left->is(integer) && right->is(string)) || (left->is(string) && right->is(integer)) && opcode == opcodes::mul)
@@ -235,7 +235,7 @@ auto vm::exec_binary_op(opcodes opcode) -> void
             str = right->as<string_object>();
             integer = left->as<integer_object>();
         }
-        push(muliply_sequence<string_object>(str->value, integer->value));
+        push(multiply_sequence<string_object>(str->value, integer->value));
         return;
     }
     if (left->is(integer) && right->is(integer)) {
