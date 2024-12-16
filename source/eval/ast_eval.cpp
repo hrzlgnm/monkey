@@ -108,11 +108,29 @@ auto binary_expression::eval(environment* env) const -> const object*
     if (evaluated_right->is_error()) {
         return evaluated_right;
     }
+    using enum object::object_type;
+    if ((evaluated_left->is(integer) && evaluated_right->is(array))
+        || (evaluated_left->is(array) && evaluated_right->is(integer)) && op == token_type::asterisk)
+    {
+        const array_object* arr {};
+        const integer_object* integer {};
+        if (evaluated_left->is(array)) {
+            arr = evaluated_left->as<array_object>();
+            integer = evaluated_right->as<integer_object>();
+        } else {
+            arr = evaluated_right->as<array_object>();
+            integer = evaluated_left->as<integer_object>();
+        }
+        array_object::array target;
+        for (int64_t count = 0; count < integer->value; count++) {
+            std::copy(arr->elements.cbegin(), arr->elements.cend(), std::back_inserter(target));
+        }
+        return make<array_object>(std::move(target));
+    }
     if (evaluated_left->type() != evaluated_right->type()) {
         return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
     }
 
-    using enum object::object_type;
     if (evaluated_left->is(string) && evaluated_right->is(string)) {
         const auto* res = apply_string_binary_operator(
             op, evaluated_left->as<string_object>()->value, evaluated_right->as<string_object>()->value);
@@ -976,13 +994,41 @@ TEST_CASE("builtinFunctions")
 
 TEST_CASE("arrayExpression")
 {
-    auto evaluated = run("[1, 2 * 2, 3 + 3]");
-    INFO("got: " << evaluated->type());
-    REQUIRE(evaluated->is(object::object_type::array));
-    const auto& as_arr = evaluated->as<array_object>()->elements;
-    require_eq(as_arr[0], int64_t(1), "...");
-    require_eq(as_arr[1], int64_t(4), "...");
-    require_eq(as_arr[2], int64_t(6), "...");
+    struct at
+    {
+        std::string_view input;
+        array expected;
+    };
+
+    std::array tests {
+        at {
+            "[1, 2 * 2, 3 + 3]",
+            {{1}, 4, 6},
+        },
+        at {
+            "2 * [1, 3, 4]",
+            {{1}, {3}, {4}, {1}, {3}, {4}},
+        },
+        at {
+            "[1, 3] * 3",
+            {{1}, {3}, {1}, {3}, {1}, {3}},
+        },
+        at {
+            "[1, 3] * 0",
+            {},
+        },
+        at {
+            "-1 * [1, 3]",
+            {},
+        },
+    };
+    for (const auto test : tests) {
+        const auto evaluated = run(test.input);
+        INFO("got: " << evaluated->type());
+        REQUIRE(evaluated->is(object::object_type::array));
+        const auto& as_arr = evaluated->as<array_object>()->elements;
+        require_array_eq(evaluated->as<array_object>(), test.expected, test.input);
+    }
 }
 
 TEST_CASE("indexOperatorExpressions")

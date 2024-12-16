@@ -198,6 +198,23 @@ auto vm::exec_binary_op(opcodes opcode) -> void
     const auto* right = pop();
     const auto* left = pop();
     using enum object::object_type;
+    if ((left->is(integer) && right->is(array)) || (left->is(array) && right->is(integer)) && opcode == opcodes::mul) {
+        const array_object* arr {};
+        const integer_object* integer {};
+        if (left->is(array)) {
+            arr = left->as<array_object>();
+            integer = right->as<integer_object>();
+        } else {
+            arr = right->as<array_object>();
+            integer = left->as<integer_object>();
+        }
+        array_object::array target;
+        for (int64_t count = 0; count < integer->value; count++) {
+            std::copy(arr->elements.cbegin(), arr->elements.cend(), std::back_inserter(target));
+        }
+        push(make<array_object>(std::move(target)));
+        return;
+    }
     if (left->is(integer) && right->is(integer)) {
         auto left_value = left->as<integer_object>()->value;
         auto right_value = right->as<integer_object>()->value;
@@ -718,6 +735,14 @@ TEST_CASE("arrayLiterals")
         vt<std::vector<int>> {
             "[1+ 2, 3 * 4, 5 + 6]",
             {std::vector<int> {3, 12, 11}},
+        },
+        vt<std::vector<int>> {
+            "2 * [1, 3, 5]",
+            {std::vector<int> {1, 3, 5, 1, 3, 5}},
+        },
+        vt<std::vector<int>> {
+            "[1, 5] * 3",
+            {std::vector<int> {1, 5, 1, 5, 1, 5}},
         },
     };
     run(tests);

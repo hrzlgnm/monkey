@@ -536,6 +536,34 @@ TEST_CASE("arrayLiterals")
                 make(pop),
             },
         },
+        ctc {
+            R"([1, 5 * 6] * 2)",
+            {{1, 5, 6, 2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(mul),
+                make(array, 2),
+                make(constant, 3),
+                make(mul),
+                make(pop),
+            },
+        },
+        ctc {
+            R"(2 * [1 + 5, 6])",
+            {{2, 1, 5, 6}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(constant, 2),
+                make(add),
+                make(constant, 3),
+                make(array, 2),
+                make(mul),
+                make(pop),
+            },
+        },
     };
     run(std::move(tests));
 }
