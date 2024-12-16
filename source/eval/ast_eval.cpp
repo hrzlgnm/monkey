@@ -34,8 +34,11 @@
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
 
+#include "code/code.hpp"
 #include "environment.hpp"
+#include "lexer/token.hpp"
 #include "object.hpp"
+#include "util.hpp"
 
 auto array_expression::eval(environment* env) const -> const object*
 {
@@ -95,16 +98,6 @@ auto apply_string_binary_operator(token_type oper, const std::string& left, cons
             return {};
     }
 }
-
-template<typename O>
-auto multiply_sequence(const typename O::value_type& values, int64_t count) -> object*
-{
-    typename O::value_type target;
-    for (int64_t i = 0; i < count; i++) {
-        std::copy(values.cbegin(), values.cend(), std::back_inserter(target));
-    }
-    return make<O>(std::move(target));
-}
 }  // namespace
 
 auto binary_expression::eval(environment* env) const -> const object*
@@ -118,35 +111,12 @@ auto binary_expression::eval(environment* env) const -> const object*
     if (evaluated_right->is_error()) {
         return evaluated_right;
     }
+    if (op == token_type::asterisk) {
+        if (const auto* multiplied = evaluate_sequence_mul(evaluated_left, evaluated_right); multiplied != nullptr) {
+            return multiplied;
+        }
+    }
     using enum object::object_type;
-    if ((evaluated_left->is(integer) && evaluated_right->is(array))
-        || (evaluated_left->is(array) && evaluated_right->is(integer)) && op == token_type::asterisk)
-    {
-        const array_object* arr {};
-        const integer_object* integer {};
-        if (evaluated_left->is(array)) {
-            arr = evaluated_left->as<array_object>();
-            integer = evaluated_right->as<integer_object>();
-        } else {
-            arr = evaluated_right->as<array_object>();
-            integer = evaluated_left->as<integer_object>();
-        }
-        return multiply_sequence<array_object>(arr->value, integer->value);
-    }
-    if ((evaluated_left->is(integer) && evaluated_right->is(string))
-        || (evaluated_left->is(string) && evaluated_right->is(integer)) && op == token_type::asterisk)
-    {
-        const string_object* str {};
-        const integer_object* integer {};
-        if (evaluated_left->is(string)) {
-            str = evaluated_left->as<string_object>();
-            integer = evaluated_right->as<integer_object>();
-        } else {
-            str = evaluated_right->as<string_object>();
-            integer = evaluated_left->as<integer_object>();
-        }
-        return multiply_sequence<string_object>(str->value, integer->value);
-    }
     if (evaluated_left->type() != evaluated_right->type()) {
         return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
     }

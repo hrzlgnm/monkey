@@ -134,6 +134,8 @@ struct string_object : hashable_object
 {
     using value_type = std::string;
 
+    string_object() = default;
+
     explicit string_object(std::string val)
         : value {std::move(val)}
     {
@@ -191,6 +193,8 @@ auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object*
 struct array_object : object
 {
     using value_type = std::vector<const object*>;
+
+    array_object() = default;
 
     explicit array_object(value_type&& arr)
         : value {std::move(arr)}
