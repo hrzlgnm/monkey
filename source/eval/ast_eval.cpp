@@ -391,6 +391,7 @@ auto builtin_function_expression::call(environment* /*closure_env*/,
 
 namespace
 {
+
 const builtin_function_expression builtin_len {
     "len",
     {"val"},
@@ -399,22 +400,27 @@ const builtin_function_expression builtin_len {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
         }
-        const auto& maybe_string_or_array = arguments[0];
+        const auto& maybe_string_or_array_or_hash = arguments[0];
         using enum object::object_type;
-        if (maybe_string_or_array->is(string)) {
-            const auto& str = maybe_string_or_array->as<string_object>()->value;
+        if (maybe_string_or_array_or_hash->is(string)) {
+            const auto& str = maybe_string_or_array_or_hash->as<string_object>()->value;
             return make<integer_object>(static_cast<int64_t>(str.size()));
         }
-        if (maybe_string_or_array->is(array)) {
-            const auto& arr = maybe_string_or_array->as<array_object>()->value;
+        if (maybe_string_or_array_or_hash->is(array)) {
+            const auto& arr = maybe_string_or_array_or_hash->as<array_object>()->value;
 
             return make<integer_object>(static_cast<int64_t>(arr.size()));
         }
-        return make_error("argument of type {} to len() is not supported", maybe_string_or_array->type());
+        if (maybe_string_or_array_or_hash->is(hash)) {
+            const auto& hsh = maybe_string_or_array_or_hash->as<hash_object>()->value;
+
+            return make<integer_object>(static_cast<int64_t>(hsh.size()));
+        }
+        return make_error("argument of type {} to len() is not supported", maybe_string_or_array_or_hash->type());
     }};
 
 const builtin_function_expression builtin_puts {"puts",
-                                                {"str"},
+                                                {"val"},
                                                 [](const array_object::value_type& arguments) -> const object*
                                                 {
                                                     using enum object::object_type;
@@ -539,6 +545,7 @@ const builtin_function_expression builtin_push {
         }
         return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
     }};
+
 const builtin_function_expression builtin_type {
     "type",
     {"val"},
@@ -975,6 +982,7 @@ TEST_CASE("builtinFunctions")
         bt {R"(len(1))", error {"argument of type integer to len() is not supported"}},
         bt {R"(len("one", "two"))", error {"wrong number of arguments to len(): expected=1, got=2"}},
         bt {R"(len([1,2]))", 2},
+        bt {R"(len({1: 2, 2: 3}))", 2},
         bt {R"(first("abc"))", "a"},
         bt {R"(first())", error {"wrong number of arguments to first(): expected=1, got=0"}},
         bt {R"(first(1))", error {"argument of type integer to first() is not supported"}},
