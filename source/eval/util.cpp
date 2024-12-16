@@ -1,3 +1,4 @@
+#include <type_traits>
 
 #include "util.hpp"
 
@@ -10,17 +11,31 @@ namespace
 template<class T, class U>
 concept Derived = std::is_base_of_v<U, T>;
 
-template<Derived<object> SequenceObject>
-auto multiply_sequence(const SequenceObject* source, integer_object::value_type count) -> SequenceObject*
+template<typename T>
+concept IsSequenceObject = requires(T obj) {
+    {
+        obj.is_sequence()
+    } -> std::same_as<bool>;
+} && requires(T obj) {
+    {
+        obj.is_sequence() == true
+    };
+};
+
+template<typename T>
+concept SequenceObject = Derived<T, object> && IsSequenceObject<T>;
+
+template<SequenceObject T>
+auto multiply_sequence(const T* source, integer_object::value_type count) -> T*
 {
-    typename SequenceObject::value_type target;
+    typename T::value_type target;
     for (integer_object::value_type i = 0; i < count; i++) {
         std::copy(source->value.cbegin(), source->value.cend(), std::back_inserter(target));
     }
-    return make<SequenceObject>(std::move(target));
+    return make<T>(std::move(target));
 }
 
-template<typename T>
+template<SequenceObject T>
 auto try_mul(const object* lhs, const object* rhs) -> const object*
 {
     using enum object::object_type;

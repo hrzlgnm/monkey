@@ -50,6 +50,8 @@ struct object
 
     [[nodiscard]] virtual auto is_hashable() const -> bool { return false; }
 
+    [[nodiscard]] virtual auto is_sequence() const -> bool { return false; }
+
     [[nodiscard]] virtual auto type() const -> object_type = 0;
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
@@ -145,6 +147,8 @@ struct string_object : hashable_object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::string; }
 
+    [[nodiscard]] auto is_sequence() const -> bool override { return true; }
+
     [[nodiscard]] auto inspect() const -> std::string override { return fmt::format(R"("{}")", value); }
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
@@ -202,6 +206,8 @@ struct array_object : object
     }
 
     [[nodiscard]] auto is_truthy() const -> bool override { return !value.empty(); }
+
+    [[nodiscard]] auto is_sequence() const -> bool override { return true; }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::array; }
 
