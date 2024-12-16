@@ -23,5 +23,5 @@ struct builtin_function_expression : callable_expression
     static const std::vector<const builtin_function_expression*> builtins;
 
     std::string name;
-    std::function<const object*(array_object::array&& arguments)> body;
+    std::function<const object*(array_object::value_type&& arguments)> body;
 };

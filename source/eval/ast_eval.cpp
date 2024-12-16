@@ -39,7 +39,7 @@
 
 auto array_expression::eval(environment* env) const -> const object*
 {
-    array_object::array arr;
+    array_object::value_type arr;
     for (const auto& element : elements) {
         const auto* evaluated = element->eval(env);
         if (evaluated->is_error()) {
@@ -95,6 +95,16 @@ auto apply_string_binary_operator(token_type oper, const std::string& left, cons
             return {};
     }
 }
+
+template<typename O>
+auto muliply_sequence(const typename O::value_type& values, int64_t count) -> object*
+{
+    typename O::value_type target;
+    for (int64_t i = 0; i < count; i++) {
+        std::copy(values.cbegin(), values.cend(), std::back_inserter(target));
+    }
+    return make<O>(std::move(target));
+}
 }  // namespace
 
 auto binary_expression::eval(environment* env) const -> const object*
@@ -121,11 +131,21 @@ auto binary_expression::eval(environment* env) const -> const object*
             arr = evaluated_right->as<array_object>();
             integer = evaluated_left->as<integer_object>();
         }
-        array_object::array target;
-        for (int64_t count = 0; count < integer->value; count++) {
-            std::copy(arr->elements.cbegin(), arr->elements.cend(), std::back_inserter(target));
+        return muliply_sequence<array_object>(arr->value, integer->value);
+    }
+    if ((evaluated_left->is(integer) && evaluated_right->is(string))
+        || (evaluated_left->is(string) && evaluated_right->is(integer)) && op == token_type::asterisk)
+    {
+        const string_object* str {};
+        const integer_object* integer {};
+        if (evaluated_left->is(string)) {
+            str = evaluated_left->as<string_object>();
+            integer = evaluated_right->as<integer_object>();
+        } else {
+            str = evaluated_right->as<string_object>();
+            integer = evaluated_left->as<integer_object>();
         }
-        return make<array_object>(std::move(target));
+        return muliply_sequence<string_object>(str->value, integer->value);
     }
     if (evaluated_left->type() != evaluated_right->type()) {
         return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
@@ -181,7 +201,7 @@ auto call_expression::eval(environment* env) const -> const object*
 
 auto hash_literal_expression::eval(environment* env) const -> const object*
 {
-    hash_object::hash result;
+    hash_object::value_type result;
 
     for (const auto& [key, value] : pairs) {
         const auto* eval_key = key->eval(env);
@@ -236,7 +256,7 @@ auto index_expression::eval(environment* env) const -> const object*
     }
     using enum object::object_type;
     if (evaluated_left->is(array) && evaluated_index->is(integer)) {
-        const auto& arr = evaluated_left->as<array_object>()->elements;
+        const auto& arr = evaluated_left->as<array_object>()->value;
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
@@ -256,7 +276,7 @@ auto index_expression::eval(environment* env) const -> const object*
     }
 
     if (evaluated_left->is(hash)) {
-        const auto& hsh = evaluated_left->as<hash_object>()->pairs;
+        const auto& hsh = evaluated_left->as<hash_object>()->value;
         if (!evaluated_index->is_hashable()) {
             return make_error("unusable as hash key: {}", evaluated_index->type());
         }
@@ -361,7 +381,7 @@ auto builtin_function_expression::call(environment* /*closure_env*/,
                                        environment* caller_env,
                                        const std::vector<const expression*>& arguments) const -> const object*
 {
-    array_object::array args;
+    array_object::value_type args;
     std::transform(arguments.cbegin(),
                    arguments.cend(),
                    std::back_inserter(args),
@@ -374,7 +394,7 @@ namespace
 const builtin_function_expression builtin_len {
     "len",
     {"val"},
-    [](const array_object::array& arguments) -> const object*
+    [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to len(): expected=1, got={}", arguments.size());
@@ -386,7 +406,7 @@ const builtin_function_expression builtin_len {
             return make<integer_object>(static_cast<int64_t>(str.size()));
         }
         if (maybe_string_or_array->is(array)) {
-            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+            const auto& arr = maybe_string_or_array->as<array_object>()->value;
 
             return make<integer_object>(static_cast<int64_t>(arr.size()));
         }
@@ -395,7 +415,7 @@ const builtin_function_expression builtin_len {
 
 const builtin_function_expression builtin_puts {"puts",
                                                 {"str"},
-                                                [](const array_object::array& arguments) -> const object*
+                                                [](const array_object::value_type& arguments) -> const object*
                                                 {
                                                     using enum object::object_type;
                                                     for (bool first = true; const auto& arg : arguments) {
@@ -416,7 +436,7 @@ const builtin_function_expression builtin_puts {"puts",
 const builtin_function_expression builtin_first {
     "first",
     {"arr"},
-    [](const array_object::array& arguments) -> const object*
+    [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to first(): expected=1, got={}", arguments.size());
@@ -431,7 +451,7 @@ const builtin_function_expression builtin_first {
             return native_null();
         }
         if (maybe_string_or_array->is(array)) {
-            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+            const auto& arr = maybe_string_or_array->as<array_object>()->value;
             if (!arr.empty()) {
                 return arr.front();
             }
@@ -443,7 +463,7 @@ const builtin_function_expression builtin_first {
 const builtin_function_expression builtin_last {
     "last",
     {"arr"},
-    [](const array_object::array& arguments) -> const object*
+    [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to last(): expected=1, got={}", arguments.size());
@@ -458,7 +478,7 @@ const builtin_function_expression builtin_last {
             return native_null();
         }
         if (maybe_string_or_array->is(array)) {
-            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+            const auto& arr = maybe_string_or_array->as<array_object>()->value;
             if (!arr.empty()) {
                 return arr.back();
             }
@@ -470,7 +490,7 @@ const builtin_function_expression builtin_last {
 const builtin_function_expression builtin_rest {
     "rest",
     {"arr"},
-    [](const array_object::array& arguments) -> const object*
+    [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to rest(): expected=1, got={}", arguments.size());
@@ -485,9 +505,9 @@ const builtin_function_expression builtin_rest {
             return native_null();
         }
         if (maybe_string_or_array->is(array)) {
-            const auto& arr = maybe_string_or_array->as<array_object>()->elements;
+            const auto& arr = maybe_string_or_array->as<array_object>()->value;
             if (arr.size() > 1) {
-                array_object::array rest;
+                array_object::value_type rest;
                 std::copy(arr.cbegin() + 1, arr.cend(), std::back_inserter(rest));
                 return make<array_object>(std::move(rest));
             }
@@ -499,7 +519,7 @@ const builtin_function_expression builtin_rest {
 const builtin_function_expression builtin_push {
     "push",
     {"arr", "val"},
-    [](const array_object::array& arguments) -> const object*
+    [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 2) {
             return make_error("wrong number of arguments to push(): expected=2, got={}", arguments.size());
@@ -508,7 +528,7 @@ const builtin_function_expression builtin_push {
         const auto& rhs = arguments[1];
         using enum object::object_type;
         if (lhs->is(array)) {
-            auto copy = lhs->as<array_object>()->elements;
+            auto copy = lhs->as<array_object>()->value;
             copy.push_back(rhs);
             return make<array_object>(std::move(copy));
         }
@@ -522,7 +542,7 @@ const builtin_function_expression builtin_push {
 const builtin_function_expression builtin_type {
     "type",
     {"val"},
-    [](const array_object::array& arguments) -> const object*
+    [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
             return make_error("wrong number of arguments to type(): expected=1, got={}", arguments.size());
@@ -582,7 +602,7 @@ auto require_array_eq(const object* obj, const array& expected, std::string_view
 {
     INFO(input, " expected: array with: ", expected.size(), "elements got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::array));
-    const auto& actual = obj->as<array_object>()->elements;
+    const auto& actual = obj->as<array_object>()->value;
     REQUIRE(actual.size() == expected.size());
     for (auto idx = 0UL; const auto& expected_elem : expected) {
         std::visit(
@@ -723,6 +743,13 @@ TEST_CASE("stringConcatenation")
     auto input = R"("Hello" + " " + "World!")";
     auto evaluated = run(input);
     require_eq(evaluated, std::string("Hello World!"), input);
+}
+
+TEST_CASE("stringIntegerMultiplication")
+{
+    auto input = R"("Hello" * 2 + " " + 3 * "World!")";
+    auto evaluated = run(input);
+    require_eq(evaluated, std::string("HelloHello World!World!World!"), input);
 }
 
 TEST_CASE("bangOperator")
@@ -1026,7 +1053,7 @@ TEST_CASE("arrayExpression")
         const auto evaluated = run(test.input);
         INFO("got: " << evaluated->type());
         REQUIRE(evaluated->is(object::object_type::array));
-        const auto& as_arr = evaluated->as<array_object>()->elements;
+        const auto& as_arr = evaluated->as<array_object>()->value;
         require_array_eq(evaluated->as<array_object>(), test.expected, test.input);
     }
 }
@@ -1137,7 +1164,7 @@ TEST_CASE("hashLiterals")
         expect {true, 5},
         expect {false, 6},
     };
-    const auto& as_hash = evaluated->as<hash_object>()->pairs;
+    const auto& as_hash = evaluated->as<hash_object>()->value;
     for (const auto& [key, value] : expected) {
         REQUIRE(as_hash.contains(key));
         REQUIRE_EQ(value, as_hash.at(key)->as<integer_object>()->value);

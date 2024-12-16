@@ -86,7 +86,7 @@ auto array_object::inspect() const -> std::string
 {
     std::ostringstream strm;
     strm << "[";
-    for (bool first = true; const auto* const element : elements) {
+    for (bool first = true; const auto* const element : value) {
         if (!first) {
             strm << ", ";
         }
@@ -99,12 +99,12 @@ auto array_object::inspect() const -> std::string
 
 auto array_object::equals_to(const object* other) const -> bool
 {
-    if (!other->is(type()) || other->as<array_object>()->elements.size() != elements.size()) {
+    if (!other->is(type()) || other->as<array_object>()->value.size() != value.size()) {
         return false;
     }
-    const auto& other_elements = other->as<array_object>()->elements;
-    return std::equal(elements.cbegin(),
-                      elements.cend(),
+    const auto& other_elements = other->as<array_object>()->value;
+    return std::equal(value.cbegin(),
+                      value.cend(),
                       other_elements.cbegin(),
                       other_elements.cend(),
                       [](const object* a, const object* b) { return a->equals_to(b); });
@@ -126,7 +126,7 @@ auto hash_object::inspect() const -> std::string
 {
     std::ostringstream strm;
     strm << "{";
-    for (bool first = true; const auto& [key, value] : pairs) {
+    for (bool first = true; const auto& [key, value] : value) {
         if (!first) {
             strm << ", ";
         }
@@ -140,12 +140,12 @@ auto hash_object::inspect() const -> std::string
 
 auto hash_object::equals_to(const object* other) const -> bool
 {
-    if (!other->is(type()) || other->as<hash_object>()->pairs.size() != pairs.size()) {
+    if (!other->is(type()) || other->as<hash_object>()->value.size() != value.size()) {
         return false;
     }
-    const auto& other_pairs = other->as<hash_object>()->pairs;
-    return std::all_of(pairs.cbegin(),
-                       pairs.cend(),
+    const auto& other_pairs = other->as<hash_object>()->value;
+    return std::all_of(value.cbegin(),
+                       value.cend(),
                        [other_pairs](const auto& pair)
                        {
                            const auto& [key, value] = pair;

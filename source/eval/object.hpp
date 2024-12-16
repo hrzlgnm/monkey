@@ -78,6 +78,8 @@ auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> 
 
 struct integer_object : hashable_object
 {
+    using value_type = std::int64_t;
+
     explicit integer_object(int64_t val)
         : value {val}
     {
@@ -96,11 +98,13 @@ struct integer_object : hashable_object
         return other->is(type()) && other->as<integer_object>()->value == value;
     }
 
-    int64_t value {};
+    value_type value {};
 };
 
 struct boolean_object : hashable_object
 {
+    using value_type = bool;
+
     explicit boolean_object(bool val)
         : value {val}
     {
@@ -119,7 +123,7 @@ struct boolean_object : hashable_object
         return other->is(type()) && other->as<boolean_object>()->value == value;
     }
 
-    bool value {};
+    value_type value {};
 };
 
 auto native_true() -> const object*;
@@ -128,6 +132,8 @@ auto native_bool_to_object(bool val) -> const object*;
 
 struct string_object : hashable_object
 {
+    using value_type = std::string;
+
     explicit string_object(std::string val)
         : value {std::move(val)}
     {
@@ -143,7 +149,7 @@ struct string_object : hashable_object
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override;
 
-    std::string value;
+    value_type value;
 };
 
 struct null_object : object
@@ -184,14 +190,14 @@ auto make_error(fmt::format_string<T...> fmt, T&&... args) -> object*
 
 struct array_object : object
 {
-    using array = std::vector<const object*>;
+    using value_type = std::vector<const object*>;
 
-    explicit array_object(array&& arr)
-        : elements {std::move(arr)}
+    explicit array_object(value_type&& arr)
+        : value {std::move(arr)}
     {
     }
 
-    [[nodiscard]] auto is_truthy() const -> bool override { return !elements.empty(); }
+    [[nodiscard]] auto is_truthy() const -> bool override { return !value.empty(); }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::array; }
 
@@ -199,19 +205,19 @@ struct array_object : object
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override;
 
-    array elements;
+    value_type value;
 };
 
 struct hash_object : object
 {
-    using hash = std::unordered_map<hashable_object::hash_key_type, const object*>;
+    using value_type = std::unordered_map<hashable_object::hash_key_type, const object*>;
 
-    explicit hash_object(hash&& hsh)
-        : pairs {std::move(hsh)}
+    explicit hash_object(value_type&& hsh)
+        : value {std::move(hsh)}
     {
     }
 
-    [[nodiscard]] auto is_truthy() const -> bool override { return !pairs.empty(); }
+    [[nodiscard]] auto is_truthy() const -> bool override { return !value.empty(); }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::hash; }
 
@@ -219,7 +225,7 @@ struct hash_object : object
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override;
 
-    hash pairs;
+    value_type value;
 };
 
 struct callable_expression;
