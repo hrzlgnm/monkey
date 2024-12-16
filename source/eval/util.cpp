@@ -24,7 +24,7 @@ template<typename T>
 auto handle_mul(const object* lhs, const object* rhs) -> const object*
 {
     using enum object::object_type;
-    auto seq_type = T {}.type();
+    const auto seq_type = T {}.type();
     if (lhs->is(integer) && rhs->is(seq_type)) {
         return multiply_sequence(rhs->as<T>(), lhs->as<integer_object>()->value);
     }
