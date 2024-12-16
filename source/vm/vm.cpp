@@ -193,6 +193,19 @@ auto vm::last_popped() const -> const object*
     return m_stack[m_sp];
 }
 
+namespace
+{
+template<typename O>
+auto multiply_sequence(const typename O::value_type& values, int64_t count) -> object*
+{
+    typename O::value_type target;
+    for (int64_t i = 0; i < count; i++) {
+        std::copy(values.cbegin(), values.cend(), std::back_inserter(target));
+    }
+    return make<O>(std::move(target));
+}
+}  // namespace
+
 auto vm::exec_binary_op(opcodes opcode) -> void
 {
     const auto* right = pop();
@@ -208,11 +221,21 @@ auto vm::exec_binary_op(opcodes opcode) -> void
             arr = right->as<array_object>();
             integer = left->as<integer_object>();
         }
-        array_object::array target;
-        for (int64_t count = 0; count < integer->value; count++) {
-            std::copy(arr->elements.cbegin(), arr->elements.cend(), std::back_inserter(target));
+        push(multiply_sequence<array_object>(arr->value, integer->value));
+        return;
+    }
+    if ((left->is(integer) && right->is(string)) || (left->is(string) && right->is(integer)) && opcode == opcodes::mul)
+    {
+        const string_object* str {};
+        const integer_object* integer {};
+        if (left->is(string)) {
+            str = left->as<string_object>();
+            integer = right->as<integer_object>();
+        } else {
+            str = right->as<string_object>();
+            integer = left->as<integer_object>();
         }
-        push(make<array_object>(std::move(target)));
+        push(multiply_sequence<string_object>(str->value, integer->value));
         return;
     }
     if (left->is(integer) && right->is(integer)) {
@@ -319,7 +342,7 @@ auto vm::exec_minus() -> void
 
 auto vm::build_array(size_t start, size_t end) const -> object*
 {
-    array_object::array arr;
+    array_object::value_type arr;
     for (auto idx = start; idx < end; idx++) {
         arr.push_back(m_stack[idx]);
     }
@@ -328,7 +351,7 @@ auto vm::build_array(size_t start, size_t end) const -> object*
 
 auto vm::build_hash(size_t start, size_t end) const -> object*
 {
-    hash_object::hash hsh;
+    hash_object::value_type hsh;
     for (auto idx = start; idx < end; idx += 2) {
         const auto* key = m_stack[idx];
         const auto* val = m_stack[idx + 1];
@@ -339,7 +362,7 @@ auto vm::build_hash(size_t start, size_t end) const -> object*
 
 namespace
 {
-auto exec_hash(const hash_object::hash& hsh, const hashable_object::hash_key_type& key) -> const object*
+auto exec_hash(const hash_object::value_type& hsh, const hashable_object::hash_key_type& key) -> const object*
 {
     if (!hsh.contains(key)) {
         return native_null();
@@ -353,12 +376,12 @@ auto vm::exec_index(const object* left, const object* index) -> void
     using enum object::object_type;
     if (left->is(array) && index->is(integer)) {
         auto idx = index->as<integer_object>()->value;
-        auto max = static_cast<int64_t>(left->as<array_object>()->elements.size()) - 1;
+        auto max = static_cast<int64_t>(left->as<array_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
             push(native_null());
             return;
         }
-        push(left->as<array_object>()->elements[static_cast<size_t>(idx)]);
+        push(left->as<array_object>()->value[static_cast<size_t>(idx)]);
         return;
     }
     if (left->is(string) && index->is(integer)) {
@@ -372,7 +395,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         return;
     }
     if (left->is(hash) && index->is_hashable()) {
-        push(exec_hash(left->as<hash_object>()->pairs, index->as<hashable_object>()->hash_key()));
+        push(exec_hash(left->as<hash_object>()->value, index->as<hashable_object>()->hash_key()));
         return;
     }
     push(make_error("invalid index operation: {}[{}]", left->type(), index->type()));
@@ -395,7 +418,7 @@ auto vm::exec_call(size_t num_args) -> void
     }
     if (callee->is(builtin)) {
         const auto* const builtin = callee->as<builtin_object>()->builtin;
-        array_object::array args;
+        array_object::value_type args;
         for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
             args.push_back(m_stack[idx]);
         }
@@ -429,7 +452,7 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
     if (!constant->is(object::object_type::compiled_function)) {
         throw std::runtime_error("not a function");
     }
-    array_object::array free;
+    array_object::value_type free;
     for (auto i = 0UL; i < num_free; i++) {
         free.push_back(m_stack[m_sp - num_free + i]);
     }
@@ -543,7 +566,7 @@ auto require_array_object(const std::vector<int>& expected, const object*& actua
          actual->inspect(),
          " instead");
     REQUIRE(actual->is(object::object_type::array));
-    const auto& actual_arr = actual->as<array_object>()->elements;
+    const auto& actual_arr = actual->as<array_object>()->value;
     REQUIRE_EQ(actual_arr.size(), expected.size());
     for (auto idx = 0UL; const auto& elem : expected) {
         REQUIRE_EQ(elem, actual_arr[idx]->as<integer_object>()->value);
@@ -562,7 +585,7 @@ auto require_hash_object(const hash& expected, const object*& actual, std::strin
          actual->inspect(),
          " instead");
     REQUIRE(actual->is(object::object_type::hash));
-    const auto actual_hash = actual->as<hash_object>()->pairs;
+    const auto actual_hash = actual->as<hash_object>()->value;
     REQUIRE_EQ(actual_hash.size(), expected.size());
 }
 
@@ -717,6 +740,15 @@ TEST_CASE("stringExpression")
         vt<std::string> {R"("mon" + "key")", "monkey"},
         vt<std::string> {R"("mon" + "key" + "banana")", "monkeybanana"},
         vt<std::string> {R"("mon" + "k" + "a" + "S")", "monkaS"},
+    };
+    run(tests);
+}
+
+TEST_CASE("stringIntMultiplication")
+{
+    const std::array tests {
+        vt<std::string> {R"("monkey" * 2)", "monkeymonkey"},
+        vt<std::string> {R"(2 * "mon" + "key" * 3)", "monmonkeykeykey"},
     };
     run(tests);
 }
