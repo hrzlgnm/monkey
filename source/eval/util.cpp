@@ -21,7 +21,7 @@ auto multiply_sequence(const SequenceObject* source, integer_object::value_type 
 }
 
 template<typename T>
-auto handle_mul(const object* lhs, const object* rhs) -> const object*
+auto try_mul(const object* lhs, const object* rhs) -> const object*
 {
     using enum object::object_type;
     const auto seq_type = T {}.type();
@@ -38,10 +38,10 @@ auto handle_mul(const object* lhs, const object* rhs) -> const object*
 
 auto evaluate_sequence_mul(const object* lhs, const object* rhs) -> const object*
 {
-    if (const auto* result = handle_mul<array_object>(lhs, rhs)) {
+    if (const auto* result = try_mul<array_object>(lhs, rhs)) {
         return result;
     }
-    if (const auto* result = handle_mul<string_object>(lhs, rhs)) {
+    if (const auto* result = try_mul<string_object>(lhs, rhs)) {
         return result;
     }
     return nullptr;
