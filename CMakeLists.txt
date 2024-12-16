@@ -46,6 +46,7 @@ target_sources(monkey_lib
     source/eval/ast_eval.cpp
     source/eval/environment.cpp
     source/eval/object.cpp
+    source/eval/util.cpp
     source/lexer/lexer.cpp
     source/lexer/token.cpp
     source/lexer/token_type.cpp

@@ -18,6 +18,7 @@
 #include <compiler/compiler.hpp>
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
+#include <eval/util.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <gc.hpp>
@@ -193,50 +194,16 @@ auto vm::last_popped() const -> const object*
     return m_stack[m_sp];
 }
 
-namespace
-{
-template<typename O>
-auto multiply_sequence(const typename O::value_type& values, int64_t count) -> object*
-{
-    typename O::value_type target;
-    for (int64_t i = 0; i < count; i++) {
-        std::copy(values.cbegin(), values.cend(), std::back_inserter(target));
-    }
-    return make<O>(std::move(target));
-}
-}  // namespace
-
 auto vm::exec_binary_op(opcodes opcode) -> void
 {
     const auto* right = pop();
     const auto* left = pop();
     using enum object::object_type;
-    if ((left->is(integer) && right->is(array)) || (left->is(array) && right->is(integer)) && opcode == opcodes::mul) {
-        const array_object* arr {};
-        const integer_object* integer {};
-        if (left->is(array)) {
-            arr = left->as<array_object>();
-            integer = right->as<integer_object>();
-        } else {
-            arr = right->as<array_object>();
-            integer = left->as<integer_object>();
+    if (opcode == opcodes::mul) {
+        if (const auto* multiplied = evaluate_sequence_mul(left, right); multiplied != nullptr) {
+            push(multiplied);
+            return;
         }
-        push(multiply_sequence<array_object>(arr->value, integer->value));
-        return;
-    }
-    if ((left->is(integer) && right->is(string)) || (left->is(string) && right->is(integer)) && opcode == opcodes::mul)
-    {
-        const string_object* str {};
-        const integer_object* integer {};
-        if (left->is(string)) {
-            str = left->as<string_object>();
-            integer = right->as<integer_object>();
-        } else {
-            str = right->as<string_object>();
-            integer = left->as<integer_object>();
-        }
-        push(multiply_sequence<string_object>(str->value, integer->value));
-        return;
     }
     if (left->is(integer) && right->is(integer)) {
         auto left_value = left->as<integer_object>()->value;
