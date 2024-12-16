@@ -200,7 +200,7 @@ auto vm::exec_binary_op(opcodes opcode) -> void
     const auto* left = pop();
     using enum object::object_type;
     if (opcode == opcodes::mul) {
-        if (const auto* multiplied = evaluate_sequence_mul(left, right); multiplied) {
+        if (const auto* multiplied = evaluate_sequence_mul(left, right); multiplied != nullptr) {
             push(multiplied);
             return;
         }
