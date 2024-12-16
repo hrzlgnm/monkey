@@ -34,9 +34,7 @@
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
 
-#include "code/code.hpp"
 #include "environment.hpp"
-#include "lexer/token.hpp"
 #include "object.hpp"
 #include "util.hpp"
 
