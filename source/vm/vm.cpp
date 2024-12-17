@@ -389,6 +389,7 @@ auto vm::exec_call(size_t num_args) -> void
         for (auto idx = m_sp - num_args; idx < m_sp; idx++) {
             args.push_back(m_stack[idx]);
         }
+        m_sp = m_sp - num_args - 1;
         const auto* result = builtin->body(std::move(args));
         push(result);
         return;
@@ -1048,6 +1049,7 @@ TEST_CASE("callBuiltins")
         vt<int64_t, null_type, std::string, std::vector<int>> {R"(push([], 1))", maker<int>({1})},
         vt<int64_t, null_type, std::string, std::vector<int>> {R"(last([1, 2, 3]))", 3},
         vt<int64_t, null_type, std::string, std::vector<int>> {R"(type([]))", "array"},
+        vt<int64_t, null_type, std::string, std::vector<int>> {R"(push([], first([1])))", maker<int>({1})},
     };
     const std::array errortests {
         vt<error> {
