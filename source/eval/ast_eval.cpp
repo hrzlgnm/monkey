@@ -15,6 +15,7 @@
 #include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/callable_expression.hpp>
+#include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
@@ -53,6 +54,31 @@ auto array_expression::eval(environment* env) const -> const object*
 
 namespace
 {
+auto apply_decimal_binary_operator(token_type oper, const double left, const double right) -> const object*
+{
+    using enum token_type;
+    switch (oper) {
+        case plus:
+            return make<decimal_object>(left + right);
+        case asterisk:
+            return make<decimal_object>(left * right);
+        case minus:
+            return make<decimal_object>(left - right);
+        case slash:
+            return make<decimal_object>(left / right);
+        case less_than:
+            return native_bool_to_object(left < right);
+        case greater_than:
+            return native_bool_to_object(left > right);
+        case equals:
+            return native_bool_to_object(left == right);
+        case not_equals:
+            return native_bool_to_object(left != right);
+        default:
+            return {};
+    }
+}
+
 auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> const object*
 {
     using enum token_type;
@@ -129,6 +155,13 @@ auto binary_expression::eval(environment* env) const -> const object*
     if (evaluated_left->is(integer) && evaluated_right->is(integer)) {
         const auto* res = apply_integer_binary_operator(
             op, evaluated_left->as<integer_object>()->value, evaluated_right->as<integer_object>()->value);
+        if (res != nullptr) {
+            return res;
+        }
+    }
+    if (evaluated_left->is(decimal) && evaluated_right->is(decimal)) {
+        const auto* res = apply_decimal_binary_operator(
+            op, evaluated_left->as<decimal_object>()->value, evaluated_right->as<decimal_object>()->value);
         if (res != nullptr) {
             return res;
         }
@@ -262,6 +295,11 @@ auto integer_literal::eval(environment* /*env*/) const -> object*
     return make<integer_object>(value);
 }
 
+auto decimal_literal::eval(environment* /*env*/) const -> object*
+{
+    return make<decimal_object>(value);
+}
+
 auto program::eval(environment* env) const -> const object*
 {
     const object* result = nullptr;
@@ -334,10 +372,12 @@ auto unary_expression::eval(environment* env) const -> const object*
     }
     switch (op) {
         case minus:
-            if (!evaluated_value->is(object::object_type::integer)) {
-                return make_error("unknown operator: -{}", evaluated_value->type());
+            if (evaluated_value->is(object::object_type::integer)) {
+                return make<integer_object>(-evaluated_value->as<integer_object>()->value);
+            } else if (evaluated_value->is(object::object_type::decimal)) {
+                return make<decimal_object>(-evaluated_value->as<decimal_object>()->value);
             }
-            return make<integer_object>(-evaluated_value->as<integer_object>()->value);
+            return make_error("unknown operator: -{}", evaluated_value->type());
         case exclamation:
             return native_bool_to_object(!evaluated_value->is_truthy());
         default:
@@ -573,6 +613,14 @@ auto require_eq(const object* obj, const std::string& expected, std::string_view
     REQUIRE(actual == expected);
 }
 
+auto require_eq(const object* obj, double expected, std::string_view input) -> void
+{
+    INFO(input, " expected: string with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::decimal));
+    const auto& actual = obj->as<decimal_object>()->value;
+    REQUIRE(actual == expected);
+}
+
 auto require_array_eq(const object* obj, const array& expected, std::string_view input) -> void
 {
     INFO(input, " expected: array with: ", expected.size(), "elements got: ", obj->type(), " with: ", obj->inspect());
@@ -665,6 +713,37 @@ TEST_CASE("integerExpression")
         et {"3 * 3 * 3 + 10", 37},
         et {"3 * (3 * 3) + 10", 37},
         et {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+    };
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        require_eq(evaluated, expected, input);
+    }
+}
+
+TEST_CASE("decimalExpression")
+{
+    struct et
+    {
+        std::string_view input;
+        double expected;
+    };
+
+    std::array tests {
+        et {"5.0", 5.0},
+        et {"10.0", 10.0},
+        et {"-5.0", -5.0},
+        et {"-10.0", -10.0},
+        et {"5.0 + 5.0 + 5.0 + 5.0 - 10.0", 10.0},
+        et {"2.0 * 2.0 * 2.0 * 2.0 * 2.0", 32.0},
+        et {"-50.0 + 100.0 + -50.0", 0.0},
+        et {"5.0 * 2.0 + 10.0", 20.0},
+        et {"5.0 + 2.0 * 10.0", 25.0},
+        et {"20.0 + 2.0 * -10.0", 0.0},
+        et {"50.0/ 2.0 * 2.0 + 10.0", 60.0},
+        et {"2.0 * (5.0 + 10.0)", 30.0},
+        et {"3.0 * 3.0 * 3.0 + 10.0", 37.0},
+        et {"3.0 * (3.0 * 3.0) + 10.0", 37.0},
+        et {"(5.0 + 10.0 * 2.0 + 15.0 / 3.0) * 2.0 + -10.8", 49.2},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);

@@ -11,6 +11,7 @@
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
 #include <ast/call_expression.hpp>
+#include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
@@ -77,6 +78,7 @@ parser::parser(lexer lxr)
     using enum token_type;
     register_unary(ident, [this] { return parse_identifier(); });
     register_unary(integer, [this] { return parse_integer_literal(); });
+    register_unary(decimal, [this] { return parse_decimal_literal(); });
     register_unary(exclamation, [this] { return parse_unary_expression(); });
     register_unary(minus, [this] { return parse_unary_expression(); });
     register_unary(tru, [this] { return parse_boolean(); });
@@ -219,6 +221,18 @@ auto parser::parse_integer_literal() -> expression*
         lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
         new_error("could not parse {} as integer", m_current_token.literal);
+        return {};
+    }
+    return lit;
+}
+
+auto parser::parse_decimal_literal() -> expression*
+{
+    auto* lit = make<decimal_literal>();
+    try {
+        lit->value = std::stod(std::string {m_current_token.literal});
+    } catch (const std::out_of_range&) {
+        new_error("could not parse {} as decimal", m_current_token.literal);
         return {};
     }
     return lit;
@@ -481,7 +495,7 @@ auto parser::current_precedence() const -> int
 namespace
 {
 // NOLINTBEGIN(*)
-using expected_value_type = std::variant<int64_t, std::string, bool>;
+using expected_value_type = std::variant<int64_t, std::string, bool, double>;
 
 auto check_no_parse_errors(const parser& prsr) -> bool
 {
@@ -535,6 +549,16 @@ auto require_integer_literal(const expression* expr, int64_t value) -> void
     REQUIRE_EQ(integer_lit->string(), std::to_string(value));
 }
 
+auto require_decimal_literal(const expression* expr, double value) -> void
+{
+    auto* decimal_lit = dynamic_cast<const decimal_literal*>(expr);
+    INFO("expected integer_literal, got:", expr->string());
+    REQUIRE(decimal_lit);
+
+    REQUIRE_EQ(decimal_lit->value, value);
+    REQUIRE_EQ(decimal_lit->string(), std::to_string(value));
+}
+
 auto require_literal_expression(const expression* expr, const expected_value_type& expected) -> void
 {
     std::visit(
@@ -542,6 +566,7 @@ auto require_literal_expression(const expression* expr, const expected_value_typ
             [&](int64_t val) { require_integer_literal(expr, val); },
             [&](const std::string& val) { require_identifier(expr, val); },
             [&](bool val) { require_boolean_literal(expr, val); },
+            [&](double val) { require_decimal_literal(expr, val); },
         },
         expected);
 }
@@ -695,6 +720,14 @@ TEST_CASE("integerExpression")
     auto* expr_stmt = require_expression_statement(prgrm);
 
     require_literal_expression(expr_stmt->expr, 5);
+}
+
+TEST_CASE("decimalExpression")
+{
+    auto [prgrm, _] = check_program("5.5;");
+    auto* expr_stmt = require_expression_statement(prgrm);
+
+    require_literal_expression(expr_stmt->expr, 5.5);
 }
 
 TEST_CASE("unaryExpressions")

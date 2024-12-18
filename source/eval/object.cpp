@@ -27,6 +27,8 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
     switch (type) {
         case integer:
             return ostrm << "integer";
+        case decimal:
+            return ostrm << "decimal";
         case boolean:
             return ostrm << "boolean";
         case string:

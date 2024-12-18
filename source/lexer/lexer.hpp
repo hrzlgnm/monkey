@@ -15,7 +15,7 @@ class lexer final
     auto skip_whitespace() -> void;
     auto peek_char() -> std::string_view::value_type;
     auto read_identifier_or_keyword() -> token;
-    auto read_integer() -> token;
+    auto read_number() -> token;
     auto read_string() -> token;
     std::string_view m_input;
 

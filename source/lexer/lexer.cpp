@@ -122,7 +122,7 @@ auto lexer::next_token() -> token
         return read_identifier_or_keyword();
     }
     if (is_digit(m_byte)) {
-        return read_integer();
+        return read_number();
     }
     auto literal = m_byte;
     return read_char(), token {.type = token_type::illegal, .literal = std::string_view {&literal, 1}};
@@ -176,15 +176,25 @@ auto lexer::read_identifier_or_keyword() -> token
     return token {.type = token_type::ident, .literal = identifier_or_keyword};
 }
 
-auto lexer::read_integer() -> token
+auto lexer::read_number() -> token
 {
     const auto position = m_position;
-    while (is_digit(m_byte)) {
+    int dot_count = 0;
+    while (is_digit(m_byte) || m_byte == '.') {
+        if (m_byte == '.') {
+            dot_count++;
+        }
         read_char();
     }
     auto end = m_position;
     auto count = end - position;
-    return token {.type = token_type::integer, .literal = m_input.substr(position, count)};
+    if (dot_count == 0) {
+        return token {.type = token_type::integer, .literal = m_input.substr(position, count)};
+    }
+    if (dot_count == 1) {
+        return token {.type = token_type::decimal, .literal = m_input.substr(position, count)};
+    }
+    return token {.type = token_type::illegal, .literal = m_input.substr(position, count)};
 }
 
 auto lexer::read_string() -> token
@@ -227,7 +237,8 @@ return false;
 "foo bar"
 ""
 [1,2];
-{"foo": "bar"}
+{"foo": "bar"};
+5.5
         )"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
@@ -273,7 +284,8 @@ return false;
         token {.type = rbracket, .literal = "]"},     token {.type = semicolon, .literal = ";"},
         token {.type = lsquirly, .literal = "{"},     token {.type = string, .literal = "foo"},
         token {.type = colon, .literal = ":"},        token {.type = string, .literal = "bar"},
-        token {.type = rsquirly, .literal = "}"},     token {.type = eof, .literal = ""},
+        token {.type = rsquirly, .literal = "}"},     token {.type = semicolon, .literal = ";"},
+        token {.type = decimal, .literal = "5.5"},    token {.type = eof, .literal = ""},
 
     };
     for (const auto& expected_token : expected_tokens) {
