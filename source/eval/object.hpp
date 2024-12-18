@@ -83,7 +83,7 @@ struct integer_object : hashable_object
 {
     using value_type = std::int64_t;
 
-    explicit integer_object(int64_t val)
+    explicit integer_object(value_type val)
         : value {val}
     {
     }
@@ -108,7 +108,7 @@ struct decimal_object : object
 {
     using value_type = double;
 
-    explicit decimal_object(double val)
+    explicit decimal_object(value_type val)
         : value {val}
     {
     }
@@ -131,7 +131,7 @@ struct boolean_object : hashable_object
 {
     using value_type = bool;
 
-    explicit boolean_object(bool val)
+    explicit boolean_object(value_type val)
         : value {val}
     {
     }
@@ -162,7 +162,7 @@ struct string_object : hashable_object
 
     string_object() = default;
 
-    explicit string_object(std::string val)
+    explicit string_object(value_type val)
         : value {std::move(val)}
     {
     }
