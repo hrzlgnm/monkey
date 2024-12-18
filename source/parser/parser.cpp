@@ -23,6 +23,7 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <ast/util.hpp>
 #include <doctest/doctest.h>
 #include <fmt/ranges.h>
 #include <gc.hpp>
@@ -556,7 +557,7 @@ auto require_decimal_literal(const expression* expr, double value) -> void
     REQUIRE(decimal_lit);
 
     REQUIRE_EQ(decimal_lit->value, value);
-    REQUIRE_EQ(decimal_lit->string(), std::to_string(value));
+    REQUIRE_EQ(decimal_lit->string(), decimal_to_string(value));
 }
 
 auto require_literal_expression(const expression* expr, const expected_value_type& expected) -> void

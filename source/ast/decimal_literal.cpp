@@ -2,7 +2,9 @@
 
 #include "decimal_literal.hpp"
 
+#include "util.hpp"
+
 auto decimal_literal::string() const -> std::string
 {
-    return std::to_string(value);
+    return decimal_to_string(value);
 }

@@ -7,6 +7,7 @@
 #include <variant>
 #include <vector>
 
+#include <ast/util.hpp>
 #include <code/code.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
@@ -117,7 +118,7 @@ struct decimal_object : object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::decimal; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return std::to_string(value); }
+    [[nodiscard]] auto inspect() const -> std::string override { return decimal_to_string(value); }
 
     [[nodiscard]] auto equals_to(const object* other) const -> bool override
     {
