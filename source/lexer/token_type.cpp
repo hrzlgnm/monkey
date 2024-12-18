@@ -34,6 +34,8 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "identifier";
         case token_type::integer:
             return ostream << "integer";
+        case token_type::decimal:
+            return ostream << "decimal";
         case token_type::string:
             return ostream << "string";
         case token_type::let:

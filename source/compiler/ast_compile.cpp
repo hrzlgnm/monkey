@@ -6,6 +6,7 @@
 #include <ast/boolean.hpp>
 #include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
+#include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
@@ -130,6 +131,11 @@ auto index_expression::compile(compiler& comp) const -> void
 auto integer_literal::compile(compiler& comp) const -> void
 {
     comp.emit(opcodes::constant, comp.add_constant(make<integer_object>(value)));
+}
+
+auto decimal_literal::compile(compiler& comp) const -> void
+{
+    comp.emit(opcodes::constant, comp.add_constant(make<decimal_object>(value)));
 }
 
 auto program::compile(compiler& comp) const -> void

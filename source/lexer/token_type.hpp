@@ -44,6 +44,7 @@ enum class token_type : std::uint8_t
     // multi character tokens
     ident,
     integer,
+    decimal,
     string,
 
     // keywords

@@ -226,6 +226,27 @@ auto vm::exec_binary_op(opcodes opcode) -> void
         }
         return;
     }
+    if (left->is(decimal) && right->is(decimal)) {
+        auto left_value = left->as<decimal_object>()->value;
+        auto right_value = right->as<decimal_object>()->value;
+        switch (opcode) {
+            case opcodes::sub:
+                push(make<decimal_object>(left_value - right_value));
+                break;
+            case opcodes::mul:
+                push(make<decimal_object>(left_value * right_value));
+                break;
+            case opcodes::div:
+                push(make<decimal_object>(left_value / right_value));
+                break;
+            case opcodes::add:
+                push(make<decimal_object>(left_value + right_value));
+                break;
+            default:
+                throw std::runtime_error(fmt::format("unknown decimal operator"));
+        }
+        return;
+    }
     if (left->is(string) && right->is(string)) {
         const auto& left_value = left->as<string_object>()->value;
         const auto& right_value = right->as<string_object>()->value;

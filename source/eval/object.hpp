@@ -7,6 +7,7 @@
 #include <variant>
 #include <vector>
 
+#include <ast/util.hpp>
 #include <code/code.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
@@ -18,6 +19,7 @@ struct object
     enum class object_type : std::uint8_t
     {
         integer,
+        decimal,
         boolean,
         string,
         null,
@@ -82,7 +84,7 @@ struct integer_object : hashable_object
 {
     using value_type = std::int64_t;
 
-    explicit integer_object(int64_t val)
+    explicit integer_object(value_type val)
         : value {val}
     {
     }
@@ -103,11 +105,34 @@ struct integer_object : hashable_object
     value_type value {};
 };
 
+struct decimal_object : object
+{
+    using value_type = double;
+
+    explicit decimal_object(value_type val)
+        : value {val}
+    {
+    }
+
+    [[nodiscard]] auto is_truthy() const -> bool override { return value != 0.0; }
+
+    [[nodiscard]] auto type() const -> object_type override { return object_type::decimal; }
+
+    [[nodiscard]] auto inspect() const -> std::string override { return decimal_to_string(value); }
+
+    [[nodiscard]] auto equals_to(const object* other) const -> bool override
+    {
+        return other->is(type()) && other->as<decimal_object>()->value == value;
+    }
+
+    value_type value {};
+};
+
 struct boolean_object : hashable_object
 {
     using value_type = bool;
 
-    explicit boolean_object(bool val)
+    explicit boolean_object(value_type val)
         : value {val}
     {
     }
@@ -138,7 +163,7 @@ struct string_object : hashable_object
 
     string_object() = default;
 
-    explicit string_object(std::string val)
+    explicit string_object(value_type val)
         : value {std::move(val)}
     {
     }

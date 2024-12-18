@@ -31,6 +31,7 @@ class parser final
     auto parse_expression(int precedence) -> expression*;
     auto parse_identifier() const -> identifier*;
     auto parse_integer_literal() -> expression*;
+    auto parse_decimal_literal() -> expression*;
     auto parse_unary_expression() -> expression*;
     auto parse_binary_expression(expression* left) -> expression*;
     auto parse_boolean() -> expression*;
