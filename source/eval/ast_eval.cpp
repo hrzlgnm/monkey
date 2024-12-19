@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -54,18 +55,20 @@ auto array_expression::eval(environment* env) const -> const object*
 
 namespace
 {
-auto apply_decimal_binary_operator(token_type oper, const double left, const double right) -> const object*
+
+template<typename T>
+auto apply_binary_operator(token_type oper, typename T::value_type left, typename T::value_type right) -> const object*
 {
     using enum token_type;
     switch (oper) {
         case plus:
-            return make<decimal_object>(left + right);
+            return make<T>(left + right);
         case asterisk:
-            return make<decimal_object>(left * right);
+            return make<T>(left * right);
         case minus:
-            return make<decimal_object>(left - right);
+            return make<T>(left - right);
         case slash:
-            return make<decimal_object>(left / right);
+            return make<T>(left / right);
         case less_than:
             return native_bool_to_object(left < right);
         case greater_than:
@@ -79,29 +82,39 @@ auto apply_decimal_binary_operator(token_type oper, const double left, const dou
     }
 }
 
-auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> const object*
+auto cast_to_double(const object* obj, double& d) -> bool
 {
-    using enum token_type;
-    switch (oper) {
-        case plus:
-            return make<integer_object>(left + right);
-        case asterisk:
-            return make<integer_object>(left * right);
-        case minus:
-            return make<integer_object>(left - right);
-        case slash:
-            return make<integer_object>(left / right);
-        case less_than:
-            return native_bool_to_object(left < right);
-        case greater_than:
-            return native_bool_to_object(left > right);
-        case equals:
-            return native_bool_to_object(left == right);
-        case not_equals:
-            return native_bool_to_object(left != right);
-        default:
-            return {};
+    switch (obj->type()) {
+        case object::object_type::integer:
+            d = static_cast<double>(obj->as<integer_object>()->value);
+            return true;
+        case object::object_type::decimal:
+            d = obj->as<decimal_object>()->value;
+            return true;
+        case object::object_type::boolean:
+        case object::object_type::string:
+        case object::object_type::null:
+        case object::object_type::error:
+        case object::object_type::array:
+        case object::object_type::hash:
+        case object::object_type::function:
+        case object::object_type::compiled_function:
+        case object::object_type::closure:
+        case object::object_type::builtin:
+            break;
     }
+    return false;
+}
+
+template<typename T>
+auto apply_binary_operator(token_type oper, const object* lo, const object* ro) -> const object*
+{
+    double left {};
+    double right {};
+    if (!cast_to_double(lo, left) || !cast_to_double(ro, right)) {
+        return {};
+    }
+    return apply_binary_operator<T>(oper, left, right);
 }
 
 auto apply_string_binary_operator(token_type oper, const std::string& left, const std::string& right) -> const object*
@@ -141,10 +154,15 @@ auto binary_expression::eval(environment* env) const -> const object*
         }
     }
     using enum object::object_type;
-    if (evaluated_left->type() != evaluated_right->type()) {
-        return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
-    }
+    if ((evaluated_left->is(integer) && evaluated_right->is(decimal))
+        || (evaluated_left->is(decimal) && evaluated_right->is(integer)))
 
+    {
+        const auto* res = apply_binary_operator<decimal_object>(op, evaluated_left, evaluated_right);
+        if (res != nullptr) {
+            return res;
+        }
+    }
     if (evaluated_left->is(string) && evaluated_right->is(string)) {
         const auto* res = apply_string_binary_operator(
             op, evaluated_left->as<string_object>()->value, evaluated_right->as<string_object>()->value);
@@ -153,19 +171,23 @@ auto binary_expression::eval(environment* env) const -> const object*
         }
     }
     if (evaluated_left->is(integer) && evaluated_right->is(integer)) {
-        const auto* res = apply_integer_binary_operator(
+        const auto* res = apply_binary_operator<integer_object>(
             op, evaluated_left->as<integer_object>()->value, evaluated_right->as<integer_object>()->value);
         if (res != nullptr) {
             return res;
         }
     }
     if (evaluated_left->is(decimal) && evaluated_right->is(decimal)) {
-        const auto* res = apply_decimal_binary_operator(
+        const auto* res = apply_binary_operator<decimal_object>(
             op, evaluated_left->as<decimal_object>()->value, evaluated_right->as<decimal_object>()->value);
         if (res != nullptr) {
             return res;
         }
     }
+    if (evaluated_left->type() != evaluated_right->type()) {
+        return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
+    }
+
     return make_error("unknown operator: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
 }
 
@@ -744,6 +766,10 @@ TEST_CASE("decimalExpression")
         et {"3.0 * 3.0 * 3.0 + 10.0", 37.0},
         et {"3.0 * (3.0 * 3.0) + 10.0", 37.0},
         et {"(5.0 + 10.0 * 2.0 + 15.0 / 3.0) * 2.0 + -10.8", 49.2},
+        et {"5 + 10.2", 15.2},
+        et {"5 - 10.1", -5.1},
+        et {"5 * 10.0", 50.0},
+        et {"10 / 5.0", 2.0},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);

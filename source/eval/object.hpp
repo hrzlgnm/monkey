@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -43,6 +44,7 @@ struct object
     template<typename T>
     [[nodiscard]] auto as() const -> const T*
     {
+        assert(type() == T {}.type());
         return static_cast<const T*>(this);
     }
 
@@ -68,6 +70,8 @@ template<>
 struct fmt::formatter<object::object_type> : ostream_formatter
 {
 };
+
+auto cast_to_double(const object* obj) -> std::optional<double>;
 
 struct hashable_object : object
 {
@@ -196,6 +200,8 @@ auto native_null() -> const object*;
 
 struct error_object : object
 {
+    error_object() = default;
+
     explicit error_object(std::string msg)
         : message {std::move(msg)}
     {
