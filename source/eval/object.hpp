@@ -103,6 +103,8 @@ struct integer_object : hashable_object
 {
     using value_type = std::int64_t;
 
+    integer_object() = default;
+
     explicit integer_object(value_type val)
         : value {val}
     {
@@ -131,6 +133,8 @@ struct decimal_object : object
 {
     using value_type = double;
 
+    decimal_object() = default;
+
     explicit decimal_object(value_type val)
         : value {val}
     {
@@ -156,6 +160,8 @@ struct decimal_object : object
 struct boolean_object : hashable_object
 {
     using value_type = bool;
+
+    boolean_object() = default;
 
     explicit boolean_object(value_type val)
         : value {val}
@@ -274,6 +280,8 @@ struct array_object : object
 struct hash_object : object
 {
     using value_type = std::unordered_map<hashable_object::hash_key_type, const object*>;
+
+    hash_object() = default;
 
     explicit hash_object(value_type&& hsh)
         : value {std::move(hsh)}
