@@ -374,10 +374,10 @@ auto array_object::inspect() const -> std::string
 auto array_object::operator==(const object& other) const -> const object*
 {
     if (other.is(type())) {
-        if (value.size() != other.as<array_object>()->value.size()) {
+        const auto& other_value = other.as<array_object>()->value;
+        if (other_value.size() != value.size()) {
             return native_false();
         }
-        const auto& other_value = other.as<array_object>()->value;
         const auto eq = std::equal(value.cbegin(),
                                    value.cend(),
                                    other_value.cbegin(),
