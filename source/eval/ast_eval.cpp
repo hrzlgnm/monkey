@@ -32,11 +32,11 @@
 #include <fmt/ranges.h>
 #include <gc.hpp>
 #include <lexer/token_type.hpp>
+#include <object/object.hpp>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
 
 #include "environment.hpp"
-#include "object.hpp"
 
 auto array_expression::eval(environment* env) const -> const object*
 {

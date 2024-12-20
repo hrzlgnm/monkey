@@ -6,8 +6,7 @@
 #include "builtin_function_expression.hpp"
 
 #include <fmt/format.h>
-
-#include "eval/object.hpp"
+#include <object/object.hpp>
 
 builtin_function_expression::builtin_function_expression(
     std::string name,

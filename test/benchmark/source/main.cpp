@@ -5,7 +5,7 @@
 
 #include <compiler/compiler.hpp>
 #include <eval/environment.hpp>
-#include <eval/object.hpp>
+#include <object/object.hpp>
 #include <fmt/base.h>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>

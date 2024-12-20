@@ -6,7 +6,7 @@
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
-#include <eval/object.hpp>
+#include <object/object.hpp>
 #include <gc.hpp>
 
 constexpr size_t stack_size = 2048UL;

@@ -19,7 +19,7 @@
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 #include <code/code.hpp>
-#include <eval/object.hpp>
+#include <object/object.hpp>
 #include <fmt/format.h>
 #include <gc.hpp>
 #include <lexer/token_type.hpp>

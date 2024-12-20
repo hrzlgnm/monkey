@@ -46,10 +46,10 @@ target_sources(monkey_lib
     source/compiler/symbol_table.cpp
     source/eval/ast_eval.cpp
     source/eval/environment.cpp
-    source/eval/object.cpp
     source/lexer/lexer.cpp
     source/lexer/token.cpp
     source/lexer/token_type.cpp
+    source/object/object.cpp
     source/parser/parser.cpp
     source/vm/vm.cpp
 )
