@@ -153,12 +153,11 @@ auto parser::parse_let_statement() -> statement*
     }
 
     next_token();
-    stmt->value = parse_expression(lowest);
-    if (const auto* func_expr = dynamic_cast<const function_expression*>(stmt->value); func_expr != nullptr) {
-        // NOLINTBEGIN(cppcoreguidelines-pro-type-const-cast)
-        const_cast<function_expression*>(func_expr)->name = stmt->name->value;
-        // NOLINTEND(cppcoreguidelines-pro-type-const-cast)
+    auto* expr = parse_expression(lowest);
+    if (auto* func_expr = dynamic_cast<function_expression*>(expr); func_expr != nullptr) {
+        func_expr->name = stmt->name->value;
     }
+    stmt->value = expr;
 
     if (peek_token_is(semicolon)) {
         next_token();
