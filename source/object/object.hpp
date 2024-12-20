@@ -56,8 +56,6 @@ struct object
 
     [[nodiscard]] virtual auto is_hashable() const -> bool { return false; }
 
-    [[nodiscard]] virtual auto is_sequence() const -> bool { return false; }
-
     [[nodiscard]] virtual auto type() const -> object_type = 0;
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
@@ -116,7 +114,6 @@ struct integer_object : hashable_object
     [[nodiscard]] auto inspect() const -> std::string override { return std::to_string(value); }
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
-
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
     [[nodiscard]] auto operator<(const object& other) const -> const object* override;
     [[nodiscard]] auto operator>(const object& other) const -> const object* override;
@@ -172,7 +169,6 @@ struct boolean_object : hashable_object
     [[nodiscard]] auto inspect() const -> std::string override { return value ? "true" : "false"; }
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
-
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
     [[nodiscard]] auto operator<(const object& other) const -> const object* override;
     [[nodiscard]] auto operator>(const object& other) const -> const object* override;
@@ -198,12 +194,9 @@ struct string_object : hashable_object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::string; }
 
-    [[nodiscard]] auto is_sequence() const -> bool override { return true; }
-
     [[nodiscard]] auto inspect() const -> std::string override { return fmt::format(R"("{}")", value); }
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
-
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
     [[nodiscard]] auto operator<(const object& other) const -> const object* override;
     [[nodiscard]] auto operator>(const object& other) const -> const object* override;
@@ -259,12 +252,9 @@ struct array_object : object
 
     [[nodiscard]] auto is_truthy() const -> bool override { return !value.empty(); }
 
-    [[nodiscard]] auto is_sequence() const -> bool override { return true; }
-
     [[nodiscard]] auto type() const -> object_type override { return object_type::array; }
 
     [[nodiscard]] auto inspect() const -> std::string override;
-
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
     [[nodiscard]] auto operator*(const object& /*other*/) const -> const object* override;
     [[nodiscard]] auto operator+(const object& other) const -> const object* override;
@@ -286,7 +276,6 @@ struct hash_object : object
     [[nodiscard]] auto type() const -> object_type override { return object_type::hash; }
 
     [[nodiscard]] auto inspect() const -> std::string override;
-
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
     [[nodiscard]] auto operator+(const object& other) const -> const object* override;
 
