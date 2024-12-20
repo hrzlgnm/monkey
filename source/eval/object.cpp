@@ -437,19 +437,22 @@ auto hash_object::inspect() const -> std::string
 
 auto hash_object::operator==(const object& other) const -> const object*
 {
-    if (!other.is(type()) || other.as<hash_object>()->value.size() != value.size()) {
-        return native_false();
+    if (other.is(type())) {
+        const auto& other_value = other.as<hash_object>()->value;
+        if (other_value.size() != value.size()) {
+            return native_false();
+        }
+        const auto eq = std::all_of(value.cbegin(),
+                                    value.cend(),
+                                    [&other_value](const auto& pair)
+                                    {
+                                        const auto& [key, value] = pair;
+                                        auto it = other_value.find(key);
+                                        return it != other_value.cend() && object_eq(*(it->second), *value);
+                                    });
+        return native_bool_to_object(eq);
     }
-    const auto& other_value = other.as<hash_object>()->value;
-    const auto eq = std::all_of(value.cbegin(),
-                                value.cend(),
-                                [&other_value](const auto& pair)
-                                {
-                                    const auto& [key, value] = pair;
-                                    auto it = other_value.find(key);
-                                    return it != other_value.cend() && object_eq(*(it->second), *value);
-                                });
-    return native_bool_to_object(eq);
+    return nullptr;
 }
 
 auto null_object::operator==(const object& other) const -> const object*
