@@ -102,6 +102,8 @@ struct integer_object : hashable_object
 {
     using value_type = std::int64_t;
 
+    integer_object() = default;
+
     explicit integer_object(value_type val)
         : value {val}
     {
@@ -129,6 +131,8 @@ struct integer_object : hashable_object
 struct decimal_object : object
 {
     using value_type = double;
+
+    decimal_object() = default;
 
     explicit decimal_object(value_type val)
         : value {val}
@@ -223,17 +227,17 @@ auto native_null() -> const object*;
 struct error_object : object
 {
     explicit error_object(std::string msg)
-        : message {std::move(msg)}
+        : value {std::move(msg)}
     {
     }
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::error; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return "ERROR: " + message; }
+    [[nodiscard]] auto inspect() const -> std::string override { return "ERROR: " + value; }
 
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
 
-    std::string message;
+    std::string value;
 };
 
 template<typename... T>

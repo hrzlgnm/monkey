@@ -46,6 +46,54 @@ auto are_almost_equal(double a, double b) -> bool
 {
     return std::fabs(a - b) < epsilon;
 }
+
+template<typename T>
+auto eq_helper(const T* t, const object& other) -> const object*
+{
+    return native_bool_to_object(other.is(t->type()) && t->value == other.as<T>()->value);
+}
+
+template<typename T>
+auto lt_helper(const T* t, const object& other) -> const object*
+{
+    if (other.is(t->type())) {
+        return native_bool_to_object(t->value < other.as<T>()->value);
+    }
+    return nullptr;
+}
+
+template<typename T>
+auto gt_helper(const T* t, const object& other) -> const object*
+{
+    if (other.is(t->type())) {
+        return native_bool_to_object(t->value > other.as<T>()->value);
+    }
+    return nullptr;
+}
+
+template<typename T, typename U>
+auto lt_helper(const T* t, const object& other) -> const object*
+{
+    if (other.is(t->type())) {
+        return native_bool_to_object(t->value < other.as<T>()->value);
+    }
+    if (other.is(U {}.type())) {
+        return native_bool_to_object(t->value < other.as<U>()->value);
+    }
+    return nullptr;
+}
+
+template<typename T, typename U>
+auto gt_helper(const T* t, const object& other) -> const object*
+{
+    if (other.is(t->type())) {
+        return native_bool_to_object(t->value > other.as<T>()->value);
+    }
+    if (other.is(U {}.type())) {
+        return native_bool_to_object(t->value > other.as<U>()->value);
+    }
+    return nullptr;
+}
 }  // namespace
 
 auto native_bool_to_object(bool val) -> const object*
@@ -125,23 +173,17 @@ auto string_object::hash_key() const -> hash_key_type
 
 auto string_object::operator==(const object& other) const -> const object*
 {
-    return native_bool_to_object(other.is(type()) && other.as<string_object>()->value == value);
+    return eq_helper(this, other);
 }
 
 auto string_object::operator<(const object& other) const -> const object*
 {
-    if (other.is(type())) {
-        return native_bool_to_object(value < other.as<string_object>()->value);
-    }
-    return nullptr;
+    return lt_helper(this, other);
 }
 
 auto string_object::operator>(const object& other) const -> const object*
 {
-    if (other.is(type())) {
-        return native_bool_to_object(value > other.as<string_object>()->value);
-    }
-    return nullptr;
+    return gt_helper(this, other);
 }
 
 auto string_object::operator+(const object& other) const -> const object*
@@ -167,23 +209,17 @@ auto boolean_object::hash_key() const -> hash_key_type
 
 auto boolean_object::operator==(const object& other) const -> const object*
 {
-    return native_bool_to_object(other.is(type()) && other.as<boolean_object>()->value == value);
+    return eq_helper(this, other);
 }
 
 auto boolean_object::operator<(const object& other) const -> const object*
 {
-    if (other.is(boolean)) {
-        return native_bool_to_object(static_cast<int>(value) < static_cast<int>(other.as<boolean_object>()->value));
-    }
-    return nullptr;
+    return lt_helper(this, other);
 }
 
 auto boolean_object::operator>(const object& other) const -> const object*
 {
-    if (other.is(boolean)) {
-        return native_bool_to_object(static_cast<int>(value) > static_cast<int>(other.as<boolean_object>()->value));
-    }
-    return nullptr;
+    return gt_helper(this, other);
 }
 
 auto integer_object::hash_key() const -> hash_key_type
@@ -193,10 +229,7 @@ auto integer_object::hash_key() const -> hash_key_type
 
 auto integer_object::operator==(const object& other) const -> const object*
 {
-    if (other.is(type())) {
-        return native_bool_to_object(other.as<integer_object>()->value == value);
-    }
-    return nullptr;
+    return eq_helper(this, other);
 }
 
 auto integer_object::operator+(const object& other) const -> const object*
@@ -252,34 +285,17 @@ auto integer_object::operator/(const object& other) const -> const object*
 
 auto integer_object::operator<(const object& other) const -> const object*
 {
-    if (other.is(integer)) {
-        return native_bool_to_object(value < other.as<integer_object>()->value);
-    }
-    if (other.is(decimal)) {
-        return native_bool_to_object(static_cast<decimal_object::value_type>(value)
-                                     < other.as<decimal_object>()->value);
-    }
-    return nullptr;
+    return lt_helper<integer_object, decimal_object>(this, other);
 }
 
 auto integer_object::operator>(const object& other) const -> const object*
 {
-    if (other.is(integer)) {
-        return native_bool_to_object(value > other.as<integer_object>()->value);
-    }
-    if (other.is(decimal)) {
-        return native_bool_to_object(static_cast<decimal_object::value_type>(value)
-                                     > other.as<decimal_object>()->value);
-    }
-    return nullptr;
+    return gt_helper<integer_object, decimal_object>(this, other);
 }
 
 auto decimal_object::operator==(const object& other) const -> const object*
 {
-    if (other.is(type())) {
-        return native_bool_to_object(are_almost_equal(value, other.as<decimal_object>()->value));
-    }
-    return nullptr;
+    return eq_helper(this, other);
 }
 
 auto decimal_object::operator+(const object& other) const -> const object*
@@ -328,26 +344,12 @@ auto decimal_object::operator/(const object& other) const -> const object*
 
 auto decimal_object::operator<(const object& other) const -> const object*
 {
-    if (other.is(decimal)) {
-        return native_bool_to_object(value < other.as<decimal_object>()->value);
-    }
-    if (other.is(integer)) {
-        return native_bool_to_object(value
-                                     < static_cast<decimal_object::value_type>(other.as<integer_object>()->value));
-    }
-    return nullptr;
+    return lt_helper<decimal_object, integer_object>(this, other);
 }
 
 auto decimal_object::operator>(const object& other) const -> const object*
 {
-    if (other.is(decimal)) {
-        return native_bool_to_object(value > other.as<decimal_object>()->value);
-    }
-    if (other.is(integer)) {
-        return native_bool_to_object(value
-                                     > static_cast<decimal_object::value_type>(other.as<integer_object>()->value));
-    }
-    return nullptr;
+    return gt_helper<decimal_object, integer_object>(this, other);
 }
 
 auto builtin_object::inspect() const -> std::string
@@ -362,10 +364,7 @@ auto function_object::inspect() const -> std::string
 
 auto error_object::operator==(const object& other) const -> const object*
 {
-    if (other.is(type())) {
-        return native_bool_to_object(message == other.as<error_object>()->message);
-    }
-    return nullptr;
+    return eq_helper(this, other);
 }
 
 auto array_object::inspect() const -> std::string
@@ -397,7 +396,7 @@ auto array_object::operator==(const object& other) const -> const object*
                                    [](const object* a, const object* b) { return object_eq(*a, *b); });
         return native_bool_to_object(eq);
     }
-    return nullptr;
+    return native_false();
 }
 
 auto array_object::operator*(const object& other) const -> const object*
@@ -464,13 +463,10 @@ auto hash_object::operator==(const object& other) const -> const object*
                                     });
         return native_bool_to_object(eq);
     }
-    return nullptr;
+    return native_false();
 }
 
 auto null_object::operator==(const object& other) const -> const object*
 {
-    if (other.is(type())) {
-        return native_true();
-    }
-    return nullptr;
+    return native_bool_to_object(other.is(type()));
 }

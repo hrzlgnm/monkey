@@ -486,7 +486,7 @@ auto require_is(const error& expected, const object*& actual_obj, std::string_vi
          actual_obj->inspect(),
          " instead");
     REQUIRE(actual_obj->is(object::object_type::error));
-    const auto& actual = actual_obj->as<error_object>()->message;
+    const auto& actual = actual_obj->as<error_object>()->value;
     REQUIRE(actual == expected.message);
 }
 

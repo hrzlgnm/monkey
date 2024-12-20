@@ -577,7 +577,7 @@ auto require_error_eq(const object* obj, const std::string& expected, std::strin
 {
     INFO(input, " expected: error with message: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::error));
-    const auto& actual = obj->as<error_object>()->message;
+    const auto& actual = obj->as<error_object>()->value;
     REQUIRE(actual == expected);
 }
 
@@ -738,6 +738,9 @@ TEST_CASE("booleanExpression")
         et {R"({1: 2} == {1: 2})", true},
         et {R"({2: 1} != {1: 2, 2: 3})", true},
         et {R"({2: 1} != {1: 2})", true},
+        et {R"({2: 1} == [1, 2])", false},
+        et {R"(1 == [1])", false},
+        et {R"("1" == ["1"])", false},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
