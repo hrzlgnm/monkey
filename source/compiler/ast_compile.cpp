@@ -19,10 +19,10 @@
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 #include <code/code.hpp>
-#include <object/object.hpp>
 #include <fmt/format.h>
 #include <gc.hpp>
 #include <lexer/token_type.hpp>
+#include <object/object.hpp>
 
 #include "compiler.hpp"
 #include "symbol_table.hpp"
