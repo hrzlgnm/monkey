@@ -18,7 +18,6 @@
 #include <compiler/compiler.hpp>
 #include <doctest/doctest.h>
 #include <eval/object.hpp>
-#include <eval/util.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <gc.hpp>

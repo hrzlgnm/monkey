@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -38,7 +37,6 @@
 
 #include "environment.hpp"
 #include "object.hpp"
-#include "util.hpp"
 
 auto array_expression::eval(environment* env) const -> const object*
 {
