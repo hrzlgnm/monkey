@@ -14,10 +14,10 @@
 #include <doctest/doctest.h>
 #include <fmt/ranges.h>
 #include <gc.hpp>
+#include <object/object.hpp>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
 
-#include "eval/object.hpp"
 #include "symbol_table.hpp"
 
 auto compiler::create() -> compiler

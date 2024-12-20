@@ -3,8 +3,7 @@
 #include "environment.hpp"
 
 #include <fmt/base.h>
-
-#include "object.hpp"
+#include <object/object.hpp>
 
 environment::environment(environment* outer_env)
     : outer(outer_env)
