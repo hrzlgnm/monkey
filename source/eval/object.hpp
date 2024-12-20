@@ -59,9 +59,9 @@ struct object
     [[nodiscard]] virtual auto type() const -> object_type = 0;
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
-    [[nodiscard]] virtual auto operator==(const object& /*other*/) const -> const object* { return nullptr; }
+    [[nodiscard]] auto operator!=(const object& other) const -> const object*;
 
-    [[nodiscard]] virtual auto operator!=(const object& other) const -> const object*;
+    [[nodiscard]] virtual auto operator==(const object& /*other*/) const -> const object* { return nullptr; }
 
     [[nodiscard]] virtual auto operator<(const object& /*other*/) const -> const object* { return nullptr; }
 
