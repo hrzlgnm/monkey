@@ -194,69 +194,33 @@ auto vm::last_popped() const -> const object*
     return m_stack[m_sp];
 }
 
+namespace
+{
+
+auto apply_binary_operator(opcodes opcode, const object* left, const object* right) -> const object*
+{
+    using enum opcodes;
+    switch (opcode) {
+        case add:
+            return *left + *right;
+        case mul:
+            return *left * *right;
+        case sub:
+            return *left - *right;
+        case div:
+            return *left / *right;
+        default:
+            return {};
+    }
+}
+}  // namespace
+
 auto vm::exec_binary_op(opcodes opcode) -> void
 {
     const auto* right = pop();
     const auto* left = pop();
-    using enum object::object_type;
-    if (opcode == opcodes::mul) {
-        if (const auto* multiplied = evaluate_sequence_mul(left, right); multiplied != nullptr) {
-            push(multiplied);
-            return;
-        }
-    }
-    if (left->is(integer) && right->is(integer)) {
-        auto left_value = left->as<integer_object>()->value;
-        auto right_value = right->as<integer_object>()->value;
-        switch (opcode) {
-            case opcodes::sub:
-                push(make<integer_object>(left_value - right_value));
-                break;
-            case opcodes::mul:
-                push(make<integer_object>(left_value * right_value));
-                break;
-            case opcodes::div:
-                push(make<integer_object>(left_value / right_value));
-                break;
-            case opcodes::add:
-                push(make<integer_object>(left_value + right_value));
-                break;
-            default:
-                throw std::runtime_error(fmt::format("unknown integer operator"));
-        }
-        return;
-    }
-    if (left->is(decimal) && right->is(decimal)) {
-        auto left_value = left->as<decimal_object>()->value;
-        auto right_value = right->as<decimal_object>()->value;
-        switch (opcode) {
-            case opcodes::sub:
-                push(make<decimal_object>(left_value - right_value));
-                break;
-            case opcodes::mul:
-                push(make<decimal_object>(left_value * right_value));
-                break;
-            case opcodes::div:
-                push(make<decimal_object>(left_value / right_value));
-                break;
-            case opcodes::add:
-                push(make<decimal_object>(left_value + right_value));
-                break;
-            default:
-                throw std::runtime_error(fmt::format("unknown decimal operator"));
-        }
-        return;
-    }
-    if (left->is(string) && right->is(string)) {
-        const auto& left_value = left->as<string_object>()->value;
-        const auto& right_value = right->as<string_object>()->value;
-        switch (opcode) {
-            case opcodes::add:
-                push(make<string_object>(left_value + right_value));
-                break;
-            default:
-                throw std::runtime_error(fmt::format("unknown string {} string operator", opcode));
-        }
+    if (const auto* result = apply_binary_operator(opcode, left, right); result != nullptr) {
+        push(result);
         return;
     }
     throw std::runtime_error(
@@ -265,17 +229,16 @@ auto vm::exec_binary_op(opcodes opcode) -> void
 
 namespace
 {
-template<typename ValueType>
-auto exec_value_cmp(opcodes opcode, const ValueType& lhs, const ValueType& rhs) -> const object*
+auto exec_obj_cmp(opcodes opcode, const object* lhs, const object* rhs) -> const object*
 {
     using enum opcodes;
     switch (opcode) {
         case equal:
-            return native_bool_to_object(lhs == rhs);
+            return *lhs == *rhs;
         case not_equal:
-            return native_bool_to_object(lhs != rhs);
+            return *lhs != *rhs;
         case greater_than:
-            return native_bool_to_object(lhs > rhs);
+            return *lhs > *rhs;
         default:
             throw std::runtime_error(fmt::format("unknown operator {}", opcode));
     }
@@ -287,29 +250,12 @@ auto vm::exec_cmp(opcodes opcode) -> void
 {
     const auto* right = pop();
     const auto* left = pop();
-    using enum object::object_type;
-    if (left->is(integer) && right->is(integer)) {
-        push(exec_value_cmp(opcode, left->as<integer_object>()->value, right->as<integer_object>()->value));
+    if (const auto* val = exec_obj_cmp(opcode, left, right); val != nullptr) {
+        push(val);
         return;
     }
 
-    if (left->is(string) && right->is(string)) {
-        push(exec_value_cmp(opcode, left->as<string_object>()->value, right->as<string_object>()->value));
-        return;
-    }
-
-    switch (opcode) {
-        case opcodes::equal: {
-            push(native_bool_to_object(left->equals_to(right)));
-            return;
-        }
-        case opcodes::not_equal: {
-            push(native_bool_to_object(!left->equals_to(right)));
-            return;
-        }
-        default:
-            throw std::runtime_error(fmt::format("unknown operator {} ({} {})", opcode, left->type(), right->type()));
-    }
+    throw std::runtime_error(fmt::format("unknown operator {} ({} {})", opcode, left->type(), right->type()));
 }
 
 auto vm::exec_bang() -> void
@@ -764,6 +710,10 @@ TEST_CASE("arrayLiterals")
         vt<std::vector<int>> {
             "[1, 5] * 3",
             {std::vector<int> {1, 5, 1, 5, 1, 5}},
+        },
+        vt<std::vector<int>> {
+            "[1, 5] + [3]",
+            {std::vector<int> {1, 5, 3}},
         },
     };
     run(tests);

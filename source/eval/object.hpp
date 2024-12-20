@@ -59,8 +59,23 @@ struct object
     [[nodiscard]] virtual auto type() const -> object_type = 0;
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
-    [[nodiscard]] virtual auto equals_to(const object* /*other*/) const -> bool { return false; }
+    [[nodiscard]] virtual auto operator==(const object& /*other*/) const -> const object* { return nullptr; }
 
+    [[nodiscard]] virtual auto operator!=(const object& other) const -> const object*;
+
+    [[nodiscard]] virtual auto operator<(const object& /*other*/) const -> const object* { return nullptr; }
+
+    [[nodiscard]] virtual auto operator>(const object& /*other*/) const -> const object* { return nullptr; }
+
+    [[nodiscard]] virtual auto operator*(const object& /*other*/) const -> const object* { return nullptr; }
+
+    [[nodiscard]] virtual auto operator+(const object& /*other*/) const -> const object* { return nullptr; }
+
+    [[nodiscard]] virtual auto operator-(const object& /*other*/) const -> const object* { return nullptr; }
+
+    [[nodiscard]] virtual auto operator/(const object& /*other*/) const -> const object* { return nullptr; }
+
+    // todo: return_object
     mutable bool is_return_value {};
 };
 
@@ -71,7 +86,7 @@ struct fmt::formatter<object::object_type> : ostream_formatter
 {
 };
 
-auto cast_to_double(const object* obj) -> std::optional<double>;
+auto native_bool_to_object(bool val) -> const object*;
 
 struct hashable_object : object
 {
@@ -101,10 +116,13 @@ struct integer_object : hashable_object
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override
-    {
-        return other->is(type()) && other->as<integer_object>()->value == value;
-    }
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator<(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator>(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator+(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator-(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator*(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator/(const object& other) const -> const object* override;
 
     value_type value {};
 };
@@ -124,10 +142,13 @@ struct decimal_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return decimal_to_string(value); }
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override
-    {
-        return other->is(type()) && other->as<decimal_object>()->value == value;
-    }
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator<(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator>(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator+(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator-(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator*(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator/(const object& other) const -> const object* override;
 
     value_type value {};
 };
@@ -149,17 +170,15 @@ struct boolean_object : hashable_object
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override
-    {
-        return other->is(type()) && other->as<boolean_object>()->value == value;
-    }
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator<(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator>(const object& other) const -> const object* override;
 
     value_type value {};
 };
 
 auto native_true() -> const object*;
 auto native_false() -> const object*;
-auto native_bool_to_object(bool val) -> const object*;
 
 struct string_object : hashable_object
 {
@@ -182,7 +201,11 @@ struct string_object : hashable_object
 
     [[nodiscard]] auto hash_key() const -> hash_key_type override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override;
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator<(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator>(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator+(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator*(const object& other) const -> const object* override;
 
     value_type value;
 };
@@ -193,7 +216,7 @@ struct null_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "null"; }
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override { return other->is(type()); }
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
 };
 
 auto native_null() -> const object*;
@@ -211,10 +234,7 @@ struct error_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override { return "ERROR: " + message; }
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override
-    {
-        return other->is(type()) && other->as<error_object>()->message == message;
-    }
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
 
     std::string message;
 };
@@ -244,7 +264,9 @@ struct array_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override;
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator*(const object& /*other*/) const -> const object* override;
+    [[nodiscard]] auto operator+(const object& other) const -> const object* override;
 
     value_type value;
 };
@@ -264,7 +286,7 @@ struct hash_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override;
 
-    [[nodiscard]] auto equals_to(const object* other) const -> bool override;
+    [[nodiscard]] auto operator==(const object& other) const -> const object* override;
 
     value_type value;
 };
