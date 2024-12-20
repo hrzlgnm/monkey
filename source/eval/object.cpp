@@ -19,8 +19,6 @@
 #include <gc.hpp>
 #include <overloaded.hpp>
 
-#include "util.hpp"
-
 namespace
 {
 const boolean_object false_obj {/*val=*/false};
@@ -110,6 +108,17 @@ auto gt_helper(const T* t, const object& other) -> const object*
     }
     return nullptr;
 }
+
+template<typename T>
+auto multiply_sequence_helper(const T* source, integer_object::value_type count) -> const object*
+{
+    typename T::value_type target;
+    for (integer_object::value_type i = 0; i < count; i++) {
+        std::copy(source->value.cbegin(), source->value.cend(), std::back_inserter(target));
+    }
+    return make<T>(std::move(target));
+}
+
 }  // namespace
 
 auto native_bool_to_object(bool val) -> const object*
@@ -212,7 +221,7 @@ auto string_object::operator+(const object& other) const -> const object*
 auto string_object::operator*(const object& other) const -> const object*
 {
     if (other.is(integer)) {
-        return evaluate_sequence_mul(this, &other);
+        return multiply_sequence_helper(this, other.as<integer_object>()->value);
     }
     return nullptr;
 }
@@ -277,9 +286,14 @@ auto integer_object::operator*(const object& other) const -> const object*
     if (other.is(decimal)) {
         return make<decimal_object>(static_cast<decimal_object::value_type>(value) * other.as<decimal_object>()->value);
     }
-    if (other.is(array) || other.is(string)) {
-        return evaluate_sequence_mul(this, &other);
+    if (other.is(array)) {
+        return multiply_sequence_helper(other.as<array_object>(), value);
     }
+
+    if (other.is(string)) {
+        return multiply_sequence_helper(other.as<string_object>(), value);
+    }
+
     return nullptr;
 }
 
@@ -417,7 +431,7 @@ auto array_object::operator==(const object& other) const -> const object*
 auto array_object::operator*(const object& other) const -> const object*
 {
     if (other.is(integer)) {
-        return evaluate_sequence_mul(this, &other);
+        return multiply_sequence_helper(this, other.as<integer_object>()->value);
     }
     return nullptr;
 }
