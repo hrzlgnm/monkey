@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <ios>
 #include <iterator>
@@ -37,6 +38,13 @@ auto invert_bool_object(const object* b) -> const object*
 auto object_eq(const object& lhs, const object& rhs) -> bool
 {
     return (lhs == rhs) == &true_obj;
+}
+
+constexpr auto epsilon = 1e-9;
+
+auto are_almost_equal(double a, double b) -> bool
+{
+    return std::fabs(a - b) < epsilon;
 }
 }  // namespace
 
@@ -230,7 +238,11 @@ auto integer_object::operator*(const object& other) const -> const object*
 auto integer_object::operator/(const object& other) const -> const object*
 {
     if (other.is(integer)) {
-        return make<integer_object>(value / other.as<integer_object>()->value);
+        const auto other_value = other.as<integer_object>()->value;
+        if (other_value == 0) {
+            return make_error("division by zero");
+        }
+        return make<integer_object>(value / other_value);
     }
     if (other.is(decimal)) {
         return make<decimal_object>(static_cast<decimal_object::value_type>(value) / other.as<decimal_object>()->value);
@@ -265,7 +277,7 @@ auto integer_object::operator>(const object& other) const -> const object*
 auto decimal_object::operator==(const object& other) const -> const object*
 {
     if (other.is(type())) {
-        return native_bool_to_object(value == other.as<decimal_object>()->value);
+        return native_bool_to_object(are_almost_equal(value, other.as<decimal_object>()->value));
     }
     return nullptr;
 }

@@ -861,6 +861,10 @@ TEST_CASE("errorHandling")
 
     std::array tests {
         et {
+            "5 / 0;",
+            "division by zero",
+        },
+        et {
             "5 + true;",
             "type mismatch: integer + boolean",
         },
