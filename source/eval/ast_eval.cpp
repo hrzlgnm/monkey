@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
@@ -15,6 +16,7 @@
 #include <ast/builtin_function_expression.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/callable_expression.hpp>
+#include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
@@ -53,49 +55,32 @@ auto array_expression::eval(environment* env) const -> const object*
 
 namespace
 {
-auto apply_integer_binary_operator(token_type oper, const int64_t left, const int64_t right) -> const object*
+
+auto apply_binary_operator(token_type oper, const object* left, const object* right) -> const object*
 {
     using enum token_type;
     switch (oper) {
         case plus:
-            return make<integer_object>(left + right);
+            return *left + *right;
         case asterisk:
-            return make<integer_object>(left * right);
+            return *left * *right;
         case minus:
-            return make<integer_object>(left - right);
+            return *left - *right;
         case slash:
-            return make<integer_object>(left / right);
+            return *left / *right;
         case less_than:
-            return native_bool_to_object(left < right);
+            return *left < *right;
         case greater_than:
-            return native_bool_to_object(left > right);
+            return *left > *right;
         case equals:
-            return native_bool_to_object(left == right);
+            return *left == *right;
         case not_equals:
-            return native_bool_to_object(left != right);
+            return *left != *right;
         default:
             return {};
     }
 }
 
-auto apply_string_binary_operator(token_type oper, const std::string& left, const std::string& right) -> const object*
-{
-    using enum token_type;
-    switch (oper) {
-        case plus:
-            return make<string_object>(left + right);
-        case less_than:
-            return native_bool_to_object(left < right);
-        case greater_than:
-            return native_bool_to_object(left > right);
-        case equals:
-            return native_bool_to_object(left == right);
-        case not_equals:
-            return native_bool_to_object(left != right);
-        default:
-            return {};
-    }
-}
 }  // namespace
 
 auto binary_expression::eval(environment* env) const -> const object*
@@ -109,30 +94,13 @@ auto binary_expression::eval(environment* env) const -> const object*
     if (evaluated_right->is_error()) {
         return evaluated_right;
     }
-    if (op == token_type::asterisk) {
-        if (const auto* multiplied = evaluate_sequence_mul(evaluated_left, evaluated_right); multiplied != nullptr) {
-            return multiplied;
-        }
+    if (const auto* val = apply_binary_operator(op, evaluated_left, evaluated_right); val != nullptr) {
+        return val;
     }
-    using enum object::object_type;
     if (evaluated_left->type() != evaluated_right->type()) {
         return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
     }
 
-    if (evaluated_left->is(string) && evaluated_right->is(string)) {
-        const auto* res = apply_string_binary_operator(
-            op, evaluated_left->as<string_object>()->value, evaluated_right->as<string_object>()->value);
-        if (res != nullptr) {
-            return res;
-        }
-    }
-    if (evaluated_left->is(integer) && evaluated_right->is(integer)) {
-        const auto* res = apply_integer_binary_operator(
-            op, evaluated_left->as<integer_object>()->value, evaluated_right->as<integer_object>()->value);
-        if (res != nullptr) {
-            return res;
-        }
-    }
     return make_error("unknown operator: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
 }
 
@@ -262,6 +230,11 @@ auto integer_literal::eval(environment* /*env*/) const -> object*
     return make<integer_object>(value);
 }
 
+auto decimal_literal::eval(environment* /*env*/) const -> object*
+{
+    return make<decimal_object>(value);
+}
+
 auto program::eval(environment* env) const -> const object*
 {
     const object* result = nullptr;
@@ -334,10 +307,12 @@ auto unary_expression::eval(environment* env) const -> const object*
     }
     switch (op) {
         case minus:
-            if (!evaluated_value->is(object::object_type::integer)) {
-                return make_error("unknown operator: -{}", evaluated_value->type());
+            if (evaluated_value->is(object::object_type::integer)) {
+                return make<integer_object>(-evaluated_value->as<integer_object>()->value);
+            } else if (evaluated_value->is(object::object_type::decimal)) {
+                return make<decimal_object>(-evaluated_value->as<decimal_object>()->value);
             }
-            return make<integer_object>(-evaluated_value->as<integer_object>()->value);
+            return make_error("unknown operator: -{}", evaluated_value->type());
         case exclamation:
             return native_bool_to_object(!evaluated_value->is_truthy());
         default:
@@ -573,6 +548,14 @@ auto require_eq(const object* obj, const std::string& expected, std::string_view
     REQUIRE(actual == expected);
 }
 
+auto require_eq(const object* obj, double expected, std::string_view input) -> void
+{
+    INFO(input, " expected: string with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::decimal));
+    const auto& actual = obj->as<decimal_object>()->value;
+    REQUIRE(actual == expected);
+}
+
 auto require_array_eq(const object* obj, const array& expected, std::string_view input) -> void
 {
     INFO(input, " expected: array with: ", expected.size(), "elements got: ", obj->type(), " with: ", obj->inspect());
@@ -672,6 +655,45 @@ TEST_CASE("integerExpression")
     }
 }
 
+TEST_CASE("decimalExpression")
+{
+    struct et
+    {
+        std::string_view input;
+        double expected;
+    };
+
+    std::array tests {
+        et {"5.0", 5.0},
+        et {"10.0", 10.0},
+        et {"-5.0", -5.0},
+        et {"-10.0", -10.0},
+        et {"5.0 + 5.0 + 5.0 + 5.0 - 10.0", 10.0},
+        et {"2.0 * 2.0 * 2.0 * 2.0 * 2.0", 32.0},
+        et {"-50.0 + 100.0 + -50.0", 0.0},
+        et {"5.0 * 2.0 + 10.0", 20.0},
+        et {"5.0 + 2.0 * 10.0", 25.0},
+        et {"20.0 + 2.0 * -10.0", 0.0},
+        et {"50.0/ 2.0 * 2.0 + 10.0", 60.0},
+        et {"2.0 * (5.0 + 10.0)", 30.0},
+        et {"3.0 * 3.0 * 3.0 + 10.0", 37.0},
+        et {"3.0 * (3.0 * 3.0) + 10.0", 37.0},
+        et {"(5.0 + 10.0 * 2.0 + 15.0 / 3.0) * 2.0 + -10.8", 49.2},
+        et {"5 + 10.2", 15.2},
+        et {"10.2 + 5", 15.2},
+        et {"5 - 10.1", -5.1},
+        et {"10.1 - 5", 5.1},
+        et {"5 * 10.0", 50.0},
+        et {"10.0 * 5", 50.0},
+        et {"10 / 5.0", 2.0},
+        et {"10.0 / 5 ", 2.0},
+    };
+    for (const auto& [input, expected] : tests) {
+        const auto evaluated = run(input);
+        require_eq(evaluated, expected, input);
+    }
+}
+
 TEST_CASE("booleanExpression")
 {
     struct et
@@ -687,10 +709,20 @@ TEST_CASE("booleanExpression")
         et {"1 > 2", false},
         et {"1 < 1", false},
         et {"1 > 1", false},
+        et {"1.1 > 1.1", false},
+        et {"1.1 < 2.1", true},
+        et {"1.1 > 2.1", false},
+        et {"1.1 < 1.1", false},
+        et {"1 > 1.1", false},
+        et {"1.1 > 2", false},
+        et {"2 < 1.1", false},
+        et {"1.1 < 2", true},
         et {"1 == 1", true},
         et {"1 != 1", false},
         et {"1 == 2", false},
         et {"1 != 2", true},
+        et {R"(false > true)", false},
+        et {R"(false < true)", true},
         et {R"("a" < "b")", true},
         et {R"("a" > "b")", false},
         et {R"("a" < "a")", false},
@@ -699,6 +731,13 @@ TEST_CASE("booleanExpression")
         et {R"("a" != "a")", false},
         et {R"("a" == "b")", false},
         et {R"("a" != "b")", true},
+        et {R"([1] == [1, 2])", false},
+        et {R"([1] == [1])", true},
+        et {R"([1] != [2])", true},
+        et {R"([1] != [1, 2])", true},
+        et {R"({1: 2} == {1: 2})", true},
+        et {R"({2: 1} != {1: 2, 2: 3})", true},
+        et {R"({2: 1} != {1: 2})", true},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
@@ -821,6 +860,10 @@ TEST_CASE("errorHandling")
     };
 
     std::array tests {
+        et {
+            "5 / 0;",
+            "division by zero",
+        },
         et {
             "5 + true;",
             "type mismatch: integer + boolean",
@@ -1024,10 +1067,14 @@ TEST_CASE("arrayExpression")
             "-1 * [1, 3]",
             {},
         },
+        at {
+            "[2] + [1, 3]",
+            {{2}, {1}, {3}},
+        },
     };
     for (const auto test : tests) {
         const auto evaluated = run(test.input);
-        INFO("got: " << evaluated->type());
+        INFO("got: " << evaluated->type() << " for " << test.input);
         REQUIRE(evaluated->is(object::object_type::array));
         const auto& as_arr = evaluated->as<array_object>()->value;
         require_array_eq(evaluated->as<array_object>(), test.expected, test.input);
