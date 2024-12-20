@@ -6,6 +6,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <type_traits>
 #include <variant>
 
 #include "object.hpp"
@@ -14,6 +15,7 @@
 #include <ast/callable_expression.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <gc.hpp>
 #include <overloaded.hpp>
 
 #include "util.hpp"
@@ -81,7 +83,12 @@ auto lt_helper(const T* t, const object& other) -> const object*
         return native_bool_to_object(t->value < other.as<T>()->value);
     }
     if (other.is(U {}.type())) {
-        return native_bool_to_object(t->value < other.as<U>()->value);
+        if constexpr (std::is_same_v<T, decimal_object>) {
+            return native_bool_to_object(t->value < static_cast<decimal_object::value_type>(other.as<U>()->value));
+        }
+        if constexpr (std::is_same_v<U, decimal_object>) {
+            return native_bool_to_object(static_cast<decimal_object::value_type>(t->value) < other.as<U>()->value);
+        }
     }
     return nullptr;
 }
@@ -93,7 +100,12 @@ auto gt_helper(const T* t, const object& other) -> const object*
         return native_bool_to_object(t->value > other.as<T>()->value);
     }
     if (other.is(U {}.type())) {
-        return native_bool_to_object(t->value > other.as<U>()->value);
+        if constexpr (std::is_same_v<T, decimal_object>) {
+            return native_bool_to_object(t->value > static_cast<decimal_object::value_type>(other.as<U>()->value));
+        }
+        if constexpr (std::is_same_v<U, decimal_object>) {
+            return native_bool_to_object(static_cast<decimal_object::value_type>(t->value) > other.as<U>()->value);
+        }
     }
     return nullptr;
 }
