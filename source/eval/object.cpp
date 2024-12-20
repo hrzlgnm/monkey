@@ -177,9 +177,8 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
             return ostrm << "closure";
         case builtin:
             return ostrm << "builtin";
-        default:
-            return ostrm << "unknown " << static_cast<int>(type);
     }
+    return ostrm << "unknown " << static_cast<int>(type);
 }
 
 auto string_object::hash_key() const -> hash_key_type
