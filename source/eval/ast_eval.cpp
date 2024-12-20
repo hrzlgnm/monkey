@@ -1073,11 +1073,10 @@ TEST_CASE("arrayExpression")
             {{2}, {1}, {3}},
         },
     };
-    for (const auto test : tests) {
+    for (const auto& test : tests) {
         const auto evaluated = run(test.input);
         INFO("got: " << evaluated->type() << " for " << test.input);
         REQUIRE(evaluated->is(object::object_type::array));
-        const auto& as_arr = evaluated->as<array_object>()->value;
         require_array_eq(evaluated->as<array_object>(), test.expected, test.input);
     }
 }
