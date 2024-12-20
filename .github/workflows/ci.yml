@@ -208,7 +208,7 @@ jobs:
           -DCMAKE_SHARED_LINKER_FLAGS="-Wl,--allow-shlib-undefined,--as-needed,-z,noexecstack,-z,relro,-z,now"
           -DCMAKE_CXX_CLANG_TIDY="clang-tidy;--header-filter=^/__w/monkey/monkey/source"
           -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON
-          -DCMAKE_CXX_CPPCHECK="cppcheck;--inline-suppr;--library=/__w/monkey/monkey/cppcheck/monkey.cfg"
+          -DCMAKE_CXX_CPPCHECK="cppcheck;--inline-suppr;--check-level=exhaustive;--library=/__w/monkey/monkey/cppcheck/monkey.cfg"
           -DCMAKE_CXX_EXTENSIONS=OFF
           -DCMAKE_CXX_STANDARD=20
           -DCMAKE_CXX_STANDARD_REQUIRED=ON
