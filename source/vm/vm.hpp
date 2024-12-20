@@ -6,8 +6,8 @@
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
-#include <eval/object.hpp>
 #include <gc.hpp>
+#include <object/object.hpp>
 
 constexpr size_t stack_size = 2048UL;
 constexpr size_t globals_size = 65536UL;

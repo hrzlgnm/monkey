@@ -18,10 +18,9 @@
 #include <fmt/format.h>
 #include <gc.hpp>
 #include <lexer/lexer.hpp>
+#include <object/object.hpp>
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
-
-#include "eval/object.hpp"
 
 namespace
 {
