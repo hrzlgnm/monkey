@@ -20,6 +20,8 @@
 #include <gc.hpp>
 #include <overloaded.hpp>
 
+using enum object::object_type;
+
 namespace
 {
 const boolean_object false_obj {/*val=*/false};
@@ -53,7 +55,18 @@ template<typename T>
 auto eq_helper(const T* t, const object& other) -> const object*
 {
     if constexpr (std::is_same_v<T, decimal_object>) {
+        if (other.is(integer)) {
+            return native_bool_to_object(
+                are_almost_equal(static_cast<decimal_object::value_type>(other.as<integer_object>()->value), t->value));
+        }
         return native_bool_to_object(other.is(t->type()) && are_almost_equal(t->value, other.as<T>()->value));
+    }
+    if constexpr (std::is_same_v<T, integer_object>) {
+        if (other.is(decimal)) {
+            return native_bool_to_object(
+                are_almost_equal(static_cast<decimal_object::value_type>(t->value), other.as<decimal_object>()->value));
+        }
+        return native_bool_to_object(other.is(t->type()) && t->value == other.as<T>()->value);
     }
     return native_bool_to_object(other.is(t->type()) && t->value == other.as<T>()->value);
 }
@@ -149,8 +162,6 @@ auto object::operator!=(const object& other) const -> const object*
 {
     return invert_bool_object(*this == other);
 }
-
-using enum object::object_type;
 
 builtin_object::builtin_object(const builtin_function_expression* bltn)
 
