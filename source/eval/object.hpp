@@ -288,6 +288,7 @@ struct hash_object : object
     [[nodiscard]] auto inspect() const -> std::string override;
 
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator+(const object& other) const -> const object* override;
 
     value_type value;
 };

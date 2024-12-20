@@ -466,6 +466,19 @@ auto hash_object::operator==(const object& other) const -> const object*
     return native_false();
 }
 
+auto hash_object::operator+(const object& other) const -> const object*
+{
+    if (other.is(hash)) {
+        value_type concat = value;
+        const auto& other_value = other.as<hash_object>()->value;
+        for (const auto& pair : other_value) {
+            concat.insert_or_assign(pair.first, pair.second);
+        }
+        return make<hash_object>(std::move(concat));
+    }
+    return nullptr;
+}
+
 auto null_object::operator==(const object& other) const -> const object*
 {
     return native_bool_to_object(other.is(type()));

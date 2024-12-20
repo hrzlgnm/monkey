@@ -1167,6 +1167,8 @@ TEST_CASE("hashLiterals")
         "one": 10 - 9,
         two: 1 + 1,
         "thr" + "ee": 6 / 2,
+        4: 3
+    } + {
         4: 4,
         true: 5,
         false: 6
