@@ -60,10 +60,10 @@ auto vm::run() -> void
                 pop();
                 break;
             case opcodes::tru:
-                push(native_true());
+                push(true_object());
                 break;
             case opcodes::fals:
-                push(native_false());
+                push(false_object());
                 break;
             case opcodes::bang:
                 exec_bang();
@@ -85,7 +85,7 @@ auto vm::run() -> void
 
             } break;
             case opcodes::null:
-                push(native_null());
+                push(null_object());
                 break;
             case opcodes::set_global: {
                 auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
@@ -131,7 +131,7 @@ auto vm::run() -> void
             case opcodes::ret: {
                 auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(native_null());
+                push(null_object());
             } break;
             case opcodes::set_local: {
                 auto local_index = code[instr_ptr + 1UL];
@@ -299,7 +299,7 @@ namespace
 auto exec_hash(const hash_object::value_type& hsh, const hashable_object::hash_key_type& key) -> const object*
 {
     if (!hsh.contains(key)) {
-        return native_null();
+        return null_object();
     }
     return hsh.at(key);
 }
@@ -312,7 +312,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<array_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
-            push(native_null());
+            push(null_object());
             return;
         }
         push(left->as<array_object>()->value[static_cast<size_t>(idx)]);
@@ -322,7 +322,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<string_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
-            push(native_null());
+            push(null_object());
             return;
         }
         push(make<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));

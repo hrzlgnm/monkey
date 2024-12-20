@@ -180,8 +180,8 @@ struct boolean_object : hashable_object
     value_type value {};
 };
 
-auto native_true() -> const object*;
-auto native_false() -> const object*;
+auto true_object() -> const object*;
+auto false_object() -> const object*;
 
 struct string_object : hashable_object
 {
@@ -222,7 +222,7 @@ struct null_object : object
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
 };
 
-auto native_null() -> const object*;
+auto null_object() -> const object*;
 
 struct error_object : object
 {

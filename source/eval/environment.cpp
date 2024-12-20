@@ -18,7 +18,7 @@ auto environment::get(const std::string& name) const -> const object*
             return itr->second;
         }
     }
-    return native_null();
+    return null_object();
 }
 
 auto environment::set(const std::string& name, const object* val) -> void

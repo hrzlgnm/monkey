@@ -22,7 +22,7 @@ namespace
 {
 const boolean_object false_obj {/*val=*/false};
 const boolean_object true_obj {/*val=*/true};
-const null_object null_obj;
+const struct null_object null_obj;
 
 auto invert_bool_object(const object* b) -> const object*
 {
@@ -104,17 +104,17 @@ auto native_bool_to_object(bool val) -> const object*
     return &false_obj;
 }
 
-auto native_true() -> const object*
+auto true_object() -> const object*
 {
     return &true_obj;
 }
 
-auto native_false() -> const object*
+auto false_object() -> const object*
 {
     return &false_obj;
 }
 
-auto native_null() -> const object*
+auto null_object() -> const object*
 {
     return &null_obj;
 }
@@ -387,7 +387,7 @@ auto array_object::operator==(const object& other) const -> const object*
     if (other.is(type())) {
         const auto& other_value = other.as<array_object>()->value;
         if (other_value.size() != value.size()) {
-            return native_false();
+            return false_object();
         }
         const auto eq = std::equal(value.cbegin(),
                                    value.cend(),
@@ -396,7 +396,7 @@ auto array_object::operator==(const object& other) const -> const object*
                                    [](const object* a, const object* b) { return object_eq(*a, *b); });
         return native_bool_to_object(eq);
     }
-    return native_false();
+    return false_object();
 }
 
 auto array_object::operator*(const object& other) const -> const object*
@@ -451,7 +451,7 @@ auto hash_object::operator==(const object& other) const -> const object*
     if (other.is(type())) {
         const auto& other_value = other.as<hash_object>()->value;
         if (other_value.size() != value.size()) {
-            return native_false();
+            return false_object();
         }
         const auto eq = std::all_of(value.cbegin(),
                                     value.cend(),
@@ -463,7 +463,7 @@ auto hash_object::operator==(const object& other) const -> const object*
                                     });
         return native_bool_to_object(eq);
     }
-    return native_false();
+    return false_object();
 }
 
 auto hash_object::operator+(const object& other) const -> const object*
