@@ -19,6 +19,8 @@
 #include <gc.hpp>
 #include <overloaded.hpp>
 
+#include "code/code.hpp"
+
 namespace
 {
 const boolean_object false_obj {/*val=*/false};
@@ -186,6 +188,8 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
             return ostrm << "closure";
         case builtin:
             return ostrm << "builtin";
+        case object::object_type::return_value:
+            return ostrm << "return_value";
     }
     return ostrm << "unknown " << static_cast<int>(type);
 }
@@ -384,6 +388,11 @@ auto decimal_object::operator>(const object& other) const -> const object*
 auto builtin_object::inspect() const -> std::string
 {
     return fmt::format("builtin {}({}){{...}}", builtin->name, fmt::join(builtin->parameters, ", "));
+}
+
+auto return_value_object::inspect() const -> std::string
+{
+    return fmt::format("return {}", return_value->inspect());
 }
 
 auto function_object::inspect() const -> std::string

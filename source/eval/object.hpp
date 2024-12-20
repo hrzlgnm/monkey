@@ -27,6 +27,7 @@ struct object
         error,
         array,
         hash,
+        return_value,
         function,
         compiled_function,
         closure,
@@ -48,6 +49,8 @@ struct object
     }
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
+
+    [[nodiscard]] auto is_return_value() const -> bool { return type() == object_type::return_value; }
 
     [[nodiscard]] virtual auto is_truthy() const -> bool { return false; }
 
@@ -73,9 +76,6 @@ struct object
     [[nodiscard]] virtual auto operator-(const object& /*other*/) const -> const object* { return nullptr; }
 
     [[nodiscard]] virtual auto operator/(const object& /*other*/) const -> const object* { return nullptr; }
-
-    // todo: return_object
-    mutable bool is_return_value {};
 };
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;
@@ -291,6 +291,20 @@ struct hash_object : object
     [[nodiscard]] auto operator+(const object& other) const -> const object* override;
 
     value_type value;
+};
+
+struct return_value_object : object
+{
+    explicit return_value_object(const object* obj)
+        : return_value {obj}
+    {
+    }
+
+    [[nodiscard]] auto type() const -> object_type override { return object_type::return_value; }
+
+    [[nodiscard]] auto inspect() const -> std::string override;
+
+    const object* return_value;
 };
 
 struct callable_expression;

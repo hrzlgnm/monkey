@@ -238,8 +238,8 @@ auto program::eval(environment* env) const -> const object*
     const object* result = nullptr;
     for (const auto* statement : statements) {
         result = statement->eval(env);
-        if (result->is_return_value) {
-            return result;
+        if (result->is_return_value()) {
+            return result->as<return_value_object>()->return_value;
         }
         if (result->is_error()) {
             return result;
@@ -265,8 +265,7 @@ auto return_statement::eval(environment* env) const -> const object*
         if (evaluated->is_error()) {
             return evaluated;
         }
-        evaluated->is_return_value = true;
-        return evaluated;
+        return make<return_value_object>(evaluated);
     }
     return null_object();
 }
@@ -284,7 +283,7 @@ auto block_statement::eval(environment* env) const -> const object*
     const object* result = nullptr;
     for (const auto& stmt : statements) {
         result = stmt->eval(env);
-        if (result->is_return_value || result->is_error()) {
+        if (result->is_return_value() || result->is_error()) {
             return result;
         }
     }
