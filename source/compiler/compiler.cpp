@@ -384,6 +384,16 @@ TEST_CASE("integerArithmetics")
             },
         },
         ctc {
+            "1 ^ 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(bit_xor),
+                make(pop),
+            },
+        },
+        ctc {
             "-1",
             {{1}},
             {
@@ -502,6 +512,16 @@ TEST_CASE("booleanExpressions")
                 make(tru),
                 make(tru),
                 make(bit_or),
+                make(pop),
+            },
+        },
+        ctc {
+            "true ^ true",
+            {},
+            {
+                make(tru),
+                make(tru),
+                make(bit_xor),
                 make(pop),
             },
         },

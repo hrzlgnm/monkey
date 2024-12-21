@@ -52,6 +52,7 @@ auto vm::run() -> void
             case opcodes::floor_div:
             case opcodes::bit_and:
             case opcodes::bit_or:
+            case opcodes::bit_xor:
                 exec_binary_op(op_code);
                 break;
             case opcodes::equal:
@@ -217,6 +218,8 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
             return *left & *right;
         case opcodes::bit_or:
             return *left | *right;
+        case opcodes::bit_xor:
+            return *left ^ *right;
         case opcodes::floor_div:
             return floor_div(left, right);
         default:
@@ -597,6 +600,9 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"5 | 5", 5},
         vt<int64_t> {"5 | true", 5},
         vt<int64_t> {"true | 3", 3},
+        vt<int64_t> {"5 ^ 5", 0},
+        vt<int64_t> {"5 ^ true", 4},
+        vt<int64_t> {"true ^ 3", 2},
         vt<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
         vt<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
         vt<int64_t> {"2 * 2 * 2 * 2 * 2", 32},
@@ -628,6 +634,9 @@ TEST_CASE("booleanExpressions")
         vt<bool> {R"(true | true)", true},
         vt<bool> {R"(false | true)", true},
         vt<bool> {R"(false | false)", false},
+        vt<bool> {R"(true ^ true)", false},
+        vt<bool> {R"(false ^ true)", true},
+        vt<bool> {R"(false ^ false)", false},
         vt<bool> {R"("a" == "a")", true},
         vt<bool> {R"(1 == 1)", true},
         vt<bool> {R"("a" != "a")", false},

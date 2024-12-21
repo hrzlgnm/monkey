@@ -79,6 +79,8 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left & *right;
         case pipe:
             return *left | *right;
+        case caret:
+            return *left ^ *right;
         case double_slash:
             return floor_div(left, right);
         default:
@@ -671,6 +673,12 @@ TEST_CASE("integerExpression")
         et {"1 | true", 1},
         et {"1 | false", 1},
         et {"0 | false", 0},
+        et {"2 ^ 5", 7},
+        et {"3 ^ 5", 6},
+        et {"1 ^ 1", 0},
+        et {"1 ^ true", 0},
+        et {"1 ^ false", 1},
+        et {"0 ^ false", 0},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
@@ -786,6 +794,9 @@ TEST_CASE("booleanExpression")
         et {"false | false", false},
         et {"true | false", true},
         et {"true | true", true},
+        et {"false ^ false", false},
+        et {"true ^ false", true},
+        et {"true ^ true", false},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
