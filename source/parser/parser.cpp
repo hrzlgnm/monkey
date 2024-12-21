@@ -62,6 +62,8 @@ auto precedence_of_token(token_type type) -> std::uint8_t
         case token_type::plus:
         case token_type::minus:
             return sum;
+        case token_type::pipe:
+            return bitwise_or;
         case token_type::ampersand:
             return bitwise_and;
         case token_type::double_slash:
@@ -111,6 +113,7 @@ parser::parser(lexer lxr)
     register_binary(double_slash, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(percent, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(ampersand, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(pipe, [this](expression* left) { return parse_binary_expression(left); });
 }
 
 auto parser::parse_program() -> program*
@@ -791,6 +794,7 @@ TEST_CASE("binaryExpressions")
         bt {"5 // 5;", 5, double_slash, 5},
         bt {"5 % 5;", 5, percent, 5},
         bt {"5 & 5;", 5, ampersand, 5},
+        bt {"5 | 5;", 5, pipe, 5},
     };
 
     for (const auto& [input, left, op, right] : tests) {
@@ -835,8 +839,20 @@ TEST_CASE("operatorPrecedence")
             "((a + b) & c)",
         },
         op {
-            "a & b + c",
-            "(a & (b + c))",
+            "a & b | c",
+            "((a & b) | c)",
+        },
+        op {
+            "a | b & c",
+            "(a | (b & c))",
+        },
+        op {
+            "a + b | c",
+            "((a + b) | c)",
+        },
+        op {
+            "a | b + c",
+            "(a | (b + c))",
         },
         op {
             "a * b * c",

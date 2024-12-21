@@ -296,32 +296,101 @@ TEST_CASE("integerArithmetics")
         ctc {
             "1 + 2",
             {{1}, {2}},
-            {make(constant, 0), make(constant, 1), make(add), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(add),
+                make(pop),
+            },
         },
         ctc {
             "1; 2",
             {{1}, {2}},
-            {make(constant, 0), make(pop), make(constant, 1), make(pop)},
+            {
+                make(constant, 0),
+                make(pop),
+                make(constant, 1),
+                make(pop),
+            },
         },
         ctc {
             "1 - 2",
             {{1}, {2}},
-            {make(constant, 0), make(constant, 1), make(sub), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(sub),
+                make(pop),
+            },
         },
         ctc {
             "1 * 2",
             {{1}, {2}},
-            {make(constant, 0), make(constant, 1), make(mul), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(mul),
+                make(pop),
+            },
         },
         ctc {
             "1 / 2",
             {{1}, {2}},
-            {make(constant, 0), make(constant, 1), make(div), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(div),
+                make(pop),
+            },
+        },
+        ctc {
+            "1 // 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(floor_div),
+                make(pop),
+            },
+        },
+        ctc {
+            "1 % 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(mod),
+                make(pop),
+            },
+        },
+        ctc {
+            "1 & 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(bit_and),
+                make(pop),
+            },
+        },
+        ctc {
+            "1 | 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(bit_or),
+                make(pop),
+            },
         },
         ctc {
             "-1",
             {{1}},
-            {make(constant, 0), make(minus), make(pop)},
+            {
+                make(constant, 0),
+                make(minus),
+                make(pop),
+            },
         },
     };
     run(std::move(tests));
@@ -334,47 +403,107 @@ TEST_CASE("booleanExpressions")
         ctc {
             "true",
             {},
-            {make(tru), make(pop)},
+            {
+                make(tru),
+                make(pop),
+            },
         },
         ctc {
             "false",
             {},
-            {make(fals), make(pop)},
+            {
+                make(fals),
+                make(pop),
+            },
         },
         ctc {
             "1 > 2",
             {{1}, {2}},
-            {make(constant, 0), make(constant, 1), make(greater_than), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(greater_than),
+                make(pop),
+            },
         },
         ctc {
             "1 < 2",
             {{2}, {1}},
-            {make(constant, 0), make(constant, 1), make(greater_than), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(greater_than),
+                make(pop),
+            },
         },
         ctc {
             "1 == 2",
             {{1}, {2}},
-            {make(constant, 0), make(constant, 1), make(equal), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(equal),
+                make(pop),
+            },
         },
         ctc {
             "1 != 2",
             {{1}, {2}},
-            {make(constant, 0), make(constant, 1), make(not_equal), make(pop)},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(not_equal),
+                make(pop),
+            },
         },
         ctc {
             "true == false",
             {},
-            {make(tru), make(fals), make(equal), make(pop)},
+            {
+                make(tru),
+                make(fals),
+                make(equal),
+                make(pop),
+            },
         },
         ctc {
             "true != false",
             {},
-            {make(tru), make(fals), make(not_equal), make(pop)},
+            {
+                make(tru),
+                make(fals),
+                make(not_equal),
+                make(pop),
+            },
         },
         ctc {
             "!true",
             {},
-            {make(tru), make(bang), make(pop)},
+            {
+                make(tru),
+                make(bang),
+                make(pop),
+            },
+        },
+        ctc {
+            "true & true",
+            {},
+            {
+                make(tru),
+                make(tru),
+                make(bit_and),
+                make(pop),
+            },
+        },
+        ctc {
+            "true | true",
+            {},
+            {
+                make(tru),
+                make(tru),
+                make(bit_or),
+                make(pop),
+            },
         },
     };
     run(std::move(tests));
