@@ -88,6 +88,10 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "//";
         case token_type::ampersand:
             return ostream << "&";
+        case token_type::shift_right:
+            return ostream << ">>";
+        case token_type::shift_left:
+            return ostream << "<<";
     }
     throw std::invalid_argument("invalid token_type");
 }

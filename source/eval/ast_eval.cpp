@@ -81,6 +81,10 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left | *right;
         case caret:
             return *left ^ *right;
+        case shift_left:
+            return *left << *right;
+        case shift_right:
+            return *left >> *right;
         case double_slash:
             return floor_div(left, right);
         default:
@@ -679,6 +683,24 @@ TEST_CASE("integerExpression")
         et {"1 ^ true", 0},
         et {"1 ^ false", 1},
         et {"0 ^ false", 0},
+        et {"2 << 5", 64},
+        et {"3 << 5", 96},
+        et {"1 << 1", 2},
+        et {"1 << true", 2},
+        et {"1 << false", 1},
+        et {"0 << false", 0},
+        et {"2 >> 5", 0},
+        et {"3 >> 5", 0},
+        et {"4 >> 1", 2},
+        et {"1 >> true", 0},
+        et {"1 >> false", 1},
+        et {"0 >> false", 0},
+        et {"false << false", 0},
+        et {"true << false", 1},
+        et {"true << true", 2},
+        et {"false >> false", 0},
+        et {"true >> false", 1},
+        et {"true >> true", 0},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);

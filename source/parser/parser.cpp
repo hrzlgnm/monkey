@@ -68,6 +68,9 @@ auto precedence_of_token(token_type type) -> std::uint8_t
             return bitwise_and;
         case token_type::caret:
             return bitwise_xor;
+        case token_type::shift_left:
+        case token_type::shift_right:
+            return bitwise_shift;
         case token_type::double_slash:
         case token_type::slash:
         case token_type::asterisk:
@@ -117,6 +120,8 @@ parser::parser(lexer lxr)
     register_binary(ampersand, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(pipe, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(caret, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(shift_left, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(shift_right, [this](expression* left) { return parse_binary_expression(left); });
 }
 
 auto parser::parse_program() -> program*
@@ -799,6 +804,8 @@ TEST_CASE("binaryExpressions")
         bt {"5 & 5;", 5, ampersand, 5},
         bt {"5 | 5;", 5, pipe, 5},
         bt {"5 ^ 5;", 5, caret, 5},
+        bt {"5 << 5;", 5, shift_left, 5},
+        bt {"5 >> 5;", 5, shift_right, 5},
     };
 
     for (const auto& [input, left, op, right] : tests) {
@@ -857,6 +864,14 @@ TEST_CASE("operatorPrecedence")
         op {
             "a | b ^ c",
             "(a | (b ^ c))",
+        },
+        op {
+            "a ^ b >> c",
+            "(a ^ (b >> c))",
+        },
+        op {
+            "a ^ b << c",
+            "(a ^ (b << c))",
         },
         op {
             "a + b | c",

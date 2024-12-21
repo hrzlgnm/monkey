@@ -112,6 +112,16 @@ auto lexer::next_token() -> token
                     return read_char(), read_char(), token {.type = double_slash, .literal = "//"};
                 }
                 break;
+            case less_than:
+                if (peek_token_type == less_than) {
+                    return read_char(), read_char(), token {.type = shift_left, .literal = "<<"};
+                }
+                break;
+            case greater_than:
+                if (peek_token_type == greater_than) {
+                    return read_char(), read_char(), token {.type = shift_right, .literal = ">>"};
+                }
+                break;
             default:
                 break;
         }
@@ -245,7 +255,7 @@ return false;
 [1,2];
 {"foo": "bar"};
 5.5 // %
-& | ^
+& | ^ << >>
         )"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
@@ -295,6 +305,7 @@ return false;
         token {.type = decimal, .literal = "5.5"},    token {.type = double_slash, .literal = "//"},
         token {.type = percent, .literal = "%"},      token {.type = ampersand, .literal = "&"},
         token {.type = pipe, .literal = "|"},         token {.type = caret, .literal = "^"},
+        token {.type = shift_left, .literal = "<<"},  token {.type = shift_right, .literal = ">>"},
         token {.type = eof, .literal = ""},
 
     };
