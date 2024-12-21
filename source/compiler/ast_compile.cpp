@@ -64,6 +64,9 @@ auto binary_expression::compile(compiler& comp) const -> void
         case token_type::double_slash:
             comp.emit(opcodes::floor_div);
             break;
+        case token_type::ampersand:
+            comp.emit(opcodes::bit_and);
+            break;
         case token_type::greater_than:
             comp.emit(opcodes::greater_than);
             break;

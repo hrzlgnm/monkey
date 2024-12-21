@@ -76,6 +76,8 @@ struct object
     [[nodiscard]] virtual auto operator/(const object& /*other*/) const -> const object* { return nullptr; }
 
     [[nodiscard]] virtual auto operator%(const object& /*other*/) const -> const object* { return nullptr; }
+
+    [[nodiscard]] virtual auto operator&(const object& /*other*/) const -> const object* { return nullptr; }
 };
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;
@@ -124,6 +126,7 @@ struct integer_object : hashable_object
     [[nodiscard]] auto operator*(const object& other) const -> const object* override;
     [[nodiscard]] auto operator/(const object& other) const -> const object* override;
     [[nodiscard]] auto operator%(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator&(const object& other) const -> const object* override;
 
     value_type value {};
 };
@@ -178,6 +181,7 @@ struct boolean_object : hashable_object
     [[nodiscard]] auto operator==(const object& other) const -> const object* override;
     [[nodiscard]] auto operator<(const object& other) const -> const object* override;
     [[nodiscard]] auto operator>(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator&(const object& other) const -> const object* override;
 
     value_type value {};
 };
