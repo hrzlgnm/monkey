@@ -58,6 +58,7 @@ auto precedence_of_token(token_type type) -> std::uint8_t
         case token_type::plus:
         case token_type::minus:
             return sum;
+        case token_type::double_slash:
         case token_type::slash:
         case token_type::asterisk:
             return product;
@@ -100,6 +101,7 @@ parser::parser(lexer lxr)
     register_binary(greater_than, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(lparen, [this](expression* left) { return parse_call_expression(left); });
     register_binary(lbracket, [this](expression* left) { return parse_index_expression(left); });
+    register_binary(double_slash, [this](expression* left) { return parse_binary_expression(left); });
 }
 
 auto parser::parse_program() -> program*
@@ -777,6 +779,7 @@ TEST_CASE("binaryExpressions")
         bt {"5 < 5;", 5, less_than, 5},
         bt {"5 == 5;", 5, equals, 5},
         bt {"5 != 5;", 5, not_equals, 5},
+        bt {"5 // 5;", 5, double_slash, 5},
     };
 
     for (const auto& [input, left, op, right] : tests) {

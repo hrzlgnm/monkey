@@ -40,6 +40,7 @@ enum class token_type : std::uint8_t
     // two character tokens
     equals,
     not_equals,
+    double_slash,
 
     // multi character tokens
     ident,

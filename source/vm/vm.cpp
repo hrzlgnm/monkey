@@ -44,14 +44,15 @@ auto vm::run() -> void
                 current_frame().ip += 2;
                 push(m_constants->at(const_idx));
             } break;
-            case opcodes::sub:  // fallthrough
-            case opcodes::mul:  // fallthrough
-            case opcodes::div:  // fallthrough
             case opcodes::add:
+            case opcodes::sub:
+            case opcodes::mul:
+            case opcodes::div:
+            case opcodes::floor_div:
                 exec_binary_op(op_code);
                 break;
-            case opcodes::equal:  // fallthrough
-            case opcodes::not_equal:  // fallthrough
+            case opcodes::equal:
+            case opcodes::not_equal:
             case opcodes::greater_than:
                 exec_cmp(op_code);
                 break;
@@ -198,16 +199,17 @@ namespace
 
 auto apply_binary_operator(opcodes opcode, const object* left, const object* right) -> const object*
 {
-    using enum opcodes;
     switch (opcode) {
-        case add:
+        case opcodes::add:
             return *left + *right;
-        case mul:
+        case opcodes::mul:
             return *left * *right;
-        case sub:
+        case opcodes::sub:
             return *left - *right;
-        case div:
+        case opcodes::div:
             return *left / *right;
+        case opcodes::floor_div:
+            return floor_div(left, right);
         default:
             return {};
     }
@@ -577,6 +579,7 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"1 * 2", 2},
 
         vt<int64_t> {"4 / 2", 2},
+        vt<int64_t> {"5 // 2", 2},
         vt<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
         vt<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
         vt<int64_t> {"2 * 2 * 2 * 2 * 2", 32},
@@ -585,6 +588,7 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"5 * (2 + 10)", 60},
         vt<int64_t> {"-5", -5},
         vt<int64_t> {"-10", -10},
+        vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
     };
