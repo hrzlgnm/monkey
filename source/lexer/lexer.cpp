@@ -242,7 +242,7 @@ return false;
 ""
 [1,2];
 {"foo": "bar"};
-5.5 //
+5.5 // %
         )"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
@@ -290,7 +290,7 @@ return false;
         token {.type = colon, .literal = ":"},        token {.type = string, .literal = "bar"},
         token {.type = rsquirly, .literal = "}"},     token {.type = semicolon, .literal = ";"},
         token {.type = decimal, .literal = "5.5"},    token {.type = double_slash, .literal = "//"},
-        token {.type = eof, .literal = ""},
+        token {.type = percent, .literal = "%"},      token {.type = eof, .literal = ""},
     };
     for (const auto& expected_token : expected_tokens) {
         auto token = lxr.next_token();

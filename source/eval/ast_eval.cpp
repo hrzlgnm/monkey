@@ -73,6 +73,8 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left == *right;
         case not_equals:
             return *left != *right;
+        case percent:
+            return *left % *right;
         case double_slash:
             return floor_div(left, right);
         default:
@@ -551,7 +553,8 @@ auto require_eq(const object* obj, double expected, std::string_view input) -> v
     INFO(input, " expected: string with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::decimal));
     const auto& actual = obj->as<decimal_object>()->value;
-    REQUIRE(actual == expected);
+    constexpr auto epsilon = 1e-9;
+    REQUIRE(std::fabs(actual - expected) < epsilon);
 }
 
 auto require_array_eq(const object* obj, const array& expected, std::string_view input) -> void
@@ -650,7 +653,9 @@ TEST_CASE("integerExpression")
         et {"5 // -2", -3},
         et {"-2 // 2", -1},
         et {"-2 // -2", 1},
-
+        et {"3 % 2", 1},
+        et {"-1 % 100", 99},
+        et {"2 % 5", 2},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
@@ -692,7 +697,12 @@ TEST_CASE("decimalExpression")
         et {"10.0 // 2", 5.0},
         et {"-5.0 // -2", 2.0},
         et {"5.0 // -2", -3.0},
-        et {"10.0 / 5 ", 2.0},
+        et {"10.0 % 5", 0.0},
+        et {"10.0 % 5.0", 0.0},
+        et {"5.2 % 2.6", 0.0},
+        et {"2.6 % 5.2", 2.6},
+        et {"-2.6 % 5.2", 2.6},
+        et {"10.0 / 5", 2.0},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);

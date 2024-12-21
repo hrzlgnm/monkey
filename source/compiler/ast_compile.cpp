@@ -58,6 +58,9 @@ auto binary_expression::compile(compiler& comp) const -> void
         case token_type::slash:
             comp.emit(opcodes::div);
             break;
+        case token_type::percent:
+            comp.emit(opcodes::mod);
+            break;
         case token_type::double_slash:
             comp.emit(opcodes::floor_div);
             break;
