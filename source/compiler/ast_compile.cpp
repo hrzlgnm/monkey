@@ -73,6 +73,12 @@ auto binary_expression::compile(compiler& comp) const -> void
         case token_type::caret:
             comp.emit(opcodes::bit_xor);
             break;
+        case token_type::shift_left:
+            comp.emit(opcodes::bit_lsh);
+            break;
+        case token_type::shift_right:
+            comp.emit(opcodes::bit_rsh);
+            break;
         case token_type::greater_than:
             comp.emit(opcodes::greater_than);
             break;

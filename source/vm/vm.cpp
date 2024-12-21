@@ -53,6 +53,8 @@ auto vm::run() -> void
             case opcodes::bit_and:
             case opcodes::bit_or:
             case opcodes::bit_xor:
+            case opcodes::bit_lsh:
+            case opcodes::bit_rsh:
                 exec_binary_op(op_code);
                 break;
             case opcodes::equal:
@@ -220,6 +222,10 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
             return *left | *right;
         case opcodes::bit_xor:
             return *left ^ *right;
+        case opcodes::bit_lsh:
+            return *left << *right;
+        case opcodes::bit_rsh:
+            return *left >> *right;
         case opcodes::floor_div:
             return floor_div(left, right);
         default:
@@ -603,6 +609,8 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"5 ^ 5", 0},
         vt<int64_t> {"5 ^ true", 4},
         vt<int64_t> {"true ^ 3", 2},
+        vt<int64_t> {"true << 3", 8},
+        vt<int64_t> {"true >> 3", 0},
         vt<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
         vt<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
         vt<int64_t> {"2 * 2 * 2 * 2 * 2", 32},

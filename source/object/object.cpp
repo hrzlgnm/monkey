@@ -308,6 +308,32 @@ auto boolean_object::operator^(const object& other) const -> const object*
     return nullptr;
 }
 
+auto boolean_object::operator<<(const object& other) const -> const object*
+{
+    if (other.is(boolean)) {
+        return make<integer_object>(static_cast<uint8_t>(value)
+                                    << static_cast<uint8_t>(other.as<boolean_object>()->value));
+    }
+    // todo: cast to uint64_t?
+    if (other.is(integer)) {
+        return make<integer_object>(static_cast<uint8_t>(value) << other.as<integer_object>()->value);
+    }
+    return nullptr;
+}
+
+auto boolean_object::operator>>(const object& other) const -> const object*
+{
+    if (other.is(boolean)) {
+        return make<integer_object>(static_cast<uint8_t>(value)
+                                    >> static_cast<uint8_t>(other.as<boolean_object>()->value));
+    }
+    // todo: cast to uint64_t?
+    if (other.is(integer)) {
+        return make<integer_object>(static_cast<uint8_t>(value) >> other.as<integer_object>()->value);
+    }
+    return nullptr;
+}
+
 auto integer_object::hash_key() const -> hash_key_type
 {
     return value;
@@ -418,6 +444,32 @@ auto integer_object::operator^(const object& other) const -> const object*
     if (other.is(boolean)) {
         // todo: cast to uint64_t?
         return make<integer_object>(value ^ static_cast<value_type>(other.as<boolean_object>()->value));
+    }
+    return nullptr;
+}
+
+auto integer_object::operator<<(const object& other) const -> const object*
+{
+    if (other.is(integer)) {
+        // todo: cast to uint64_t?
+        return make<integer_object>(value << other.as<integer_object>()->value);
+    }
+    if (other.is(boolean)) {
+        // todo: cast to uint64_t?
+        return make<integer_object>(value << static_cast<value_type>(other.as<boolean_object>()->value));
+    }
+    return nullptr;
+}
+
+auto integer_object::operator>>(const object& other) const -> const object*
+{
+    if (other.is(integer)) {
+        // todo: cast to uint64_t?
+        return make<integer_object>(value >> other.as<integer_object>()->value);
+    }
+    if (other.is(boolean)) {
+        // todo: cast to uint64_t?
+        return make<integer_object>(value >> static_cast<value_type>(other.as<boolean_object>()->value));
     }
     return nullptr;
 }
