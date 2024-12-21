@@ -27,6 +27,8 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "mul";
         case div:
             return ostream << "div";
+        case opcodes::floor_div:
+            return ostream << "floor_div";
         case pop:
             return ostream << "pop";
         case tru:

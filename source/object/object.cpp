@@ -395,6 +395,26 @@ auto decimal_object::operator>(const object& other) const -> const object*
     return gt_helper<decimal_object, integer_object>(this, other);
 }
 
+auto floor_div(const object* lhs, const object* rhs) -> const object*
+{
+    const auto* div = (*lhs / *rhs);
+    if (div->is(object::object_type::decimal)) {
+        return make<decimal_object>(std::floor(div->as<decimal_object>()->value));
+    }
+
+    if (!div->is(object::object_type::integer)) {
+        return nullptr;
+    }
+    const auto left = lhs->as<integer_object>()->value;
+    const auto right = rhs->as<integer_object>()->value;
+    const auto lhs_is_negative = left < 0;
+    const auto rhs_is_negative = right < 0;
+    const auto has_remainder = (left % right) != 0;
+    const auto val = div->as<integer_object>()->value;
+
+    return make<integer_object>(has_remainder && (rhs_is_negative != lhs_is_negative) ? val - 1 : val);
+}
+
 auto builtin_object::inspect() const -> std::string
 {
     return fmt::format("builtin {}({}){{...}}", builtin->name, fmt::join(builtin->parameters, ", "));

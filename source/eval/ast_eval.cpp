@@ -53,7 +53,6 @@ auto array_expression::eval(environment* env) const -> const object*
 
 namespace
 {
-
 auto apply_binary_operator(token_type oper, const object* left, const object* right) -> const object*
 {
     using enum token_type;
@@ -74,6 +73,8 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left == *right;
         case not_equals:
             return *left != *right;
+        case double_slash:
+            return floor_div(left, right);
         default:
             return {};
     }
@@ -645,6 +646,11 @@ TEST_CASE("integerExpression")
         et {"3 * 3 * 3 + 10", 37},
         et {"3 * (3 * 3) + 10", 37},
         et {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+        et {"5 // 2", 2},
+        et {"5 // -2", -3},
+        et {"-2 // 2", -1},
+        et {"-2 // -2", 1},
+
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
@@ -683,6 +689,9 @@ TEST_CASE("decimalExpression")
         et {"5 * 10.0", 50.0},
         et {"10.0 * 5", 50.0},
         et {"10 / 5.0", 2.0},
+        et {"10.0 // 2", 5.0},
+        et {"-5.0 // -2", 2.0},
+        et {"5.0 // -2", -3.0},
         et {"10.0 / 5 ", 2.0},
     };
     for (const auto& [input, expected] : tests) {

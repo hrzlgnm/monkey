@@ -153,6 +153,8 @@ struct decimal_object : object
     value_type value {};
 };
 
+auto floor_div(const object* lhs, const object* rhs) -> const object*;
+
 struct boolean_object : hashable_object
 {
     using value_type = bool;
