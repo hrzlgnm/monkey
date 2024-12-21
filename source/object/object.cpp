@@ -405,12 +405,12 @@ auto floor_div(const object* lhs, const object* rhs) -> const object*
     if (!div->is(object::object_type::integer)) {
         return nullptr;
     }
-    auto left = lhs->as<integer_object>()->value;
-    auto right = rhs->as<integer_object>()->value;
-    auto lhs_is_negative = left < 0;
-    auto rhs_is_negative = right < 0;
-    auto has_remainder = (left % right) != 0;
-    auto val = div->as<integer_object>()->value;
+    const auto left = lhs->as<integer_object>()->value;
+    const auto right = rhs->as<integer_object>()->value;
+    const auto lhs_is_negative = left < 0;
+    const auto rhs_is_negative = right < 0;
+    const auto has_remainder = (left % right) != 0;
+    const auto val = div->as<integer_object>()->value;
 
     return make<integer_object>(has_remainder && (rhs_is_negative != lhs_is_negative) ? val - 1 : val);
 }
