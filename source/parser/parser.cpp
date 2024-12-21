@@ -827,6 +827,10 @@ TEST_CASE("operatorPrecedence")
             "((a * b) * c)",
         },
         op {
+            "a % b % c",
+            "((a % b) % c)",
+        },
+        op {
             "a * b / c",
             "((a * b) / c)",
         },

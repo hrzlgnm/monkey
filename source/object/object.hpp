@@ -152,6 +152,7 @@ struct decimal_object : object
     [[nodiscard]] auto operator-(const object& other) const -> const object* override;
     [[nodiscard]] auto operator*(const object& other) const -> const object* override;
     [[nodiscard]] auto operator/(const object& other) const -> const object* override;
+    [[nodiscard]] auto operator%(const object& other) const -> const object* override;
 
     value_type value {};
 };

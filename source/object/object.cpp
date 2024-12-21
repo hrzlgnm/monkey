@@ -406,6 +406,18 @@ auto decimal_object::operator/(const object& other) const -> const object*
     return nullptr;
 }
 
+auto decimal_object::operator%(const object& other) const -> const object*
+{
+    if (other.is(decimal)) {
+        return make<decimal_object>(math_mod(value, other.as<decimal_object>()->value));
+    }
+    if (other.is(integer)) {
+        return make<decimal_object>(
+            math_mod(value, static_cast<decimal_object::value_type>(other.as<integer_object>()->value)));
+    }
+    return nullptr;
+}
+
 auto decimal_object::operator<(const object& other) const -> const object*
 {
     return lt_helper<decimal_object, integer_object>(this, other);
