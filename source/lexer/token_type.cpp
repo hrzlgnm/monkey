@@ -92,6 +92,8 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << ">>";
         case token_type::shift_left:
             return ostream << "<<";
+        case token_type::logical_and:
+            return ostream << "&&";
     }
     throw std::invalid_argument("invalid token_type");
 }

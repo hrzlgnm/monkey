@@ -44,6 +44,7 @@ enum class token_type : std::uint8_t
     double_slash,
     shift_right,
     shift_left,
+    logical_and,
 
     // multi character tokens
     ident,

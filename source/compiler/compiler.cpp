@@ -565,6 +565,16 @@ TEST_CASE("booleanExpressions")
                 make(pop),
             },
         },
+        ctc {
+            "true && true",
+            {},
+            {
+                make(tru),
+                make(tru),
+                make(log_and),
+                make(pop),
+            },
+        },
     };
     run(std::move(tests));
 }

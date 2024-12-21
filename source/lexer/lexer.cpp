@@ -97,6 +97,7 @@ auto lexer::next_token() -> token
     if (char_token_type != illegal) {
         const auto peek_token_type = char_literal_tokens[static_cast<unsigned char>(peek_char())];
         switch (char_token_type) {
+            // todo: compress this to another lookupt table
             case assign:
                 if (peek_token_type == assign) {
                     return read_char(), read_char(), token {.type = equals, .literal = "=="};
@@ -120,6 +121,11 @@ auto lexer::next_token() -> token
             case greater_than:
                 if (peek_token_type == greater_than) {
                     return read_char(), read_char(), token {.type = shift_right, .literal = ">>"};
+                }
+                break;
+            case ampersand:
+                if (peek_token_type == ampersand) {
+                    return read_char(), read_char(), token {.type = logical_and, .literal = "&&"};
                 }
                 break;
             default:
@@ -255,7 +261,7 @@ return false;
 [1,2];
 {"foo": "bar"};
 5.5 // %
-& | ^ << >>
+& | ^ << >> &&
         )"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
@@ -306,7 +312,7 @@ return false;
         token {.type = percent, .literal = "%"},      token {.type = ampersand, .literal = "&"},
         token {.type = pipe, .literal = "|"},         token {.type = caret, .literal = "^"},
         token {.type = shift_left, .literal = "<<"},  token {.type = shift_right, .literal = ">>"},
-        token {.type = eof, .literal = ""},
+        token {.type = logical_and, .literal = "&&"}, token {.type = eof, .literal = ""},
 
     };
     for (const auto& expected_token : expected_tokens) {

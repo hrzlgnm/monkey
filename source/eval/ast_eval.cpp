@@ -85,6 +85,8 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left << *right;
         case shift_right:
             return *left >> *right;
+        case logical_and:
+            return *left && *right;
         case double_slash:
             return floor_div(left, right);
         default:
@@ -819,6 +821,15 @@ TEST_CASE("booleanExpression")
         et {"false ^ false", false},
         et {"true ^ false", true},
         et {"true ^ true", false},
+        et {"false && false", false},
+        et {"true && false", false},
+        et {"true && true", true},
+        et {"false && 0", false},
+        et {"true && 1", true},
+        et {R"("a" && true)", true},
+        et {"[1] && true", true},
+        et {"[] && true", false},
+        et {"true && {}", false},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
