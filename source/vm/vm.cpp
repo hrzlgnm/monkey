@@ -55,6 +55,7 @@ auto vm::run() -> void
             case opcodes::bit_xor:
             case opcodes::bit_lsh:
             case opcodes::bit_rsh:
+            case opcodes::log_and:
                 exec_binary_op(op_code);
                 break;
             case opcodes::equal:
@@ -226,6 +227,8 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
             return *left << *right;
         case opcodes::bit_rsh:
             return *left >> *right;
+        case opcodes::log_and:
+            return *left && *right;
         case opcodes::floor_div:
             return floor_div(left, right);
         default:
@@ -678,6 +681,7 @@ TEST_CASE("booleanExpressions")
         vt<bool> {R"({"a": 1} == {"b": 1})", false},
         vt<bool> {R"(["a", 1] == ["a", 1])", true},
         vt<bool> {R"({"a": 1} == {"a": 1})", true},
+        vt<bool> {R"(1 && "a")", true},
     };
 
     run(tests);
