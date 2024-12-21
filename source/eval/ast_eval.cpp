@@ -75,6 +75,8 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left != *right;
         case percent:
             return *left % *right;
+        case ampersand:
+            return *left & *right;
         case double_slash:
             return floor_div(left, right);
         default:
@@ -656,6 +658,11 @@ TEST_CASE("integerExpression")
         et {"3 % 2", 1},
         et {"-1 % 100", 99},
         et {"2 % 5", 2},
+        et {"2 & 5", 0},
+        et {"3 & 5", 1},
+        et {"1 & 1", 1},
+        et {"1 & true", 1},
+        et {"1 & false", 0},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
@@ -765,6 +772,9 @@ TEST_CASE("booleanExpression")
         et {R"({2: 1} == [1, 2])", false},
         et {R"(1 == [1])", false},
         et {R"("1" == ["1"])", false},
+        et {"false & false", false},
+        et {"true & false", false},
+        et {"true & true", true},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);

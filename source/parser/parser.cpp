@@ -39,6 +39,10 @@ enum precedence : std::uint8_t
     lowest,
     equals,
     lessgreater,
+    bitwise_or,
+    bitwise_xor,
+    bitwise_and,
+    bitwise_shift,
     sum,
     product,
     prefix,
@@ -58,6 +62,8 @@ auto precedence_of_token(token_type type) -> std::uint8_t
         case token_type::plus:
         case token_type::minus:
             return sum;
+        case token_type::ampersand:
+            return bitwise_and;
         case token_type::double_slash:
         case token_type::slash:
         case token_type::asterisk:
@@ -104,6 +110,7 @@ parser::parser(lexer lxr)
     register_binary(lbracket, [this](expression* left) { return parse_index_expression(left); });
     register_binary(double_slash, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(percent, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(ampersand, [this](expression* left) { return parse_binary_expression(left); });
 }
 
 auto parser::parse_program() -> program*
@@ -783,6 +790,7 @@ TEST_CASE("binaryExpressions")
         bt {"5 != 5;", 5, not_equals, 5},
         bt {"5 // 5;", 5, double_slash, 5},
         bt {"5 % 5;", 5, percent, 5},
+        bt {"5 & 5;", 5, ampersand, 5},
     };
 
     for (const auto& [input, left, op, right] : tests) {
@@ -821,6 +829,14 @@ TEST_CASE("operatorPrecedence")
         op {
             "a + b - c",
             "((a + b) - c)",
+        },
+        op {
+            "a + b & c",
+            "((a + b) & c)",
+        },
+        op {
+            "a & b + c",
+            "(a & (b + c))",
         },
         op {
             "a * b * c",
