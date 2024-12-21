@@ -70,6 +70,9 @@ auto binary_expression::compile(compiler& comp) const -> void
         case token_type::pipe:
             comp.emit(opcodes::bit_or);
             break;
+        case token_type::caret:
+            comp.emit(opcodes::bit_xor);
+            break;
         case token_type::greater_than:
             comp.emit(opcodes::greater_than);
             break;
