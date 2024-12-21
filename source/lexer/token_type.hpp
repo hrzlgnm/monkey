@@ -12,6 +12,7 @@ enum class token_type : std::uint8_t
     eof,
 
     // single character tokens
+    ampersand,
     assign,
     asterisk,
     back_slash,

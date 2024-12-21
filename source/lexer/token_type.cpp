@@ -86,7 +86,8 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "!=";
         case token_type::double_slash:
             return ostream << "//";
-            break;
+        case token_type::ampersand:
+            return ostream << "&";
     }
     throw std::invalid_argument("invalid token_type");
 }
