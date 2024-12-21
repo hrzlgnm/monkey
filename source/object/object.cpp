@@ -133,6 +133,15 @@ auto multiply_sequence_helper(const T* source, integer_object::value_type count)
     return make<T>(std::move(target));
 }
 
+auto math_mod(integer_object::value_type lhs, integer_object::value_type rhs) -> integer_object::value_type
+{
+    return ((lhs % rhs) + rhs) % rhs;
+}
+
+auto math_mod(decimal_object::value_type lhs, decimal_object::value_type rhs) -> decimal_object::value_type
+{
+    return std::fmod(std::fmod(lhs, rhs) + rhs, rhs);
+}
 }  // namespace
 
 auto native_bool_to_object(bool val) -> const object*
@@ -322,6 +331,18 @@ auto integer_object::operator/(const object& other) const -> const object*
     }
     if (other.is(decimal)) {
         return make<decimal_object>(static_cast<decimal_object::value_type>(value) / other.as<decimal_object>()->value);
+    }
+    return nullptr;
+}
+
+auto integer_object::operator%(const object& other) const -> const object*
+{
+    if (other.is(integer)) {
+        return make<integer_object>(math_mod(value, other.as<integer_object>()->value));
+    }
+    if (other.is(decimal)) {
+        return make<decimal_object>(
+            math_mod(static_cast<decimal_object::value_type>(value), other.as<decimal_object>()->value));
     }
     return nullptr;
 }

@@ -61,6 +61,7 @@ auto precedence_of_token(token_type type) -> std::uint8_t
         case token_type::double_slash:
         case token_type::slash:
         case token_type::asterisk:
+        case token_type::percent:
             return product;
         case token_type::lparen:
             return call;
@@ -102,6 +103,7 @@ parser::parser(lexer lxr)
     register_binary(lparen, [this](expression* left) { return parse_call_expression(left); });
     register_binary(lbracket, [this](expression* left) { return parse_index_expression(left); });
     register_binary(double_slash, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(percent, [this](expression* left) { return parse_binary_expression(left); });
 }
 
 auto parser::parse_program() -> program*
@@ -780,6 +782,7 @@ TEST_CASE("binaryExpressions")
         bt {"5 == 5;", 5, equals, 5},
         bt {"5 != 5;", 5, not_equals, 5},
         bt {"5 // 5;", 5, double_slash, 5},
+        bt {"5 % 5;", 5, percent, 5},
     };
 
     for (const auto& [input, left, op, right] : tests) {
@@ -806,6 +809,10 @@ TEST_CASE("operatorPrecedence")
         op {
             "!-a",
             "(!(-a))",
+        },
+        op {
+            "a + b % c",
+            "(a + (b % c))",
         },
         op {
             "a + b + c",

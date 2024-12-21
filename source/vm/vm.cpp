@@ -48,6 +48,7 @@ auto vm::run() -> void
             case opcodes::sub:
             case opcodes::mul:
             case opcodes::div:
+            case opcodes::mod:
             case opcodes::floor_div:
                 exec_binary_op(op_code);
                 break;
@@ -208,6 +209,8 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
             return *left - *right;
         case opcodes::div:
             return *left / *right;
+        case opcodes::mod:
+            return *left % *right;
         case opcodes::floor_div:
             return floor_div(left, right);
         default:
@@ -580,6 +583,8 @@ TEST_CASE("integerArithmetics")
 
         vt<int64_t> {"4 / 2", 2},
         vt<int64_t> {"5 // 2", 2},
+        vt<int64_t> {"5 % 2", 1},
+        vt<int64_t> {"5 % 5", 0},
         vt<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
         vt<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
         vt<int64_t> {"2 * 2 * 2 * 2 * 2", 32},

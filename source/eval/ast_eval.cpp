@@ -73,6 +73,8 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left == *right;
         case not_equals:
             return *left != *right;
+        case percent:
+            return *left % *right;
         case double_slash:
             return floor_div(left, right);
         default:
@@ -650,7 +652,8 @@ TEST_CASE("integerExpression")
         et {"5 // -2", -3},
         et {"-2 // 2", -1},
         et {"-2 // -2", 1},
-
+        et {"3 % 2", 1},
+        et {"-1 % 100", 99},
     };
     for (const auto& [input, expected] : tests) {
         const auto evaluated = run(input);
