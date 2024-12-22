@@ -404,12 +404,32 @@ TEST_CASE("integerArithmetics")
             },
         },
         ctc {
-            "1 >>  2",
+            "1 >> 2",
             {{1}, {2}},
             {
                 make(constant, 0),
                 make(constant, 1),
                 make(bit_rsh),
+                make(pop),
+            },
+        },
+        ctc {
+            "1 && 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(logical_and),
+                make(pop),
+            },
+        },
+        ctc {
+            "1 || 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(logical_or),
                 make(pop),
             },
         },
@@ -571,7 +591,17 @@ TEST_CASE("booleanExpressions")
             {
                 make(tru),
                 make(tru),
-                make(log_and),
+                make(logical_and),
+                make(pop),
+            },
+        },
+        ctc {
+            "true || true",
+            {},
+            {
+                make(tru),
+                make(tru),
+                make(logical_or),
                 make(pop),
             },
         },
