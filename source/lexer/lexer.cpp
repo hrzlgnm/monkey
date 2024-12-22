@@ -69,7 +69,7 @@ constexpr auto keyword_tokens = build_keyword_to_token_type_map();
 
 inline auto is_letter(char chr) -> bool
 {
-    return std::isalpha(static_cast<unsigned char>(chr)) != 0;
+    return std::isalpha(static_cast<unsigned char>(chr)) != 0 || chr == '_';
 }
 
 inline auto is_digit(char chr) -> bool
@@ -266,8 +266,8 @@ return false;
 [1,2];
 {"foo": "bar"};
 5.5 // %
-& | ^ << >> && ||
-        )"};
+& | ^ << >> && || a_b
+)"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
         token {.type = assign, .literal = "="},       token {.type = integer, .literal = "5"},
@@ -318,8 +318,7 @@ return false;
         token {.type = pipe, .literal = "|"},         token {.type = caret, .literal = "^"},
         token {.type = shift_left, .literal = "<<"},  token {.type = shift_right, .literal = ">>"},
         token {.type = logical_and, .literal = "&&"}, token {.type = logical_or, .literal = "||"},
-        token {.type = eof, .literal = ""},
-
+        token {.type = ident, .literal = "a_b"},      token {.type = eof, .literal = ""},
     };
     for (const auto& expected_token : expected_tokens) {
         auto token = lxr.next_token();
