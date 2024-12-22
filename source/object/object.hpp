@@ -60,6 +60,8 @@ struct object
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
     [[nodiscard]] auto operator!=(const object& other) const -> const object*;
+    [[nodiscard]] auto operator&&(const object& /*other*/) const -> const object*;
+    [[nodiscard]] auto operator||(const object& /*other*/) const -> const object*;
 
     [[nodiscard]] virtual auto operator==(const object& /*other*/) const -> const object* { return nullptr; }
 
@@ -86,8 +88,6 @@ struct object
     [[nodiscard]] virtual auto operator<<(const object& /*other*/) const -> const object* { return nullptr; }
 
     [[nodiscard]] virtual auto operator>>(const object& /*other*/) const -> const object* { return nullptr; }
-
-    [[nodiscard]] auto operator&&(const object& /*other*/) const -> const object*;
 };
 
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;

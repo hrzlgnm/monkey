@@ -128,6 +128,11 @@ auto lexer::next_token() -> token
                     return read_char(), read_char(), token {.type = logical_and, .literal = "&&"};
                 }
                 break;
+            case pipe:
+                if (peek_token_type == pipe) {
+                    return read_char(), read_char(), token {.type = logical_or, .literal = "||"};
+                }
+                break;
             default:
                 break;
         }
@@ -261,7 +266,7 @@ return false;
 [1,2];
 {"foo": "bar"};
 5.5 // %
-& | ^ << >> &&
+& | ^ << >> && ||
         )"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
@@ -312,7 +317,8 @@ return false;
         token {.type = percent, .literal = "%"},      token {.type = ampersand, .literal = "&"},
         token {.type = pipe, .literal = "|"},         token {.type = caret, .literal = "^"},
         token {.type = shift_left, .literal = "<<"},  token {.type = shift_right, .literal = ">>"},
-        token {.type = logical_and, .literal = "&&"}, token {.type = eof, .literal = ""},
+        token {.type = logical_and, .literal = "&&"}, token {.type = logical_or, .literal = "||"},
+        token {.type = eof, .literal = ""},
 
     };
     for (const auto& expected_token : expected_tokens) {

@@ -80,7 +80,10 @@ auto binary_expression::compile(compiler& comp) const -> void
             comp.emit(opcodes::bit_rsh);
             break;
         case token_type::logical_and:
-            comp.emit(opcodes::log_and);
+            comp.emit(opcodes::logical_and);
+            break;
+        case token_type::logical_or:
+            comp.emit(opcodes::logical_or);
             break;
         case token_type::greater_than:
             comp.emit(opcodes::greater_than);

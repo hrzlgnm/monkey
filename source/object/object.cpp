@@ -177,6 +177,11 @@ auto object::operator&&(const object& other) const -> const object*
     return native_bool_to_object(is_truthy() && other.is_truthy());
 }
 
+auto object::operator||(const object& other) const -> const object*
+{
+    return native_bool_to_object(is_truthy() || other.is_truthy());
+}
+
 builtin_object::builtin_object(const builtin_function_expression* bltn)
 
     : function_object {bltn, nullptr}

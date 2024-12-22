@@ -91,8 +91,10 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "bit_lsh";
         case opcodes::bit_rsh:
             return ostream << "bit_rsh";
-        case opcodes::log_and:
-            return ostream << "log_and";
+        case opcodes::logical_and:
+            return ostream << "logical_and";
+        case opcodes::logical_or:
+            return ostream << "logical_or";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));

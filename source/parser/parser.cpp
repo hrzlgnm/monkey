@@ -43,6 +43,7 @@ enum precedence : std::uint8_t
     bitwise_xor,
     bitwise_and,
     bitwise_shift,
+    logical_or,
     logical_and,
     sum,
     product,
@@ -65,6 +66,8 @@ auto precedence_of_token(token_type type) -> std::uint8_t
             return sum;
         case token_type::logical_and:
             return logical_and;
+        case token_type::logical_or:
+            return logical_or;
         case token_type::pipe:
             return bitwise_or;
         case token_type::ampersand:
@@ -126,6 +129,7 @@ parser::parser(lexer lxr)
     register_binary(shift_left, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(shift_right, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(logical_and, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(logical_or, [this](expression* left) { return parse_binary_expression(left); });
 }
 
 auto parser::parse_program() -> program*
@@ -811,6 +815,7 @@ TEST_CASE("binaryExpressions")
         bt {"5 << 5;", 5, shift_left, 5},
         bt {"5 >> 5;", 5, shift_right, 5},
         bt {"5 && 5;", 5, logical_and, 5},
+        bt {"5 || 5;", 5, logical_or, 5},
     };
 
     for (const auto& [input, left, op, right] : tests) {
@@ -857,6 +862,14 @@ TEST_CASE("operatorPrecedence")
         op {
             "a && b + c",
             "(a && (b + c))",
+        },
+        op {
+            "a && b || c",
+            "((a && b) || c)",
+        },
+        op {
+            "a || b && c",
+            "(a || (b && c))",
         },
         op {
             "a + b & c",
