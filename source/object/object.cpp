@@ -27,6 +27,8 @@ namespace
 const boolean_object false_obj {/*val=*/false};
 const boolean_object true_obj {/*val=*/true};
 const struct null_object null_obj;
+const break_object break_obj;
+const continue_object continue_obj;
 
 auto invert_bool_object(const object* b) -> const object*
 {
@@ -167,6 +169,16 @@ auto null_object() -> const object*
     return &null_obj;
 }
 
+auto brk_object() -> const object*
+{
+    return &break_obj;
+}
+
+auto cont_object() -> const object*
+{
+    return &continue_obj;
+}
+
 auto object::operator!=(const object& other) const -> const object*
 {
     return invert_bool_object(*this == other);
@@ -219,6 +231,10 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
             return ostrm << "builtin";
         case object::object_type::return_value:
             return ostrm << "return_value";
+        case object::object_type::brake:
+            return ostrm << "break";
+        case object::object_type::cont:
+            return ostrm << "continue";
     }
     return ostrm << "unknown " << static_cast<int>(type);
 }
@@ -595,7 +611,7 @@ auto builtin_object::inspect() const -> std::string
 
 auto return_value_object::inspect() const -> std::string
 {
-    return fmt::format("return {}", return_value->inspect());
+    return fmt::format("{}", return_value->inspect());
 }
 
 auto function_object::inspect() const -> std::string

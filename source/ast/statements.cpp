@@ -16,6 +16,16 @@ auto return_statement::string() const -> std::string
     return fmt::format("return {};", (value != nullptr) ? value->string() : std::string());
 }
 
+auto break_statement::string() const -> std::string
+{
+    return "break";
+}
+
+auto continue_statement::string() const -> std::string
+{
+    return "continue";
+}
+
 auto expression_statement::string() const -> std::string
 {
     if (expr != nullptr) {
@@ -27,4 +37,9 @@ auto expression_statement::string() const -> std::string
 auto block_statement::string() const -> std::string
 {
     return join(statements);
+}
+
+auto while_statement::string() const -> std::string
+{
+    return fmt::format("while {} {}", condition->string(), body->string());
 }

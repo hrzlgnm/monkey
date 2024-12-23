@@ -131,9 +131,20 @@ auto vm::run() -> void
                 auto num_args = instr[ip + 1UL];
                 exec_call(num_args);
             } break;
+            case opcodes::brake:
+            case opcodes::cont: {
+                current_frame().ip += 1;
+                const auto* return_value = native_bool_to_object(op == opcodes::cont);
+                auto frame = pop_frame();
+                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
+                push(return_value);
+            } break;
             case opcodes::return_value: {
                 const auto* return_value = pop();
                 auto& frame = pop_frame();
+                while (frame.cl->fn->inside_loop) {
+                    frame = pop_frame();
+                }
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(return_value);
             } break;
@@ -269,7 +280,7 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
             return *left != *right;
         case greater_than:
             return *left > *right;
-        case opcodes::floor_div:
+        case floor_div:
             return object_floor_div(left, right);
         default:
             return nullptr;

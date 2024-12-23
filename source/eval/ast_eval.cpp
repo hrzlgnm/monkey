@@ -5,6 +5,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -104,11 +105,18 @@ auto binary_expression::eval(environment* env) const -> const object*
     if (evaluated_left->is_error()) {
         return evaluated_left;
     }
+    if (evaluated_left->is_return_value()) {
+        evaluated_left = evaluated_left->as<return_value_object>()->return_value;
+    }
 
     const auto* evaluated_right = right->eval(env);
     if (evaluated_right->is_error()) {
         return evaluated_right;
     }
+    if (evaluated_right->is_return_value()) {
+        evaluated_right = evaluated_right->as<return_value_object>()->return_value;
+    }
+
     if (const auto* val = apply_binary_operator(op, evaluated_left, evaluated_right); val != nullptr) {
         return val;
     }
@@ -195,6 +203,31 @@ auto if_expression::eval(environment* env) const -> const object*
     return null_object();
 }
 
+auto while_statement::eval(environment* env) const -> const object*
+{
+    while (true) {
+        const auto* evaluated_condition = condition->eval(env);
+        if (evaluated_condition->is_error()) {
+            return evaluated_condition;
+        }
+        if (evaluated_condition->is_truthy()) {
+            const auto* result = body->eval(env);
+            if (result->is_error() || result->is_return_value()) {
+                return result;
+            }
+            if (result->is_break()) {
+                break;
+            }
+            if (result->is_continue()) {
+                continue;
+            }
+        } else {
+            break;
+        }
+    }
+    return null_object();
+}
+
 auto index_expression::eval(environment* env) const -> const object*
 {
     const auto* evaluated_left = left->eval(env);
@@ -255,11 +288,11 @@ auto program::eval(environment* env) const -> const object*
     const object* result = nullptr;
     for (const auto* statement : statements) {
         result = statement->eval(env);
-        if (result->is_return_value()) {
-            return result->as<return_value_object>()->return_value;
-        }
         if (result->is_error()) {
             return result;
+        }
+        if (result->is_return_value()) {
+            return result->as<return_value_object>()->return_value;
         }
     }
     return result;
@@ -290,6 +323,16 @@ auto return_statement::eval(environment* env) const -> const object*
     return null_object();
 }
 
+auto break_statement::eval(environment* /*env*/) const -> const object*
+{
+    return brk_object();
+}
+
+auto continue_statement::eval(environment* /*env*/) const -> const object*
+{
+    return cont_object();
+}
+
 auto expression_statement::eval(environment* env) const -> const object*
 {
     if (expr != nullptr) {
@@ -303,7 +346,7 @@ auto block_statement::eval(environment* env) const -> const object*
     const object* result = nullptr;
     for (const auto& stmt : statements) {
         result = stmt->eval(env);
-        if (result->is_return_value() || result->is_error()) {
+        if (result->is_error() || result->is_return_value() || result->is_break() || result->is_continue()) {
             return result;
         }
     }
@@ -487,23 +530,41 @@ const builtin_function_expression builtin_push {
     {"arr", "val"},
     [](const array_object::value_type& arguments) -> const object*
     {
-        if (arguments.size() != 2) {
-            return make_error("wrong number of arguments to push(): expected=2, got={}", arguments.size());
+        if (arguments.size() != 2 && arguments.size() != 3) {
+            return make_error("wrong number of arguments to push(): expected=2 or 3, got={}", arguments.size());
         }
-        const auto& lhs = arguments[0];
-        const auto& rhs = arguments[1];
         using enum object::object_type;
-        if (lhs->is(array)) {
-            auto copy = lhs->as<array_object>()->value;
-            copy.push_back(rhs);
-            return make<array_object>(std::move(copy));
+        if (arguments.size() == 2) {
+            const auto& lhs = arguments[0];
+            const auto& rhs = arguments[1];
+            if (lhs->is(array)) {
+                auto copy = lhs->as<array_object>()->value;
+                copy.push_back(rhs);
+                return make<array_object>(std::move(copy));
+            }
+            if (lhs->is(string) && rhs->is(string)) {
+                auto copy = lhs->as<string_object>()->value;
+                copy.append(rhs->as<string_object>()->value);
+                return make<string_object>(std::move(copy));
+            }
+            return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
         }
-        if (lhs->is(string) && rhs->is(string)) {
-            auto copy = lhs->as<string_object>()->value;
-            copy.append(rhs->as<string_object>()->value);
-            return make<string_object>(std::move(copy));
+        if (arguments.size() == 3) {
+            const auto& lhs = arguments[0];
+            const auto& k = arguments[1];
+            const auto& v = arguments[2];
+            if (lhs->is(hash)) {
+                if (!k->is_hashable()) {
+                    return make_error("type {} is not hashable", k->type());
+                }
+                auto copy = lhs->as<hash_object>()->value;
+                copy.insert_or_assign(k->as<hashable_object>()->hash_key(), v);
+                return make<hash_object>(std::move(copy));
+            }
+            return make_error(
+                "argument of type {}, {} and {} to push() are not supported", lhs->type(), k->type(), v->type());
         }
-        return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
+        return make_error("invalid call to push()");
     }};
 
 const builtin_function_expression builtin_type {
@@ -539,6 +600,7 @@ struct error
 };
 
 using array = std::vector<std::variant<std::string, int64_t>>;
+using hash = std::unordered_map<std::string, int64_t>;
 using null_type = std::monostate;
 const null_type null_value {};
 
@@ -589,6 +651,19 @@ auto require_array_eq(const object* obj, const array& expected, std::string_view
             },
             expected_elem);
         ++idx;
+    }
+}
+
+auto require_hash_eq(const object* obj, const hash& expected, std::string_view input) -> void
+{
+    INFO(input, " expected: hash with: ", expected.size(), " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::hash));
+    const auto& actual = obj->as<hash_object>()->value;
+    REQUIRE(actual.size() == expected.size());
+    for (const auto& [expected_key, expected_value] : expected) {
+        REQUIRE(actual.contains(expected_key));
+        auto val = actual.at(expected_key);
+        require_eq(val, expected_value, input);
     }
 }
 
@@ -930,6 +1005,49 @@ TEST_CASE("ifElseExpressions")
     }
 }
 
+TEST_CASE("whileStatements")
+{
+    struct et
+    {
+        std::string_view input;
+        std::variant<null_type, int64_t> expected;
+    };
+
+    std::array tests {
+        et {R"(let x = 1; while (false) { x = x + 1; } x)", 1},
+        et {R"(let x = 1; let y = 1; while (y > 0) { y = y - 1; x = x + 1; } x)", 2},
+        et {R"(let a = 6;
+                          let b = a;
+                          let x = 1;
+                          while (x > 0) {
+                              x = x - 1;
+                              a = 5;
+                              b = b + a;
+                              let c = 8;
+                              c = c / 2;
+                              b = b + c;
+                              let y = 1;
+                              while (y > 0) {
+                                  y = y - 1;
+                                  a = a + 3;
+                                  b = b + a;
+                              }
+                          }
+                          b = b + a;)",
+            31},
+    };
+
+    for (const auto& test : tests) {
+        const auto evaluated = run(test.input);
+        std::visit(
+            overloaded {
+                [&](const null_type& /*null*/) { REQUIRE(evaluated->is(object::object_type::null)); },
+                [&](const int64_t value) { require_eq(evaluated, value, test.input); },
+            },
+            test.expected);
+    }
+}
+
 TEST_CASE("returnStatements")
 {
     struct rt
@@ -1090,7 +1208,7 @@ TEST_CASE("builtinFunctions")
     struct bt
     {
         std::string_view input;
-        std::variant<std::int64_t, std::string, error, null_type, array> expected;
+        std::variant<std::int64_t, std::string, error, null_type, array, hash> expected;
     };
 
     const std::array tests {
@@ -1119,11 +1237,12 @@ TEST_CASE("builtinFunctions")
         bt {R"(rest([1,2]))", array {{2}}},
         bt {R"(rest([1]))", null_value},
         bt {R"(rest([]))", null_value},
-        bt {R"(push())", error {"wrong number of arguments to push(): expected=2, got=0"}},
-        bt {R"(push(1))", error {"wrong number of arguments to push(): expected=2, got=1"}},
+        bt {R"(push())", error {"wrong number of arguments to push(): expected=2 or 3, got=0"}},
+        bt {R"(push(1))", error {"wrong number of arguments to push(): expected=2 or 3, got=1"}},
         bt {R"(push(1, 2))", error {"argument of type integer and integer to push() are not supported"}},
         bt {R"(push([1,2], 3))", array {{1}, {2}, {3}}},
         bt {R"(push([], "abc"))", array {{"abc"}}},
+        bt {R"(push({}, "c", 1))", hash {{"c", 1}}},
         bt {R"(push("", "a"))", "a"},
         bt {R"(push("c", "abc"))", "cabc"},
         bt {R"(type("c"))", "string"},
@@ -1139,6 +1258,7 @@ TEST_CASE("builtinFunctions")
                 [&](const error& val) { require_error_eq(evaluated, val.message, test.input); },
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
                 [&](const array& val) { require_array_eq(evaluated, val, test.input); },
+                [&](const hash& val) { require_hash_eq(evaluated, val, test.input); },
                 [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
             },
             test.expected);

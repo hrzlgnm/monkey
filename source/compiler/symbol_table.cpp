@@ -3,6 +3,7 @@
 #include <map>
 #include <optional>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -38,11 +39,17 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
 
 auto operator<<(std::ostream& ost, const symbol& sym) -> std::ostream&
 {
-    return ost << fmt::format("symbol{{{}, {}, {}}}", sym.name, sym.scope, sym.index);
+    return ost << fmt::format("symbol{{{}, {}, {}, {}}}", sym.name, sym.scope, sym.index, sym.ptr.has_value());
 }
 
-symbol_table::symbol_table(symbol_table* outer)
-    : m_outer(outer)
+auto operator<<(std::ostream& ost, const symbol_pointer& ptr) -> std::ostream&
+{
+    return ost << fmt::format("symbol_pointer{{{}, {}, {}}}", ptr.level, ptr.scope, ptr.index);
+}
+
+symbol_table::symbol_table(symbol_table* outer, bool inside_loop)
+    : m_outer {outer}
+    , m_inside_loop {inside_loop}
 {
 }
 
@@ -74,6 +81,35 @@ auto symbol_table::define_function_name(const std::string& name) -> symbol
            };
 }
 
+auto symbol_table::define_outer(const symbol& original, int level) -> symbol
+{
+    using enum symbol_scope;
+    if (original.scope == local || original.scope == free || original.scope == function) {
+        return m_store[original.name] = symbol {.name = original.name,
+                                                .scope = outer,
+                                                .index = 0,
+                                                .ptr =
+                                                    symbol_pointer {
+                                                        .level = level,
+                                                        .scope = original.scope,
+                                                        .index = original.index,
+                                                    }
+
+               };
+    }
+    if (original.scope == outer) {
+        return m_store[original.name] = symbol {.name = original.name,
+                                                .scope = outer,
+                                                .index = 0,
+                                                .ptr = symbol_pointer {
+                                                    .level = level + original.ptr->level,
+                                                    .scope = original.ptr->scope,
+                                                    .index = original.ptr->index,
+                                                }};
+    }
+    throw std::runtime_error("invalid call to define_outer");
+}
+
 auto symbol_table::resolve(const std::string& name, int level) -> std::optional<symbol>
 {
     using enum symbol_scope;
@@ -83,12 +119,16 @@ auto symbol_table::resolve(const std::string& name, int level) -> std::optional<
     auto maybe_symbol = m_outer->resolve(name);
     if (m_outer != nullptr) {
         level = level + 1;
+        auto maybe_symbol = m_outer->resolve(name, level);
         if (!maybe_symbol.has_value()) {
             return maybe_symbol;
         }
         auto symbol = maybe_symbol.value();
         if (symbol.scope == global || symbol.scope == builtin) {
             return symbol;
+        }
+        if (m_inside_loop) {
+            return define_outer(symbol, level);
         }
         return define_free(symbol);
     }

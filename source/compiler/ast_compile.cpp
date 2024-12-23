@@ -148,6 +148,42 @@ auto if_expression::compile(compiler& comp) const -> void
     comp.change_operand(jump_pos, after_alternative);
 }
 
+auto while_statement::compile(compiler& comp) const -> void
+{
+    using enum opcodes;
+    auto loop_start_pos = comp.current_instrs().size();
+    condition->compile(comp);
+    auto jump_not_truthy_pos = comp.emit(jump_not_truthy, 0);
+
+    /* create a closure for the while loop body */
+    comp.enter_scope(/*inside_loop=*/true);
+    body->compile(comp);
+    /* add a continue opcode at the end, to detect whether break was called or not */
+    comp.emit(cont);
+
+    auto free = comp.free_symbols();
+    auto num_locals = comp.number_symbol_definitions();
+    auto instrs = comp.leave_scope();
+    for (const auto& sym : free) {
+        comp.load_symbol(sym);
+    }
+    auto* cmpl = make<compiled_function_object>(std::move(instrs), num_locals, 0);
+    cmpl->inside_loop = true;
+    auto function_index = comp.add_constant(cmpl);
+    comp.emit(closure, {function_index, free.size()});
+    comp.emit(call, 0);
+
+    auto jump_on_break_pos = comp.emit(jump_not_truthy, 0);
+    comp.emit(jump, loop_start_pos);
+
+    const auto after_body_pos = comp.current_instrs().size();
+    comp.change_operand(jump_not_truthy_pos, after_body_pos);
+    comp.change_operand(jump_on_break_pos, after_body_pos);
+
+    comp.emit(null);
+    comp.emit(pop);
+}
+
 auto index_expression::compile(compiler& comp) const -> void
 {
     left->compile(comp);
@@ -205,6 +241,14 @@ auto return_statement::compile(compiler& comp) const -> void
     value->compile(comp);
     comp.emit(opcodes::return_value);
 }
+
+auto break_statement::compile(compiler& comp) const -> void
+{
+    comp.emit(opcodes::brake);}
+
+auto continue_statement::compile(compiler& comp) const -> void
+{
+    comp.emit(opcodes::cont);}
 
 auto expression_statement::compile(compiler& comp) const -> void
 {

@@ -52,7 +52,7 @@ struct compiler
     auto change_operand(size_t pos, size_t operand) -> void;
     [[nodiscard]] auto byte_code() const -> bytecode;
     [[nodiscard]] auto current_instrs() const -> const instructions&;
-    auto enter_scope() -> void;
+    auto enter_scope(bool inside_loop = false) -> void;
     auto leave_scope() -> instructions;
     auto define_symbol(const std::string& name) -> symbol;
     auto define_function_name(const std::string& name) -> symbol;
@@ -63,6 +63,7 @@ struct compiler
     [[nodiscard]] auto consts() const -> constants*;
 
     [[nodiscard]] auto all_symbols() const -> const symbol_table* { return m_symbols; }
+;
 
   private:
     constants* m_consts {};
