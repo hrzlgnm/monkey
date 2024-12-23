@@ -353,11 +353,12 @@ struct compiled_function_object : object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::compiled_function; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return "fn<compiled>(...) {...}"; }
+    [[nodiscard]] auto inspect() const -> std::string override;
 
     instructions instrs;
     size_t num_locals {};
     size_t num_arguments {};
+    bool inside_loop {};
 };
 
 struct closure_object : object
@@ -370,7 +371,8 @@ struct closure_object : object
 
     [[nodiscard]] auto type() const -> object_type override { return object_type::closure; }
 
-    [[nodiscard]] auto inspect() const -> std::string override { return "fn<closure>{...}"; }
+    [[nodiscard]] auto inspect() const -> std::string override;
+    [[nodiscard]] auto clone() const -> closure_object*;
 
     const compiled_function_object* fn {};
     std::vector<const object*> free;

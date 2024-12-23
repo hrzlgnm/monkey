@@ -25,6 +25,15 @@ auto environment::set(const std::string& name, const object* val) -> void
     store[name] = val;
 }
 
+auto environment::reassign(const std::string& name, const object* val) -> const object*
+{
+    if (const auto itr = store.find(name); itr == store.end() && outer != nullptr) {
+        return outer->reassign(name, val);
+    }
+    set(name, val);
+    return val;
+}
+
 auto environment::debug() const -> void
 {
     for (const auto& [k, v] : store) {

@@ -271,8 +271,11 @@ auto let_statement::eval(environment* env) const -> const object*
     if (val->is_error()) {
         return val;
     }
+    if (reassign) {
+        return env->reassign(name->value, val);
+    }
     env->set(name->value, val);
-    return null_object();
+    return val;
 }
 
 auto return_statement::eval(environment* env) const -> const object*

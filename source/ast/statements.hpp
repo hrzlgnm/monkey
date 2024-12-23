@@ -14,6 +14,7 @@ struct let_statement : statement
 
     const identifier* name {};
     const expression* value {};
+    bool reassign {};
 };
 
 struct return_statement : statement

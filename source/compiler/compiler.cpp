@@ -163,6 +163,15 @@ auto compiler::load_symbol(const symbol& sym) -> void
         case function:
             emit(current_closure);
             break;
+        case outer: {
+            const auto& val = sym.ptr.value();
+            emit(get_outer,
+                 {
+                     static_cast<operands::value_type>(val.level),
+                     static_cast<operands::value_type>(val.scope),
+                     static_cast<operands::value_type>(val.index),
+                 });
+        } break;
     }
 }
 

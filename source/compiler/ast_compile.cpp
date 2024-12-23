@@ -174,13 +174,29 @@ auto program::compile(compiler& comp) const -> void
 
 auto let_statement::compile(compiler& comp) const -> void
 {
-    auto symbol = comp.define_symbol(name->value);
     value->compile(comp);
-
-    if (symbol.is_local()) {
-        comp.emit(opcodes::set_local, symbol.index);
+    if (reassign) {
+        const auto sym = comp.resolve_symbol(name->value).value();
+        if (sym.scope == symbol_scope::global) {
+            comp.emit(opcodes::set_global, sym.index);
+        } else if (sym.scope == symbol_scope::local) {
+            comp.emit(opcodes::set_local, sym.index);
+        } else if (sym.scope == symbol_scope::free) {
+            comp.emit(opcodes::set_free, sym.index);
+        } else {
+            const auto& val = sym.ptr.value();
+            comp.emit(opcodes::set_outer,
+                      {static_cast<operands::value_type>(val.level),
+                       static_cast<operands::value_type>(val.scope),
+                       static_cast<operands::value_type>(val.index)});
+        }
     } else {
-        comp.emit(opcodes::set_global, symbol.index);
+        const auto sym = comp.define_symbol(name->value);
+        if (sym.is_local()) {
+            comp.emit(opcodes::set_local, sym.index);
+        } else {
+            comp.emit(opcodes::set_global, sym.index);
+        }
     }
 }
 

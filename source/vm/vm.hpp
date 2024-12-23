@@ -17,7 +17,7 @@ using ssize_type = std::make_signed_t<size_t>;
 
 struct frame
 {
-    const closure_object* cl {};
+    closure_object* cl {};
     ssize_type ip {};
     ssize_type base_ptr {};
 };

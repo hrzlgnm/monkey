@@ -724,3 +724,28 @@ auto null_object::operator==(const object& other) const -> const object*
 {
     return native_bool_to_object(other.is(type()));
 }
+auto compiled_function_object::inspect() const -> std::string
+{
+    return fmt::format("{{\n{}}}", to_string(instrs));
+}
+
+[[nodiscard]] auto closure_object::clone() const -> closure_object*
+{
+    return make<closure_object>(fn, free);
+}
+
+auto closure_object::inspect() const -> std::string
+{
+    std::ostringstream strm;
+    strm << "[";
+    for (bool first = true; const auto* const element : free) {
+        if (!first) {
+            strm << ", ";
+        }
+        strm << fmt::format("{}", element->inspect());
+        first = false;
+    }
+    strm << "]";
+
+    return fmt::format("fn<closure>() compiled: {}\n free: {}", fn->inspect(), strm.str());
+}

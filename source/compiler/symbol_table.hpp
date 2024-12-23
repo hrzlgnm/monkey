@@ -20,6 +20,7 @@ enum class symbol_scope : std::uint8_t
     builtin,
     free,
     function,
+    outer,
 };
 auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&;
 
@@ -28,11 +29,26 @@ struct fmt::formatter<symbol_scope> : ostream_formatter
 {
 };
 
+struct symbol_pointer
+{
+    int level;
+    symbol_scope scope;
+    size_t index {};
+};
+
+auto operator<<(std::ostream& ost, const symbol_pointer& ptr) -> std::ostream&;
+
+template<>
+struct fmt::formatter<symbol_pointer> : ostream_formatter
+{
+};
+
 struct symbol
 {
     std::string name;
     symbol_scope scope {};
     size_t index {};
+    std::optional<symbol_pointer> ptr;
 
     [[nodiscard]] auto is_local() const -> bool { return scope == symbol_scope::local; }
 };
@@ -53,18 +69,20 @@ struct symbol_table
 
     explicit symbol_table(symbol_table* outer = {});
     auto define(const std::string& name) -> symbol;
+    auto define_outer(const symbol& original, int level) -> symbol;
     auto define_builtin(size_t index, const std::string& name) -> symbol;
     auto define_function_name(const std::string& name) -> symbol;
-    auto resolve(const std::string& name) -> std::optional<symbol>;
+    auto resolve(const std::string& name, int level = 0) -> std::optional<symbol>;
 
     [[nodiscard]] auto is_global() const -> bool { return m_outer == nullptr; }
 
     [[nodiscard]] auto outer() const -> symbol_table* { return m_outer; }
 
-    auto num_definitions() const -> size_t { return m_defs; }
+    [[nodiscard]] auto free() const -> std::vector<symbol>;
 
-    auto free() const -> std::vector<symbol>;
     auto debug() const -> void;
+
+    [[nodiscard]] auto num_definitions() const -> size_t { return m_defs; }
 
   private:
     auto define_free(const symbol& sym) -> symbol;

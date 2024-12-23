@@ -47,8 +47,11 @@ enum class opcodes : uint8_t
     ret,
     get_local,
     set_local,
-    get_builtin,
     get_free,
+    set_free,
+    get_outer,
+    set_outer,
+    get_builtin,
     closure,
     current_closure,
 };
@@ -107,9 +110,12 @@ const definition_type definitions {
     {opcodes::ret, definition {.name = "OpReturn"}},
     {opcodes::get_local, definition {.name = "OpGetLocal", .operand_widths = {1}}},
     {opcodes::set_local, definition {.name = "OpSetLocal", .operand_widths = {1}}},
+    {opcodes::get_free, definition {.name = "OpGetFree", .operand_widths = {1}}},
+    {opcodes::set_free, definition {.name = "OpSetFree", .operand_widths = {1}}},
+    {opcodes::set_outer, definition {.name = "OpSetOuter", .operand_widths = {1, 1, 1}}},
+    {opcodes::get_outer, definition {.name = "OpGetOuter", .operand_widths = {1, 1, 1}}},
     {opcodes::get_builtin, definition {.name = "OpGetBuiltin", .operand_widths = {1}}},
     {opcodes::closure, definition {.name = "OpClosure", .operand_widths = {2, 1}}},
-    {opcodes::get_free, definition {.name = "OpGetFree", .operand_widths = {1}}},
     {opcodes::current_closure, definition {.name = "OpCurrentClosure"}},
 };
 

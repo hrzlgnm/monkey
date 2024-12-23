@@ -159,21 +159,21 @@ auto parser::next_token() -> void
 auto parser::parse_statement() -> statement*
 {
     using enum token_type;
-    switch (m_current_token.type) {
-        case let:
-            return parse_let_statement();
-        case ret:
-            return parse_return_statement();
-        default:
-            return parse_expression_statement();
+    if (current_token_is(let) || current_token_is(ident) && peek_token_is(assign)) {
+        return parse_let_statement();
     }
+    if (current_token_is(ret)) {
+        return parse_return_statement();
+    }
+    return parse_expression_statement();
 }
 
 auto parser::parse_let_statement() -> statement*
 {
-    using enum token_type;
     auto* stmt = make<let_statement>();
-    if (!get(ident)) {
+    using enum token_type;
+    stmt->reassign = current_token_is(ident);
+    if (!stmt->reassign && !get(ident)) {
         return {};
     }
     stmt->name = parse_identifier();

@@ -95,6 +95,12 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "logical_and";
         case opcodes::logical_or:
             return ostream << "logical_or";
+        case opcodes::set_free:
+            return ostream << "set_free";
+        case opcodes::get_outer:
+            return ostream << "get_outer";
+        case opcodes::set_outer:
+            return ostream << "set_outer";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));
@@ -179,6 +185,8 @@ auto fmt_instruction(const definition& def, const operands& operands) -> std::st
             return fmt::format("{} {}", def.name, operands[0]);
         case 2:
             return fmt::format("{} {} {}", def.name, operands[0], operands[1]);
+        case 3:
+            return fmt::format("{} {} {} {}", def.name, operands[0], operands[1], operands[2]);
         default:
             return fmt::format("ERROR: unhandled operand count for {}", def.name);
     }
