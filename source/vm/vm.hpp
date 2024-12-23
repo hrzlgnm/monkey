@@ -13,7 +13,7 @@ constexpr size_t stack_size = 2048UL;
 constexpr size_t globals_size = 65536UL;
 constexpr size_t max_frames = 1024UL;
 
-using ssize_type = std::make_signed_t<size_t>;
+using ssize_type = int;
 
 struct frame
 {

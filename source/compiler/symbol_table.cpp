@@ -10,7 +10,9 @@
 #include "symbol_table.hpp"
 
 #include <doctest/doctest.h>
+#include <fmt/base.h>
 #include <fmt/format.h>
+#include <fmt/std.h>
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {
@@ -39,7 +41,7 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
 
 auto operator<<(std::ostream& ost, const symbol& sym) -> std::ostream&
 {
-    return ost << fmt::format("symbol{{{}, {}, {}, {}}}", sym.name, sym.scope, sym.index, sym.ptr.has_value());
+    return ost << fmt::format("symbol{{{}, {}, {}, {}}}", sym.name, sym.scope, sym.index, sym.ptr);
 }
 
 auto operator<<(std::ostream& ost, const symbol_pointer& ptr) -> std::ostream&
@@ -135,7 +137,7 @@ auto symbol_table::resolve(const std::string& name, int level) -> std::optional<
     return std::nullopt;
 }
 
-auto symbol_table::free() const -> std::vector<symbol>
+auto symbol_table::free() const -> const std::vector<symbol>&
 {
     return m_free;
 }
