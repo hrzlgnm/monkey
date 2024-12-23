@@ -40,7 +40,7 @@ auto operator<<(std::ostream& ost, const symbol& sym) -> std::ostream&
 }
 
 symbol_table::symbol_table(symbol_table* outer)
-    : m_parent(outer)
+    : m_outer(outer)
 {
 }
 
@@ -49,7 +49,7 @@ auto symbol_table::define(const std::string& name) -> symbol
     using enum symbol_scope;
     return m_store[name] = symbol {
                .name = name,
-               .scope = (m_parent != nullptr) ? local : global,
+               .scope = (m_outer != nullptr) ? local : global,
                .index = m_defs++,
            };
 }
@@ -78,8 +78,8 @@ auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
     if (m_store.contains(name)) {
         return m_store[name];
     }
-    if (m_parent != nullptr) {
-        auto maybe_symbol = m_parent->resolve(name);
+    auto maybe_symbol = m_outer->resolve(name);
+    if (m_outer != nullptr) {
         if (!maybe_symbol.has_value()) {
             return maybe_symbol;
         }
@@ -89,7 +89,7 @@ auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
         }
         return define_free(symbol);
     }
-    return {};
+    return std::nullopt;
 }
 
 auto symbol_table::free() const -> std::vector<symbol>
@@ -101,6 +101,17 @@ auto symbol_table::define_free(const symbol& sym) -> symbol
 {
     m_free.push_back(sym);
     return m_store[sym.name] = symbol {.name = sym.name, .scope = symbol_scope::free, .index = m_free.size() - 1};
+}
+
+auto symbol_table::debug() const -> void
+{
+    for (const auto& [name, symbol] : m_store) {
+        fmt::println("{}", symbol);
+    }
+    if (m_outer != nullptr) {
+        fmt::println("Outer:");
+        m_outer->debug();
+    }
 }
 
 namespace
