@@ -63,6 +63,7 @@ struct compiler
     [[nodiscard]] auto consts() const -> constants*;
 
     [[nodiscard]] auto all_symbols() const -> const symbol_table* { return m_symbols; };
+
   private:
     constants* m_consts {};
     symbol_table* m_symbols;
