@@ -9,5 +9,5 @@ let fibonacci = fn(x) {
     }
   }
 };
-
-puts(fibonacci(30));
+let fib = fibonacci(30);
+puts(fib);
