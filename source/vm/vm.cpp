@@ -42,7 +42,11 @@ auto vm::run() -> void
         switch (op) {
             case opcodes::constant: {
                 current_frame().ip += 2;
-                auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
+                const auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
+                const auto* constant = m_constants->at(const_idx);
+                if (constant == nullptr) {
+                    throw std::runtime_error(fmt::format("constant at index {} does not exist", const_idx));
+                }
                 push(m_constants->at(const_idx));
             } break;
             case opcodes::add:
@@ -79,15 +83,13 @@ auto vm::run() -> void
                 exec_minus();
                 break;
             case opcodes::jump: {
-                auto pos = read_uint16_big_endian(instr, ip + 1UL);
-                current_frame().ip = pos - 1;
+                current_frame().ip = read_uint16_big_endian(instr, ip + 1UL) - 1;
             } break;
             case opcodes::jump_not_truthy: {
                 current_frame().ip += 2;
-                auto pos = read_uint16_big_endian(instr, ip + 1UL);
                 const auto* condition = pop();
                 if (!condition->is_truthy()) {
-                    current_frame().ip = pos - 1;
+                    current_frame().ip = read_uint16_big_endian(instr, ip + 1UL) - 1;
                 }
             } break;
             case opcodes::null:
@@ -95,7 +97,7 @@ auto vm::run() -> void
                 break;
             case opcodes::set_global: {
                 current_frame().ip += 2;
-                auto global_index = read_uint16_big_endian(instr, ip + 1UL);
+                const auto global_index = read_uint16_big_endian(instr, ip + 1UL);
                 m_globals->at(global_index) = pop();
             } break;
             case opcodes::get_global: {
@@ -109,15 +111,15 @@ auto vm::run() -> void
             } break;
             case opcodes::array: {
                 current_frame().ip += 2;
-                auto num_elements = read_uint16_big_endian(instr, ip + 1UL);
-                auto* arr = build_array(m_sp - num_elements, m_sp);
+                const auto num_elements = read_uint16_big_endian(instr, ip + 1UL);
+                const auto* arr = build_array(m_sp - num_elements, m_sp);
                 m_sp -= num_elements;
                 push(arr);
             } break;
             case opcodes::hash: {
                 current_frame().ip += 2;
-                auto num_elements = read_uint16_big_endian(instr, ip + 1UL);
-                auto* hsh = build_hash(m_sp - num_elements, m_sp);
+                const auto num_elements = read_uint16_big_endian(instr, ip + 1UL);
+                const auto* hsh = build_hash(m_sp - num_elements, m_sp);
                 m_sp -= num_elements;
                 push(hsh);
             } break;
@@ -128,16 +130,20 @@ auto vm::run() -> void
             } break;
             case opcodes::call: {
                 current_frame().ip += 1;
-                auto num_args = instr[ip + 1UL];
+                const auto num_args = instr[ip + 1UL];
                 exec_call(num_args);
             } break;
-            case opcodes::brake:
+            case opcodes::brake: {
+                current_frame().ip += 1;
+                auto& frame = pop_frame();
+                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
+                push(false_object());
+            } break;
             case opcodes::cont: {
                 current_frame().ip += 1;
-                const auto* return_value = native_bool_to_object(op == opcodes::cont);
-                auto frame = pop_frame();
+                auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(return_value);
+                push(true_object());
             } break;
             case opcodes::return_value: {
                 const auto* return_value = pop();
@@ -155,42 +161,45 @@ auto vm::run() -> void
             } break;
             case opcodes::set_local: {
                 current_frame().ip += 1;
-                auto local_index = instr[ip + 1UL];
+                const auto local_index = instr[ip + 1UL];
                 auto& frame = current_frame();
                 m_stack[static_cast<size_t>(frame.base_ptr) + local_index] = pop();
             } break;
             case opcodes::get_local: {
                 current_frame().ip += 1;
-                auto local_index = instr[ip + 1UL];
+                const auto local_index = instr[ip + 1UL];
                 auto& frame = current_frame();
                 push(m_stack[static_cast<size_t>(frame.base_ptr) + local_index]);
             } break;
             case opcodes::set_outer:
-            case opcodes::get_outer: {
                 current_frame().ip += 3;
-                exec_set_get_outer(ip, instr, op);
-            } break;
+                exec_set_outer(ip, instr);
+                break;
+            case opcodes::get_outer:
+                current_frame().ip += 3;
+                exec_get_outer(ip, instr);
+                break;
             case opcodes::get_builtin: {
                 current_frame().ip += 1;
-                auto builtin_index = instr[ip + 1UL];
+                const auto builtin_index = instr[ip + 1UL];
                 const auto* const builtin = builtin_function_expression::builtins[builtin_index];
                 push(make<builtin_object>(builtin));
             } break;
             case opcodes::set_free: {
                 current_frame().ip += 1;
-                auto free_index = instr[ip + 1UL];
+                const auto free_index = instr[ip + 1UL];
                 current_frame().cl->free[free_index] = pop();
             } break;
             case opcodes::get_free: {
                 current_frame().ip += 1;
-                auto free_index = instr[ip + 1UL];
+                const auto free_index = instr[ip + 1UL];
                 const auto* current_closure = current_frame().cl;
                 push(current_closure->free[free_index]);
             } break;
             case opcodes::closure: {
                 current_frame().ip += 3;
-                auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
-                auto num_free = instr[ip + 3UL];
+                const auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
+                const auto num_free = instr[ip + 3UL];
                 push_closure(const_idx, num_free);
             } break;
             case opcodes::current_closure: {
@@ -304,28 +313,31 @@ auto vm::exec_minus() -> void
     throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
 }
 
-void vm::exec_set_get_outer(const size_t ip, const instructions& instr, const opcodes op)
+void vm::exec_set_outer(const size_t ip, const instructions& instr)
 {
     const auto level = instr[ip + 1UL];
     const auto scope = static_cast<symbol_scope>(instr[ip + 2UL]);
     const auto index = instr[ip + 3UL];
     const auto& frame = m_frames[m_frame_index - (level + 1)];
-    if (op == opcodes::get_outer) {
-        if (scope == symbol_scope::local) {
-            push(m_stack[frame.base_ptr + index]);
-        } else if (scope == symbol_scope::free) {
-            push(frame.cl->free[index]);
-        } else if (scope == symbol_scope::function) {
-            push(frame.cl);
-        }
-    } else if (op == opcodes::set_outer) {
-        if (scope == symbol_scope::local) {
-            m_stack[frame.base_ptr + index] = pop();
-        } else if (scope == symbol_scope::free) {
-            frame.cl->free[index] = pop();
-        }
-    } else {
-        throw std::runtime_error(fmt::format("wrong usage of {}", __func__));
+    if (scope == symbol_scope::local) {
+        m_stack[frame.base_ptr + index] = pop();
+    } else if (scope == symbol_scope::free) {
+        frame.cl->free[index] = pop();
+    }
+}
+
+void vm::exec_get_outer(const size_t ip, const instructions& instr)
+{
+    const auto level = instr[ip + 1UL];
+    const auto scope = static_cast<symbol_scope>(instr[ip + 2UL]);
+    const auto index = instr[ip + 3UL];
+    const auto& frame = m_frames[m_frame_index - (level + 1)];
+    if (scope == symbol_scope::local) {
+        push(m_stack[frame.base_ptr + index]);
+    } else if (scope == symbol_scope::free) {
+        push(frame.cl->free[index]);
+    } else if (scope == symbol_scope::function) {
+        push(frame.cl);
     }
 }
 

@@ -53,7 +53,8 @@ struct vm
     auto exec_minus() -> void;
     auto exec_index(const object* left, const object* index) -> void;
     auto exec_call(size_t num_args) -> void;
-    void exec_set_get_outer(size_t ip, const instructions& instr, opcodes op);
+    void exec_set_outer(size_t ip, const instructions& instr);
+    void exec_get_outer(size_t ip, const instructions& instr);
     [[nodiscard]] auto build_array(size_t start, size_t end) const -> object*;
     [[nodiscard]] auto build_hash(size_t start, size_t end) const -> object*;
 
