@@ -233,7 +233,7 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
         case opcodes::logical_or:
             return *left || *right;
         case opcodes::floor_div:
-            return floor_div(left, right);
+            return object_floor_div(left, right);
         default:
             return {};
     }
