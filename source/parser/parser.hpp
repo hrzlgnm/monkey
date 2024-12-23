@@ -66,7 +66,7 @@ class parser final
     lexer m_lxr;
     token m_current_token {};
     token m_peek_token {};
-    std::vector<std::string> m_errors {};
+    std::vector<std::string> m_errors;
 
     std::unordered_map<token_type, unary_parser> m_unary_parsers;
     std::unordered_map<token_type, binary_parser> m_binary_parsers;
