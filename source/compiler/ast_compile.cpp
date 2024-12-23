@@ -2,6 +2,7 @@
 #include <utility>
 
 #include <ast/array_expression.hpp>
+#include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
 #include <ast/builtin_function_expression.hpp>
@@ -33,6 +34,25 @@ auto array_expression::compile(compiler& comp) const -> void
         element->compile(comp);
     }
     comp.emit(opcodes::array, elements.size());
+}
+
+auto assign_expression::compile(compiler& comp) const -> void
+{
+    value->compile(comp);
+    const auto sym = comp.resolve_symbol(name->value).value();
+    if (sym.scope == symbol_scope::global) {
+        comp.emit(opcodes::set_global, sym.index);
+    } else if (sym.scope == symbol_scope::local) {
+        comp.emit(opcodes::set_local, sym.index);
+    } else if (sym.scope == symbol_scope::free) {
+        comp.emit(opcodes::set_free, sym.index);
+    } else {
+        const auto& val = sym.ptr.value();
+        comp.emit(opcodes::set_outer,
+                  {static_cast<operands::value_type>(val.level),
+                   static_cast<operands::value_type>(val.scope),
+                   static_cast<operands::value_type>(val.index)});
+    }
 }
 
 auto binary_expression::compile(compiler& comp) const -> void
@@ -210,29 +230,12 @@ auto program::compile(compiler& comp) const -> void
 
 auto let_statement::compile(compiler& comp) const -> void
 {
+    const auto sym = comp.define_symbol(name->value);
     value->compile(comp);
-    if (reassign) {
-        const auto sym = comp.resolve_symbol(name->value).value();
-        if (sym.scope == symbol_scope::global) {
-            comp.emit(opcodes::set_global, sym.index);
-        } else if (sym.scope == symbol_scope::local) {
-            comp.emit(opcodes::set_local, sym.index);
-        } else if (sym.scope == symbol_scope::free) {
-            comp.emit(opcodes::set_free, sym.index);
-        } else {
-            const auto& val = sym.ptr.value();
-            comp.emit(opcodes::set_outer,
-                      {static_cast<operands::value_type>(val.level),
-                       static_cast<operands::value_type>(val.scope),
-                       static_cast<operands::value_type>(val.index)});
-        }
+    if (sym.is_local()) {
+        comp.emit(opcodes::set_local, sym.index);
     } else {
-        const auto sym = comp.define_symbol(name->value);
-        if (sym.is_local()) {
-            comp.emit(opcodes::set_local, sym.index);
-        } else {
-            comp.emit(opcodes::set_global, sym.index);
-        }
+        comp.emit(opcodes::set_global, sym.index);
     }
 }
 

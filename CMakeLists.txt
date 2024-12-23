@@ -24,6 +24,7 @@ add_library(monkey::lib ALIAS monkey_lib)
 target_sources(monkey_lib
   PRIVATE
     source/ast/array_expression.cpp
+    source/ast/assign_expression.cpp
     source/ast/binary_expression.cpp
     source/ast/boolean.cpp
     source/ast/builtin_function_expression.cpp

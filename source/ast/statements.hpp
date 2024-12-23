@@ -14,10 +14,10 @@ struct let_statement : statement
 
     const identifier* name {};
     const expression* value {};
-    bool reassign {};
 };
 
 struct return_statement : statement
+
 {
     [[nodiscard]] auto string() const -> std::string override;
     [[nodiscard]] auto eval(environment* env) const -> const object* override;

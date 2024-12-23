@@ -25,6 +25,7 @@ class parser final
     auto next_token() -> void;
     auto parse_statement() -> statement*;
     auto parse_let_statement() -> statement*;
+    auto parse_assign_statement() -> statement*;
     auto parse_return_statement() -> statement*;
     auto parse_expression_statement() -> statement*;
 
