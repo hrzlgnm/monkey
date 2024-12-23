@@ -48,8 +48,8 @@ enum class opcodes : uint8_t
     get_local,
     set_local,
     get_builtin,
-    closure,
     get_free,
+    closure,
     current_closure,
 };
 

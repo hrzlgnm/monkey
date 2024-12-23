@@ -50,7 +50,6 @@ struct vm
     auto pop() -> const object*;
     auto exec_binary_op(opcodes opcode) -> void;
     void extracted();
-    auto exec_cmp(opcodes opcode) -> void;
     auto exec_bang() -> void;
     auto exec_minus() -> void;
     auto exec_index(const object* left, const object* index) -> void;
