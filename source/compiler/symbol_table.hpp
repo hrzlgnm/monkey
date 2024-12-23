@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <map>
-#include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -41,9 +40,12 @@ struct symbol
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool;
 auto operator<<(std::ostream& ost, const symbol& sym) -> std::ostream&;
 
-struct symbol_table;
+template<>
+struct fmt::formatter<symbol> : ostream_formatter
+{
+};
 
-struct symbol_table : std::enable_shared_from_this<symbol_table>
+struct symbol_table
 {
     static auto create() -> symbol_table* { return make<symbol_table>(); }
 
@@ -55,17 +57,18 @@ struct symbol_table : std::enable_shared_from_this<symbol_table>
     auto define_function_name(const std::string& name) -> symbol;
     auto resolve(const std::string& name) -> std::optional<symbol>;
 
-    auto is_global() const -> bool { return m_parent == nullptr; }
+    [[nodiscard]] auto is_global() const -> bool { return m_outer == nullptr; }
 
-    auto parent() const -> symbol_table* { return m_parent; }
+    [[nodiscard]] auto outer() const -> symbol_table* { return m_outer; }
 
     auto num_definitions() const -> size_t { return m_defs; }
 
     auto free() const -> std::vector<symbol>;
+    auto debug() const -> void;
 
   private:
     auto define_free(const symbol& sym) -> symbol;
-    symbol_table* m_parent {};
+    symbol_table* m_outer {};
     string_map<symbol> m_store;
     size_t m_defs {};
     std::vector<symbol> m_free;

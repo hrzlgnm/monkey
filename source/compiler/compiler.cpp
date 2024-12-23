@@ -129,7 +129,7 @@ auto compiler::leave_scope() -> instructions
     auto instrs = m_scopes[m_scope_index].instrs;
     m_scopes.pop_back();
     m_scope_index--;
-    m_symbols = m_symbols->parent();
+    m_symbols = m_symbols->outer();
     return instrs;
 }
 

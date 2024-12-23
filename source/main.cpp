@@ -90,7 +90,7 @@ auto operator<<(std::ostream& strm, engine en) -> std::ostream&
 struct command_line_args
 {
     bool help {};
-    bool debug_env {};
+    bool debug {};
     engine mode {};
     std::string_view file;
 };
@@ -137,7 +137,7 @@ auto parse_command_line(std::string_view program, int argc, char** argv) -> comm
                     opts.help = true;
                     break;
                 case 'd':
-                    opts.debug_env = true;
+                    opts.debug = true;
                     break;
                 default: {
                     show_usage(program, fmt::format("invalid option {}", arg));
@@ -152,6 +152,18 @@ auto parse_command_line(std::string_view program, int argc, char** argv) -> comm
         }
     }
     return opts;
+}
+
+void debug_byte_code(const bytecode& byte_code, const symbol_table* symbols)
+{
+    std::cout << "Instructions: \n" << to_string(byte_code.instrs);
+    std::cout << "Constants:\n";
+    for (auto idx = 0; const auto* constant : (*byte_code.consts)) {
+        std::cout << idx << ": " << constant->inspect() << '\n';
+        idx++;
+    }
+    std::cout << "Symbols:\n";
+    symbols->debug();
 }
 
 auto run_file(const command_line_args& opts) -> int
@@ -172,6 +184,9 @@ auto run_file(const command_line_args& opts) -> int
     if (opts.mode == engine::vm) {
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
+        if (opts.debug) {
+            debug_byte_code(cmplr.byte_code(), cmplr.all_symbols());
+        }
         auto machine = vm::create(cmplr.byte_code());
         machine.run();
         const auto* result = machine.last_popped();
@@ -186,6 +201,9 @@ auto run_file(const command_line_args& opts) -> int
         const auto* result = prgrm->eval(global_env);
         if (!result->is(object::object_type::null)) {
             std::cout << result->inspect() << '\n';
+        }
+        if (opts.debug) {
+            global_env->debug();
         }
     }
     return 0;
@@ -221,6 +239,9 @@ auto run_repl(const command_line_args& opts) -> int
             try {
                 auto cmplr = compiler::create_with_state(&consts, symbols);
                 cmplr.compile(prgrm);
+                if (opts.debug) {
+                    debug_byte_code(cmplr.byte_code(), cmplr.all_symbols());
+                }
                 auto machine = vm::create_with_state(cmplr.byte_code(), &globals);
                 machine.run();
                 const auto* result = machine.last_popped();
@@ -243,9 +264,9 @@ auto run_repl(const command_line_args& opts) -> int
                 show_prompt();
                 continue;
             }
-        }
-        if (opts.debug_env) {
-            global_env->debug();
+            if (opts.debug) {
+                global_env->debug();
+            }
         }
         show_prompt();
     }
