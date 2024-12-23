@@ -656,9 +656,10 @@ TEST_CASE("letStatement")
 let x = 5;
 let y = 10;
 let foobar = 838383;
+x = 4;
         )");
-    REQUIRE_EQ(program->statements.size(), 3);
-    auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar"};
+    REQUIRE_EQ(program->statements.size(), 4);
+    auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar", "x"};
     for (size_t i = 0; i < 3; ++i) {
         require_let_statement(program->statements[i], expected_identifiers[i]);
     }
@@ -677,6 +678,7 @@ TEST_CASE("letStatements")
         lt {"let x = 5;", "x", 5},
         lt {"let y = true;", "y", true},
         lt {"let foobar = y;", "foobar", "y"},
+        lt {"foobar = y;", "foobar", "y"},
     };
 
     for (const auto& [input, expected_identifier, expected_value] : tests) {
