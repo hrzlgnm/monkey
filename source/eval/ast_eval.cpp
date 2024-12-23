@@ -528,6 +528,8 @@ auto callable_expression::eval(environment* env) const -> const object*
 
 namespace
 {
+namespace dt = doctest;
+
 struct error
 {
     std::string message;
@@ -567,8 +569,7 @@ auto require_eq(const object* obj, double expected, std::string_view input) -> v
     INFO(input, " expected: string with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::decimal));
     const auto& actual = obj->as<decimal_object>()->value;
-    constexpr auto epsilon = 1e-9;
-    REQUIRE(std::fabs(actual - expected) < epsilon);
+    REQUIRE(actual == dt::Approx(expected));
 }
 
 auto require_array_eq(const object* obj, const array& expected, std::string_view input) -> void

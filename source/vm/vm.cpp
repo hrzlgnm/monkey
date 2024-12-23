@@ -293,10 +293,16 @@ auto vm::exec_bang() -> void
 auto vm::exec_minus() -> void
 {
     const auto* operand = pop();
-    if (!operand->is(object::object_type::integer)) {
-        throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
+    if (operand->is(object::object_type::integer)) {
+        push(make<integer_object>(-operand->as<integer_object>()->value));
+        return;
     }
-    push(make<integer_object>(-operand->as<integer_object>()->value));
+    if (operand->is(object::object_type::decimal)) {
+        push(make<decimal_object>(-operand->as<decimal_object>()->value));
+        return;
+    }
+
+    throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
 }
 
 auto vm::build_array(size_t start, size_t end) const -> object*
@@ -422,6 +428,8 @@ auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 
 namespace
 {
+namespace dt = doctest;
+
 template<typename T>
 auto maker(std::initializer_list<T> list) -> std::vector<T>
 {
@@ -483,6 +491,21 @@ auto require_is(const int64_t expected, const object*& actual_obj, std::string_v
     REQUIRE(actual_obj->is(object::object_type::integer));
     const auto& actual = actual_obj->as<integer_object>()->value;
     REQUIRE(actual == expected);
+}
+
+auto require_is(const double expected, const object*& actual_obj, std::string_view input) -> void
+{
+    INFO(input,
+         " expected: decimal with: ",
+         expected,
+         " got: ",
+         actual_obj->type(),
+         " with: ",
+         actual_obj->inspect(),
+         " instead");
+    REQUIRE(actual_obj->is(object::object_type::decimal));
+    const auto& actual = actual_obj->as<decimal_object>()->value;
+    REQUIRE(actual == dt::Approx(expected));
 }
 
 auto require_is(const std::string& expected, const object*& actual_obj, std::string_view input) -> void
@@ -563,6 +586,7 @@ auto require_eq(const std::variant<T...>& expected, const object*& actual, std::
     std::visit(
         overloaded {
             [&](const int64_t exp) { require_is(exp, actual, input); },
+            [&](const double exp) { require_is(exp, actual, input); },
             [&](const bool exp) { require_is(exp, actual, input); },
             [&](const null_type& /*null*/) { REQUIRE(actual->is(null)); },
             [&](const std::string& exp) { require_is(exp, actual, input); },
@@ -628,6 +652,16 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+    };
+    run(tests);
+}
+
+TEST_CASE("decimalArithmetics")
+{
+    const std::array tests {
+        vt<double> {"1.1", 1.1},
+        vt<double> {"-2.2", -2.2},
+        vt<double> {"(5.0 + 10 * 2 + 15 / 3) * 2 + -10", 50.0},
     };
     run(tests);
 }
