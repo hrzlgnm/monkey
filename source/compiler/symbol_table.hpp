@@ -65,9 +65,12 @@ struct symbol_table
 {
     static auto create() -> symbol_table* { return make<symbol_table>(); }
 
-    static auto create_enclosed(symbol_table* outer) -> symbol_table* { return make<symbol_table>(outer); }
+    static auto create_enclosed(symbol_table* outer, bool inside_loop = false) -> symbol_table*
+    {
+        return make<symbol_table>(outer, inside_loop);
+    }
 
-    explicit symbol_table(symbol_table* outer = {});
+    explicit symbol_table(symbol_table* outer = {}, bool inside_loop = {});
     auto define(const std::string& name) -> symbol;
     auto define_outer(const symbol& original, int level) -> symbol;
     auto define_builtin(size_t index, const std::string& name) -> symbol;
@@ -80,9 +83,16 @@ struct symbol_table
 
     [[nodiscard]] auto free() const -> std::vector<symbol>;
 
+    [[nodiscard]] auto inside_loop() const -> bool
+    {
+        return m_inside_loop;
+    }
+
+    ;
+
     auto debug() const -> void;
 
-    [[nodiscard]] auto num_definitions() const -> size_t { return m_defs; }
+    [[nodiscard]] auto num_definitions() const -> size_t { return m_defs; };
 
   private:
     auto define_free(const symbol& sym) -> symbol;
@@ -90,4 +100,5 @@ struct symbol_table
     string_map<symbol> m_store;
     size_t m_defs {};
     std::vector<symbol> m_free;
+    bool m_inside_loop {};
 };

@@ -117,11 +117,11 @@ auto compiler::byte_code() const -> bytecode
     return {.instrs = m_scopes[m_scope_index].instrs, .consts = m_consts};
 }
 
-auto compiler::enter_scope() -> void
+auto compiler::enter_scope(bool inside_loop) -> void
 {
     m_scopes.resize(m_scopes.size() + 1);
     m_scope_index++;
-    m_symbols = symbol_table::create_enclosed(m_symbols);
+    m_symbols = symbol_table::create_enclosed(m_symbols, inside_loop);
 }
 
 auto compiler::leave_scope() -> instructions
@@ -1192,7 +1192,8 @@ TEST_CASE("closures")
             },
         },
         ctc {
-            R"(fn(a) {
+            R"(
+            fn(a) {
                  fn(b) {
                     fn(c) {
                         a + b + c
@@ -1267,6 +1268,187 @@ TEST_CASE("closures")
                 make(constant, 0),
                 make(set_global, 0),
                 make(closure, {6, 0}),
+                make(pop),
+            }},
+        ctc {
+            R"(
+            let i = 2;
+            while (i > 0) {
+             i = i - 1;
+             let j = 3;
+             let f = fn() {
+                 i + j;
+             }
+             while (j > 0) {
+                 j = j - 1;
+                 puts(f() + j);
+             }
+            }
+            )",
+            {
+                2,
+                0,
+                1,
+                3,
+                maker({
+                    make(get_global, 0),
+                    make(get_free, 0),
+                    make(add),
+                    make(return_value),
+                }),
+                0,
+                1,
+                maker({
+                    make(get_outer, {1, 1, 0}),
+                    make(constant, 6),
+                    make(sub),
+                    make(set_outer, {1, 1, 0}),
+                    make(get_builtin, 1),
+                    make(get_outer, {1, 1, 1}),
+                    make(call, 0),
+                    make(get_outer, {1, 1, 0}),
+                    make(add),
+                    make(call, 1),
+                    make(pop),
+                    make(cont),
+                }),
+                maker({
+                    make(get_global, 0),
+                    make(constant, 2),
+                    make(sub),
+                    make(set_global, 0),
+                    make(constant, 3),
+                    make(set_local, 0),
+                    make(get_local, 0),
+                    make(closure, {4, 1}),
+                    make(set_local, 1),
+                    make(get_local, 0),
+                    make(constant, 5),
+                    make(greater_than),
+                    make(jump_not_truthy, 44),
+                    make(closure, {7, 0}),
+                    make(call, 0),
+                    make(jump_not_truthy, 44),
+                    make(jump, 23),
+                    make(null),
+                    make(pop),
+                    make(cont),
+                }),
+            },
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(constant, 1),
+                make(greater_than),
+                make(jump_not_truthy, 28),
+                make(closure, {8, 0}),
+                make(call, 0),
+                make(jump_not_truthy, 28),
+                make(jump, 6),
+                make(null),
+                make(pop),
+            }},
+        ctc {
+            R"(
+            while (true) {
+                break;
+                continue;
+            })",
+            {
+                maker({
+                    make(brake),
+                    make(cont),
+                    make(cont),
+                }),
+            },
+            {
+                make(tru),
+                make(jump_not_truthy, 16),
+                make(closure, {0, 0}),
+                make(call, 0),
+                make(jump_not_truthy, 16),
+                make(jump, 0),
+                make(null),
+                make(pop),
+            }},
+        ctc {
+            R"(
+            let i = 2;
+            while (i > 0) {
+             i = i - 1;
+             let j = 3;
+             let f = fn() {
+                 i + j;
+             }
+             while (j > 0) {
+                 j = j - 1;
+                 puts(f() + j);
+             }
+            }
+            )",
+            {
+                2,
+                0,
+                1,
+                3,
+                maker({
+                    make(get_global, 0),
+                    make(get_free, 0),
+                    make(add),
+                    make(return_value),
+                }),
+                0,
+                1,
+                maker({
+                    make(get_outer, {1, 1, 0}),
+                    make(constant, 6),
+                    make(sub),
+                    make(set_outer, {1, 1, 0}),
+                    make(get_builtin, 1),
+                    make(get_outer, {1, 1, 1}),
+                    make(call, 0),
+                    make(get_outer, {1, 1, 0}),
+                    make(add),
+                    make(call, 1),
+                    make(pop),
+                    make(cont),
+                }),
+                maker({
+                    make(get_global, 0),
+                    make(constant, 2),
+                    make(sub),
+                    make(set_global, 0),
+                    make(constant, 3),
+                    make(set_local, 0),
+                    make(get_local, 0),
+                    make(closure, {4, 1}),
+                    make(set_local, 1),
+                    make(get_local, 0),
+                    make(constant, 5),
+                    make(greater_than),
+                    make(jump_not_truthy, 44),
+                    make(closure, {7, 0}),
+                    make(call, 0),
+                    make(jump_not_truthy, 44),
+                    make(jump, 23),
+                    make(null),
+                    make(pop),
+                    make(cont),
+                }),
+            },
+            {
+                make(constant, 0),
+                make(set_global, 0),
+                make(get_global, 0),
+                make(constant, 1),
+                make(greater_than),
+                make(jump_not_truthy, 28),
+                make(closure, {8, 0}),
+                make(call, 0),
+                make(jump_not_truthy, 28),
+                make(jump, 6),
+                make(null),
                 make(pop),
             }},
     };

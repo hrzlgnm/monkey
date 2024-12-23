@@ -23,6 +23,8 @@ struct object
         decimal,
         boolean,
         string,
+        brake,
+        cont,
         null,
         error,
         array,
@@ -51,6 +53,10 @@ struct object
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
 
     [[nodiscard]] auto is_return_value() const -> bool { return type() == object_type::return_value; }
+
+    [[nodiscard]] auto is_break() const -> bool { return type() == object_type::brake; }
+
+    [[nodiscard]] auto is_continue() const -> bool { return type() == object_type::cont; }
 
     [[nodiscard]] virtual auto is_truthy() const -> bool { return false; }
 
@@ -233,6 +239,23 @@ struct string_object : hashable_object
 
     value_type value;
 };
+
+struct break_object : object
+{
+    [[nodiscard]] auto type() const -> object_type override { return object_type::brake; }
+
+    [[nodiscard]] auto inspect() const -> std::string override { return "break"; }
+};
+
+struct continue_object : object
+{
+    [[nodiscard]] auto type() const -> object_type override { return object_type::cont; }
+
+    [[nodiscard]] auto inspect() const -> std::string override { return "continue"; }
+};
+
+auto brk_object() -> const object*;
+auto cont_object() -> const object*;
 
 struct null_object : object
 {

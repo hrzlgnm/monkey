@@ -49,11 +49,11 @@ struct vm
     vm(frames frames, const constants* consts, constants* globals);
     auto pop() -> const object*;
     auto exec_binary_op(opcodes opcode) -> void;
-    void extracted();
     auto exec_bang() -> void;
     auto exec_minus() -> void;
     auto exec_index(const object* left, const object* index) -> void;
     auto exec_call(size_t num_args) -> void;
+    void exec_set_get_outer(size_t ip, const instructions& instr, opcodes op);
     [[nodiscard]] auto build_array(size_t start, size_t end) const -> object*;
     [[nodiscard]] auto build_hash(size_t start, size_t end) const -> object*;
 

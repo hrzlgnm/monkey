@@ -37,9 +37,12 @@ class parser final
     auto parse_boolean() -> expression*;
     auto parse_grouped_expression() -> expression*;
     auto parse_if_expression() -> expression*;
+    auto parse_while_statement() -> expression*;
     auto parse_function_expression() -> expression*;
     auto parse_function_parameters() -> std::vector<std::string>;
     auto parse_block_statement() -> block_statement*;
+    auto parse_break_statement() -> statement*;
+    auto parse_continue_statement() -> statement*;
     auto parse_call_expression(expression* function) -> expression*;
     auto parse_string_literal() const -> expression*;
     auto parse_array_expression() -> expression*;
