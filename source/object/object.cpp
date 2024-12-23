@@ -724,6 +724,7 @@ auto null_object::operator==(const object& other) const -> const object*
 {
     return native_bool_to_object(other.is(type()));
 }
+
 auto compiled_function_object::inspect() const -> std::string
 {
     return fmt::format("{{\n{}}}", to_string(instrs));
