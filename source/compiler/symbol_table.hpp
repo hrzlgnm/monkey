@@ -81,18 +81,12 @@ struct symbol_table
 
     [[nodiscard]] auto outer() const -> symbol_table* { return m_outer; }
 
-    [[nodiscard]] auto free() const -> std::vector<symbol>;
+    [[nodiscard]] auto inside_loop() const -> bool { return m_inside_loop; }
 
-    [[nodiscard]] auto inside_loop() const -> bool
-    {
-        return m_inside_loop;
-    }
+    [[nodiscard]] auto num_definitions() const -> size_t { return m_defs; }
 
-    ;
-
+    [[nodiscard]] auto free() const -> const std::vector<symbol>&;
     auto debug() const -> void;
-
-    [[nodiscard]] auto num_definitions() const -> size_t { return m_defs; };
 
   private:
     auto define_free(const symbol& sym) -> symbol;

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <ast/builtin_function_expression.hpp>
+#include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>

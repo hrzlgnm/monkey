@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -17,6 +18,7 @@
 #include <ast/program.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
+#include <compiler/symbol_table.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
