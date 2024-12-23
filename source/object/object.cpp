@@ -27,8 +27,8 @@ namespace
 const boolean_object false_obj {/*val=*/false};
 const boolean_object true_obj {/*val=*/true};
 const struct null_object null_obj;
-const break_object break_obj;
-const continue_object continue_obj;
+const struct break_object break_obj;
+const struct continue_object continue_obj;
 
 auto invert_bool_object(const object* b) -> const object*
 {
@@ -169,12 +169,12 @@ auto null_object() -> const object*
     return &null_obj;
 }
 
-auto brk_object() -> const object*
+auto break_object() -> const object*
 {
     return &break_obj;
 }
 
-auto cont_object() -> const object*
+auto continue_object() -> const object*
 {
     return &continue_obj;
 }

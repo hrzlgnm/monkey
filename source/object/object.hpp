@@ -254,8 +254,8 @@ struct continue_object : object
     [[nodiscard]] auto inspect() const -> std::string override { return "continue"; }
 };
 
-auto brk_object() -> const object*;
-auto cont_object() -> const object*;
+auto break_object() -> const object*;
+auto continue_object() -> const object*;
 
 struct null_object : object
 {

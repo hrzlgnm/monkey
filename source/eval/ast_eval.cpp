@@ -318,12 +318,12 @@ auto return_statement::eval(environment* env) const -> const object*
 
 auto break_statement::eval(environment* /*env*/) const -> const object*
 {
-    return brk_object();
+    return break_object();
 }
 
 auto continue_statement::eval(environment* /*env*/) const -> const object*
 {
-    return cont_object();
+    return continue_object();
 }
 
 auto expression_statement::eval(environment* env) const -> const object*
