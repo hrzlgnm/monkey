@@ -622,7 +622,7 @@ auto require_eq(const std::variant<T...>& expected, const object*& actual, std::
 }
 
 template<size_t N, typename... Expecteds>
-auto run(std::array<vt<Expecteds...>, N> tests)
+auto run(const std::array<vt<Expecteds...>, N>& tests)
 {
     for (const auto& [input, expected] : tests) {
         auto [prgrm, _] = check_program(input);
