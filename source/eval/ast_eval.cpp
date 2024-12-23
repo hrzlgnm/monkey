@@ -487,23 +487,41 @@ const builtin_function_expression builtin_push {
     {"arr", "val"},
     [](const array_object::value_type& arguments) -> const object*
     {
-        if (arguments.size() != 2) {
-            return make_error("wrong number of arguments to push(): expected=2, got={}", arguments.size());
+        if (arguments.size() != 2 && arguments.size() != 3) {
+            return make_error("wrong number of arguments to push(): expected=2 or 3, got={}", arguments.size());
         }
-        const auto& lhs = arguments[0];
-        const auto& rhs = arguments[1];
         using enum object::object_type;
-        if (lhs->is(array)) {
-            auto copy = lhs->as<array_object>()->value;
-            copy.push_back(rhs);
-            return make<array_object>(std::move(copy));
+        if (arguments.size() == 2) {
+            const auto& lhs = arguments[0];
+            const auto& rhs = arguments[1];
+            if (lhs->is(array)) {
+                auto copy = lhs->as<array_object>()->value;
+                copy.push_back(rhs);
+                return make<array_object>(std::move(copy));
+            }
+            if (lhs->is(string) && rhs->is(string)) {
+                auto copy = lhs->as<string_object>()->value;
+                copy.append(rhs->as<string_object>()->value);
+                return make<string_object>(std::move(copy));
+            }
+            return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
         }
-        if (lhs->is(string) && rhs->is(string)) {
-            auto copy = lhs->as<string_object>()->value;
-            copy.append(rhs->as<string_object>()->value);
-            return make<string_object>(std::move(copy));
+        if (arguments.size() == 3) {
+            const auto& lhs = arguments[0];
+            const auto& k = arguments[1];
+            const auto& v = arguments[2];
+            if (lhs->is(hash)) {
+                if (!k->is_hashable()) {
+                    return make_error("type {} is not hashable", k->type());
+                }
+                auto copy = lhs->as<hash_object>()->value;
+                copy.insert_or_assign(k->as<hashable_object>()->hash_key(), v);
+                return make<hash_object>(std::move(copy));
+            }
+            return make_error(
+                "argument of type {}, {} and {} to push() are not supported", lhs->type(), k->type(), v->type());
         }
-        return make_error("argument of type {} and {} to push() are not supported", lhs->type(), rhs->type());
+        return make_error("invalid call to push()");
     }};
 
 const builtin_function_expression builtin_type {
@@ -539,6 +557,7 @@ struct error
 };
 
 using array = std::vector<std::variant<std::string, int64_t>>;
+using hash = std::unordered_map<std::string, int64_t>;
 using null_type = std::monostate;
 const null_type null_value {};
 
@@ -589,6 +608,19 @@ auto require_array_eq(const object* obj, const array& expected, std::string_view
             },
             expected_elem);
         ++idx;
+    }
+}
+
+auto require_hash_eq(const object* obj, const hash& expected, std::string_view input) -> void
+{
+    INFO(input, " expected: hash with: ", expected.size(), " got: ", obj->type(), " with: ", obj->inspect());
+    REQUIRE(obj->is(object::object_type::hash));
+    const auto& actual = obj->as<hash_object>()->value;
+    REQUIRE(actual.size() == expected.size());
+    for (const auto& [expected_key, expected_value] : expected) {
+        REQUIRE(actual.contains(expected_key));
+        auto val = actual.at(expected_key);
+        require_eq(val, expected_value, input);
     }
 }
 
@@ -1090,7 +1122,7 @@ TEST_CASE("builtinFunctions")
     struct bt
     {
         std::string_view input;
-        std::variant<std::int64_t, std::string, error, null_type, array> expected;
+        std::variant<std::int64_t, std::string, error, null_type, array, hash> expected;
     };
 
     const std::array tests {
@@ -1119,11 +1151,12 @@ TEST_CASE("builtinFunctions")
         bt {R"(rest([1,2]))", array {{2}}},
         bt {R"(rest([1]))", null_value},
         bt {R"(rest([]))", null_value},
-        bt {R"(push())", error {"wrong number of arguments to push(): expected=2, got=0"}},
-        bt {R"(push(1))", error {"wrong number of arguments to push(): expected=2, got=1"}},
+        bt {R"(push())", error {"wrong number of arguments to push(): expected=2 or 3, got=0"}},
+        bt {R"(push(1))", error {"wrong number of arguments to push(): expected=2 or 3, got=1"}},
         bt {R"(push(1, 2))", error {"argument of type integer and integer to push() are not supported"}},
         bt {R"(push([1,2], 3))", array {{1}, {2}, {3}}},
         bt {R"(push([], "abc"))", array {{"abc"}}},
+        bt {R"(push({}, "c", 1))", hash {{"c", 1}}},
         bt {R"(push("", "a"))", "a"},
         bt {R"(push("c", "abc"))", "cabc"},
         bt {R"(type("c"))", "string"},
@@ -1139,6 +1172,7 @@ TEST_CASE("builtinFunctions")
                 [&](const error& val) { require_error_eq(evaluated, val.message, test.input); },
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
                 [&](const array& val) { require_array_eq(evaluated, val, test.input); },
+                [&](const hash& val) { require_hash_eq(evaluated, val, test.input); },
                 [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::null)); },
             },
             test.expected);
