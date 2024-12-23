@@ -39,4 +39,8 @@ auto environment::debug() const -> void
     for (const auto& [k, v] : store) {
         fmt::print("[{}] = {}\n", k, v->inspect());
     }
+    if (outer != nullptr) {
+        fmt::print("Outer:\n");
+        outer->debug();
+    }
 }
