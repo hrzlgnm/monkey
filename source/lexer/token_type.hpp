@@ -61,6 +61,9 @@ enum class token_type : std::uint8_t
     eef,
     elze,
     ret,
+    hwile,
+    brake,
+    cont,
 };
 
 auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&;

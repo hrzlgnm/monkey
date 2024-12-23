@@ -5,6 +5,7 @@
 #include <iterator>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -195,6 +196,31 @@ auto if_expression::eval(environment* env) const -> const object*
     return null_object();
 }
 
+auto while_statement::eval(environment* env) const -> const object*
+{
+    while (true) {
+        const auto* evaluated_condition = condition->eval(env);
+        if (evaluated_condition->is_error()) {
+            return evaluated_condition;
+        }
+        if (evaluated_condition->is_truthy()) {
+            const auto* result = body->eval(env);
+            if (result->is_error() || result->is_return_value()) {
+                return result;
+            }
+            if (result->is_break()) {
+                break;
+            }
+            if (result->is_continue()) {
+                continue;
+            }
+        } else {
+            break;
+        }
+    }
+    return null_object();
+}
+
 auto index_expression::eval(environment* env) const -> const object*
 {
     const auto* evaluated_left = left->eval(env);
@@ -255,11 +281,11 @@ auto program::eval(environment* env) const -> const object*
     const object* result = nullptr;
     for (const auto* statement : statements) {
         result = statement->eval(env);
-        if (result->is_return_value()) {
-            return result->as<return_value_object>()->return_value;
-        }
         if (result->is_error()) {
             return result;
+        }
+        if (result->is_return_value()) {
+            return result->as<return_value_object>()->return_value;
         }
     }
     return result;
@@ -290,6 +316,16 @@ auto return_statement::eval(environment* env) const -> const object*
     return null_object();
 }
 
+auto break_statement::eval(environment* /*env*/) const -> const object*
+{
+    return break_object();
+}
+
+auto continue_statement::eval(environment* /*env*/) const -> const object*
+{
+    return continue_object();
+}
+
 auto expression_statement::eval(environment* env) const -> const object*
 {
     if (expr != nullptr) {
@@ -303,7 +339,7 @@ auto block_statement::eval(environment* env) const -> const object*
     const object* result = nullptr;
     for (const auto& stmt : statements) {
         result = stmt->eval(env);
-        if (result->is_return_value() || result->is_error()) {
+        if (result->is_error() || result->is_return_value() || result->is_break() || result->is_continue()) {
             return result;
         }
     }
@@ -951,6 +987,49 @@ TEST_CASE("ifElseExpressions")
         et {"if (1 > 2) { 10 } else { 20 }", 20},
         et {"if (1 < 2) { 10 } else { 20 }", 10},
     };
+    for (const auto& test : tests) {
+        const auto evaluated = run(test.input);
+        std::visit(
+            overloaded {
+                [&](const null_type& /*null*/) { REQUIRE(evaluated->is(object::object_type::null)); },
+                [&](const int64_t value) { require_eq(evaluated, value, test.input); },
+            },
+            test.expected);
+    }
+}
+
+TEST_CASE("whileStatements")
+{
+    struct et
+    {
+        std::string_view input;
+        std::variant<null_type, int64_t> expected;
+    };
+
+    std::array tests {
+        et {R"(let x = 1; while (false) { x = x + 1; } x)", 1},
+        et {R"(let x = 1; let y = 1; while (y > 0) { y = y - 1; x = x + 1; } x)", 2},
+        et {R"(let a = 6;
+                          let b = a;
+                          let x = 1;
+                          while (x > 0) {
+                              x = x - 1;
+                              a = 5;
+                              b = b + a;
+                              let c = 8;
+                              c = c / 2;
+                              b = b + c;
+                              let y = 1;
+                              while (y > 0) {
+                                  y = y - 1;
+                                  a = a + 3;
+                                  b = b + a;
+                              }
+                          }
+                          b = b + a;)",
+            31},
+    };
+
     for (const auto& test : tests) {
         const auto evaluated = run(test.input);
         std::visit(

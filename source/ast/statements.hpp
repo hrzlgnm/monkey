@@ -26,6 +26,20 @@ struct return_statement : statement
     const expression* value {};
 };
 
+struct break_statement : statement
+{
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
+    auto compile(compiler& comp) const -> void override;
+};
+
+struct continue_statement : statement
+{
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
+    auto compile(compiler& comp) const -> void override;
+};
+
 struct expression_statement : statement
 {
     [[nodiscard]] auto string() const -> std::string override;
@@ -42,4 +56,14 @@ struct block_statement : statement
     auto compile(compiler& comp) const -> void override;
 
     std::vector<const statement*> statements;
+};
+
+struct while_statement : statement
+{
+    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto eval(environment* env) const -> const object* override;
+    auto compile(compiler& comp) const -> void override;
+
+    expression* condition {};
+    block_statement* body {};
 };

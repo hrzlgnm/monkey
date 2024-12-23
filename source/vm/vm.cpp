@@ -131,9 +131,20 @@ auto vm::run() -> void
                 auto num_args = instr[ip + 1UL];
                 exec_call(num_args);
             } break;
+            case opcodes::brake:
+            case opcodes::cont: {
+                current_frame().ip += 1;
+                const auto* return_value = native_bool_to_object(op == opcodes::cont);
+                auto frame = pop_frame();
+                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
+                push(return_value);
+            } break;
             case opcodes::return_value: {
                 const auto* return_value = pop();
                 auto& frame = pop_frame();
+                while (frame.cl->fn->inside_loop) {
+                    frame = pop_frame();
+                }
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(return_value);
             } break;
@@ -157,25 +168,7 @@ auto vm::run() -> void
             case opcodes::set_outer:
             case opcodes::get_outer: {
                 current_frame().ip += 3;
-                const auto level = instr[ip + 1UL];
-                const auto scope = static_cast<symbol_scope>(instr[ip + 2UL]);
-                const auto index = instr[ip + 3UL];
-                auto& frame = m_frames[m_frame_index - (level + 1)];
-                if (op == opcodes::get_outer) {
-                    if (scope == symbol_scope::local) {
-                        push(m_stack[frame.base_ptr + index]);
-                    } else if (scope == symbol_scope::free) {
-                        push(frame.cl->free[index]);
-                    } else if (scope == symbol_scope::function) {
-                        push(frame.cl);
-                    }
-                } else {
-                    if (scope == symbol_scope::local) {
-                        m_stack[frame.base_ptr + index] = pop();
-                    } else if (scope == symbol_scope::free) {
-                        frame.cl->free[index] = pop();
-                    }
-                }
+                exec_set_get_outer(ip, instr, op);
             } break;
             case opcodes::get_builtin: {
                 current_frame().ip += 1;
@@ -269,7 +262,7 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
             return *left != *right;
         case greater_than:
             return *left > *right;
-        case opcodes::floor_div:
+        case floor_div:
             return object_floor_div(left, right);
         default:
             return nullptr;
@@ -309,6 +302,31 @@ auto vm::exec_minus() -> void
     }
 
     throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
+}
+
+void vm::exec_set_get_outer(const size_t ip, const instructions& instr, const opcodes op)
+{
+    const auto level = instr[ip + 1UL];
+    const auto scope = static_cast<symbol_scope>(instr[ip + 2UL]);
+    const auto index = instr[ip + 3UL];
+    const auto& frame = m_frames[m_frame_index - (level + 1)];
+    if (op == opcodes::get_outer) {
+        if (scope == symbol_scope::local) {
+            push(m_stack[frame.base_ptr + index]);
+        } else if (scope == symbol_scope::free) {
+            push(frame.cl->free[index]);
+        } else if (scope == symbol_scope::function) {
+            push(frame.cl);
+        }
+    } else if (op == opcodes::set_outer) {
+        if (scope == symbol_scope::local) {
+            m_stack[frame.base_ptr + index] = pop();
+        } else if (scope == symbol_scope::free) {
+            frame.cl->free[index] = pop();
+        }
+    } else {
+        throw std::runtime_error(fmt::format("wrong usage of {}", __func__));
+    }
 }
 
 auto vm::build_array(size_t start, size_t end) const -> object*
@@ -604,7 +622,7 @@ auto require_eq(const std::variant<T...>& expected, const object*& actual, std::
 }
 
 template<size_t N, typename... Expecteds>
-auto run(std::array<vt<Expecteds...>, N> tests)
+auto run(const std::array<vt<Expecteds...>, N>& tests)
 {
     for (const auto& [input, expected] : tests) {
         auto [prgrm, _] = check_program(input);

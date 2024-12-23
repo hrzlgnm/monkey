@@ -101,6 +101,10 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "get_outer";
         case opcodes::set_outer:
             return ostream << "set_outer";
+        case opcodes::brake:
+            return ostream << "break";
+        case opcodes::cont:
+            return ostream << "continue";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));

@@ -50,19 +50,24 @@ constexpr auto build_char_to_token_type_map() -> char_literal_lookup_table
 }
 
 constexpr auto char_literal_tokens = build_char_to_token_type_map();
-constexpr auto keyword_count = 7;
+constexpr auto keyword_count = 10;
 using keyword_pair = std::pair<std::string_view, token_type>;
 using keyword_lookup_table = std::array<keyword_pair, keyword_count>;
 
 constexpr auto build_keyword_to_token_type_map() -> keyword_lookup_table
 {
-    return {std::pair {"fn", token_type::function},
-            std::pair {"let", token_type::let},
-            std::pair {"true", token_type::tru},
-            std::pair {"false", token_type::fals},
-            std::pair {"if", token_type::eef},
-            std::pair {"else", token_type::elze},
-            std::pair {"return", token_type::ret}};
+    return {
+        std::pair {"fn", token_type::function},
+        std::pair {"let", token_type::let},
+        std::pair {"true", token_type::tru},
+        std::pair {"false", token_type::fals},
+        std::pair {"if", token_type::eef},
+        std::pair {"else", token_type::elze},
+        std::pair {"while", token_type::hwile},
+        std::pair {"return", token_type::ret},
+        std::pair {"break", token_type::brake},
+        std::pair {"continue", token_type::cont},
+    };
 }
 
 constexpr auto keyword_tokens = build_keyword_to_token_type_map();
@@ -266,8 +271,8 @@ return false;
 [1,2];
 {"foo": "bar"};
 5.5 // %
-& | ^ << >> && || a_b
-)"};
+& | ^ << >> && || a_b while break continue
+        )"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
         token {.type = assign, .literal = "="},       token {.type = integer, .literal = "5"},
@@ -318,7 +323,9 @@ return false;
         token {.type = pipe, .literal = "|"},         token {.type = caret, .literal = "^"},
         token {.type = shift_left, .literal = "<<"},  token {.type = shift_right, .literal = ">>"},
         token {.type = logical_and, .literal = "&&"}, token {.type = logical_or, .literal = "||"},
-        token {.type = ident, .literal = "a_b"},      token {.type = eof, .literal = ""},
+        token {.type = ident, .literal = "a_b"},      token {.type = hwile, .literal = "while"},
+        token {.type = brake, .literal = "break"},    token {.type = cont, .literal = "continue"},
+        token {.type = eof, .literal = ""},
     };
     for (const auto& expected_token : expected_tokens) {
         auto token = lxr.next_token();

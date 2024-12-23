@@ -96,6 +96,12 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "&&";
         case token_type::logical_or:
             return ostream << "||";
+        case token_type::hwile:
+            return ostream << "while";
+        case token_type::brake:
+            return ostream << "break";
+        case token_type::cont:
+            return ostream << "continue";
     }
     throw std::invalid_argument("invalid token_type");
 }

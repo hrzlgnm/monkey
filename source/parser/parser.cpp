@@ -165,6 +165,15 @@ auto parser::parse_statement() -> statement*
     if (current_token_is(ret)) {
         return parse_return_statement();
     }
+    if (current_token_is(hwile)) {
+        return parse_while_statement();
+    }
+    if (current_token_is(brake)) {
+        return parse_break_statement();
+    }
+    if (current_token_is(cont)) {
+        return parse_continue_statement();
+    }
     return parse_expression_statement();
 }
 
@@ -324,6 +333,29 @@ auto parser::parse_if_expression() -> expression*
     return expr;
 }
 
+auto parser::parse_while_statement() -> expression*
+{
+    using enum token_type;
+    auto* expr = make<while_statement>();
+    if (!get(lparen)) {
+        return {};
+    }
+    next_token();
+    expr->condition = parse_expression(lowest);
+
+    if (!get(rparen)) {
+        return {};
+    }
+
+    if (!get(lsquirly)) {
+        return {};
+    }
+
+    expr->body = parse_block_statement();
+
+    return expr;
+}
+
 auto parser::parse_function_expression() -> expression*
 {
     using enum token_type;
@@ -375,6 +407,26 @@ auto parser::parse_block_statement() -> block_statement*
     }
 
     return block;
+}
+
+auto parser::parse_break_statement() -> statement*
+{
+    using enum token_type;
+    auto* b = make<break_statement>();
+    if (peek_token_is(semicolon)) {
+        next_token();
+    }
+    return b;
+}
+
+auto parser::parse_continue_statement() -> statement*
+{
+    using enum token_type;
+    auto* b = make<continue_statement>();
+    if (peek_token_is(semicolon)) {
+        next_token();
+    }
+    return b;
 }
 
 auto parser::parse_call_expression(expression* function) -> expression*
@@ -635,6 +687,18 @@ auto require_expression(const program* prgrm) -> const E*
     INFO("expected expression");
     REQUIRE(expr);
     return expr;
+}
+
+template<typename E>
+auto require_statement(const program* prgrm) -> const E*
+{
+    INFO("expected one statement, got: ", prgrm->statements.size());
+    REQUIRE_EQ(prgrm->statements.size(), 1);
+    auto* stmt = prgrm->statements[0];
+    auto* actual_stmt = dynamic_cast<const E*>(stmt);
+    INFO("expected statement, got: ", stmt->string());
+    REQUIRE(actual_stmt);
+    return actual_stmt;
 }
 
 auto require_let_statement(const statement* stmt, const std::string& expected_identifier) -> const let_statement*
@@ -1046,6 +1110,49 @@ TEST_CASE("ifElseExpression")
     auto* alternative = dynamic_cast<const expression_statement*>(if_expr->alternative->statements[0]);
     REQUIRE(alternative);
     require_identifier(alternative->expr, "y");
+}
+
+TEST_CASE("whileStatement")
+{
+    const char* input = "while(x < y) { x = x + 1 }";
+    auto [prgrm, _] = check_program(input);
+    auto* while_stmt = require_statement<while_statement>(prgrm);
+
+    require_binary_expression(while_stmt->condition, "x", token_type::less_than, "y");
+
+    REQUIRE(while_stmt->body);
+    REQUIRE_EQ(while_stmt->body->statements.size(), 1);
+    const auto* let_statement = require_let_statement(while_stmt->body->statements[0], "x");
+    REQUIRE(let_statement->reassign);
+    require_binary_expression(let_statement->value, "x", token_type::plus, 1);
+}
+
+TEST_CASE("breakStatement")
+{
+    using namespace std::string_view_literals;
+    std::array tests {
+        "break"sv,
+        "break;"sv,
+    };
+
+    for (const auto input : tests) {
+        auto [prgrm, _] = check_program(input);
+        require_statement<break_statement>(prgrm);
+    }
+}
+
+TEST_CASE("continueStatement")
+{
+    using namespace std::string_view_literals;
+    std::array tests {
+        "continue"sv,
+        "continue;"sv,
+    };
+
+    for (const auto input : tests) {
+        auto [prgrm, _] = check_program(input);
+        require_statement<continue_statement>(prgrm);
+    }
 }
 
 TEST_CASE("functionLiteral")
