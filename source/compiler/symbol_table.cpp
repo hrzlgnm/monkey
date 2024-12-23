@@ -30,6 +30,8 @@ auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
             return ost << "free";
         case function:
             return ost << "function";
+        case outer:
+            return ost << "outer";
     }
     return ost;
 }
@@ -72,7 +74,7 @@ auto symbol_table::define_function_name(const std::string& name) -> symbol
            };
 }
 
-auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
+auto symbol_table::resolve(const std::string& name, int level) -> std::optional<symbol>
 {
     using enum symbol_scope;
     if (m_store.contains(name)) {
@@ -80,6 +82,7 @@ auto symbol_table::resolve(const std::string& name) -> std::optional<symbol>
     }
     auto maybe_symbol = m_outer->resolve(name);
     if (m_outer != nullptr) {
+        level = level + 1;
         if (!maybe_symbol.has_value()) {
             return maybe_symbol;
         }

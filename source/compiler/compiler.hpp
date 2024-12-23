@@ -62,7 +62,7 @@ struct compiler
     [[nodiscard]] auto number_symbol_definitions() const -> size_t;
     [[nodiscard]] auto consts() const -> constants*;
 
-    [[nodiscard]] auto all_symbols() const -> const symbol_table* { return m_symbols; };
+    [[nodiscard]] auto all_symbols() const -> const symbol_table* { return m_symbols; }
 
   private:
     constants* m_consts {};

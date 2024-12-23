@@ -1,4 +1,5 @@
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
@@ -98,9 +99,13 @@ auto vm::run() -> void
                 m_globals->at(global_index) = pop();
             } break;
             case opcodes::get_global: {
-                current_frame().ip += 2;
                 auto global_index = read_uint16_big_endian(instr, ip + 1UL);
-                push(m_globals->at(global_index));
+                current_frame().ip += 2;
+                const auto* global = m_globals->at(global_index);
+                if (global == nullptr) {
+                    throw std::runtime_error(fmt::format("global at index {} does not exits", global_index));
+                }
+                push(global);
             } break;
             case opcodes::array: {
                 current_frame().ip += 2;
@@ -138,8 +143,8 @@ auto vm::run() -> void
                 push(null_object());
             } break;
             case opcodes::set_local: {
-                auto local_index = instr[ip + 1UL];
                 current_frame().ip += 1;
+                auto local_index = instr[ip + 1UL];
                 auto& frame = current_frame();
                 m_stack[static_cast<size_t>(frame.base_ptr) + local_index] = pop();
             } break;
@@ -149,11 +154,39 @@ auto vm::run() -> void
                 auto& frame = current_frame();
                 push(m_stack[static_cast<size_t>(frame.base_ptr) + local_index]);
             } break;
+            case opcodes::set_outer:
+            case opcodes::get_outer: {
+                current_frame().ip += 3;
+                const auto level = instr[ip + 1UL];
+                const auto scope = static_cast<symbol_scope>(instr[ip + 2UL]);
+                const auto index = instr[ip + 3UL];
+                auto& frame = m_frames[m_frame_index - (level + 1)];
+                if (op == opcodes::get_outer) {
+                    if (scope == symbol_scope::local) {
+                        push(m_stack[frame.base_ptr + index]);
+                    } else if (scope == symbol_scope::free) {
+                        push(frame.cl->free[index]);
+                    } else if (scope == symbol_scope::function) {
+                        push(frame.cl);
+                    }
+                } else {
+                    if (scope == symbol_scope::local) {
+                        m_stack[frame.base_ptr + index] = pop();
+                    } else if (scope == symbol_scope::free) {
+                        frame.cl->free[index] = pop();
+                    }
+                }
+            } break;
             case opcodes::get_builtin: {
                 current_frame().ip += 1;
                 auto builtin_index = instr[ip + 1UL];
                 const auto* const builtin = builtin_function_expression::builtins[builtin_index];
                 push(make<builtin_object>(builtin));
+            } break;
+            case opcodes::set_free: {
+                current_frame().ip += 1;
+                auto free_index = instr[ip + 1UL];
+                current_frame().cl->free[free_index] = pop();
             } break;
             case opcodes::get_free: {
                 current_frame().ip += 1;
@@ -176,6 +209,7 @@ auto vm::run() -> void
 
 auto vm::push(const object* obj) -> void
 {
+    assert(obj != nullptr);
     if (m_sp >= stack_size) {
         throw std::runtime_error("stack overflow");
     }
@@ -343,12 +377,12 @@ auto vm::exec_call(size_t num_args) -> void
     const auto* callee = m_stack[m_sp - 1 - num_args];
     using enum object::object_type;
     if (callee->is(closure)) {
-        const auto* const clsr = callee->as<closure_object>();
+        const auto* clsr = callee->as<closure_object>();
         if (num_args != clsr->fn->num_arguments) {
             throw std::runtime_error(
                 fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
         }
-        const frame frm {.cl = clsr, .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
+        const frame frm {.cl = clsr->clone(), .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
         m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
         push_frame(frm);
         return;
