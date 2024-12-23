@@ -20,7 +20,7 @@ struct builtin_function_expression : callable_expression
     [[nodiscard]] auto string() const -> std::string override;
     auto compile(compiler& comp) const -> void override;
 
-    static const std::vector<const builtin_function_expression*> builtins;
+    static auto builtins() -> const std::vector<const builtin_function_expression*>&;
 
     std::string name;
     std::function<const object*(array_object::value_type&& arguments)> body;

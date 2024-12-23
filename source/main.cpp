@@ -191,16 +191,16 @@ auto run_file(const command_line_args& opts) -> int
         auto machine = vm::create(cmplr.byte_code());
         machine.run();
         const auto* result = machine.last_popped();
-        if (!result->is(object::object_type::null)) {
+        if (!result->is(object::object_type::nll)) {
             std::cout << result->inspect() << '\n';
         }
     } else {
         auto* global_env = make<environment>();
-        for (const auto& builtin : builtin_function_expression::builtins) {
+        for (const auto& builtin : builtin_function_expression::builtins()) {
             global_env->set(builtin->name, make<builtin_object>(builtin));
         }
         const auto* result = prgrm->eval(global_env);
-        if (!result->is(object::object_type::null)) {
+        if (!result->is(object::object_type::nll)) {
             std::cout << result->inspect() << '\n';
         }
         if (opts.debug) {
@@ -219,7 +219,7 @@ auto run_repl(const command_line_args& opts) -> int
     auto* symbols = symbol_table::create();
     constants consts;
     constants globals(globals_size);
-    for (auto idx = 0UL; const auto& builtin : builtin_function_expression::builtins) {
+    for (auto idx = 0UL; const auto& builtin : builtin_function_expression::builtins()) {
         global_env->set(builtin->name, make<builtin_object>(builtin));
         symbols->define_builtin(idx, builtin->name);
         idx++;
@@ -246,7 +246,7 @@ auto run_repl(const command_line_args& opts) -> int
                 auto machine = vm::create_with_state(cmplr.byte_code(), &globals);
                 machine.run();
                 const auto* result = machine.last_popped();
-                if (result != nullptr && !result->is(object::object_type::null)) {
+                if (result != nullptr && !result->is(object::object_type::nll)) {
                     std::cout << result->inspect() << '\n';
                 }
             } catch (const std::exception& e) {
@@ -257,7 +257,7 @@ auto run_repl(const command_line_args& opts) -> int
         } else {
             try {
                 const auto* result = prgrm->eval(global_env);
-                if (result != nullptr && !result->is(object::object_type::null)) {
+                if (result != nullptr && !result->is(object::object_type::nll)) {
                     std::cout << result->inspect() << '\n';
                 }
             } catch (const std::exception& e) {

@@ -6,7 +6,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -73,10 +72,10 @@ auto vm::run() -> void
                 pop();
                 break;
             case opcodes::tru:
-                push(true_object());
+                push(tru());
                 break;
             case opcodes::fals:
-                push(false_object());
+                push(fals());
                 break;
             case opcodes::bang:
                 exec_bang();
@@ -95,7 +94,7 @@ auto vm::run() -> void
                 }
             } break;
             case opcodes::null:
-                push(null_object());
+                push(null());
                 break;
             case opcodes::set_global: {
                 current_frame().ip += 2;
@@ -139,13 +138,13 @@ auto vm::run() -> void
                 current_frame().ip += 1;
                 auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(false_object());
+                push(fals());
             } break;
             case opcodes::cont: {
                 current_frame().ip += 1;
                 auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(true_object());
+                push(tru());
             } break;
             case opcodes::return_value: {
                 const auto* return_value = pop();
@@ -159,7 +158,7 @@ auto vm::run() -> void
             case opcodes::ret: {
                 auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
-                push(null_object());
+                push(null());
             } break;
             case opcodes::set_local: {
                 current_frame().ip += 1;
@@ -184,7 +183,7 @@ auto vm::run() -> void
             case opcodes::get_builtin: {
                 current_frame().ip += 1;
                 const auto builtin_index = instr[ip + 1UL];
-                const auto* const builtin = builtin_function_expression::builtins[builtin_index];
+                const auto* const builtin = builtin_function_expression::builtins()[builtin_index];
                 push(make<builtin_object>(builtin));
             } break;
             case opcodes::set_free: {
@@ -368,7 +367,7 @@ namespace
 auto exec_hash(const hash_object::value_type& hsh, const hashable_object::hash_key_type& key) -> const object*
 {
     if (!hsh.contains(key)) {
-        return null_object();
+        return null();
     }
     return hsh.at(key);
 }
@@ -381,7 +380,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<array_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
-            push(null_object());
+            push(null());
             return;
         }
         push(left->as<array_object>()->value[static_cast<size_t>(idx)]);
@@ -391,7 +390,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         auto idx = index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(left->as<string_object>()->value.size()) - 1;
         if (idx < 0 || idx > max) {
-            push(null_object());
+            push(null());
             return;
         }
         push(make<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
@@ -626,7 +625,7 @@ auto require_eq(const std::variant<T...>& expected, const object*& actual, std::
             [&](const int64_t exp) { require_is(exp, actual, input); },
             [&](const double exp) { require_is(exp, actual, input); },
             [&](const bool exp) { require_is(exp, actual, input); },
-            [&](const null_type& /*null*/) { REQUIRE(actual->is(null)); },
+            [&](const null_type& /*null*/) { REQUIRE(actual->is(nll)); },
             [&](const std::string& exp) { require_is(exp, actual, input); },
             [&](const ::error& exp) { require_is(exp, actual, input); },
             [&](const std::vector<int>& exp) { require_array_object(exp, actual, input); },
@@ -664,8 +663,6 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"1 - 2", -1},
         vt<int64_t> {"1 * 2", 2},
 
-        vt<int64_t> {"4 / 2", 2},
-        vt<int64_t> {"5 // 2", 2},
         vt<int64_t> {"5 % 2", 1},
         vt<int64_t> {"5 % 5", 0},
         vt<int64_t> {"5 & 5", 5},
@@ -679,7 +676,7 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"true ^ 3", 2},
         vt<int64_t> {"true << 3", 8},
         vt<int64_t> {"true >> 3", 0},
-        vt<int64_t> {"50 / 2 * 2 + 10 - 5", 55},
+        vt<int64_t> {"50 + 2 * 2 + 10 - 5", 59},
         vt<int64_t> {"5 + 5 + 5 + 5 - 10", 10},
         vt<int64_t> {"2 * 2 * 2 * 2 * 2", 32},
         vt<int64_t> {"5 * 2 + 10", 20},
@@ -689,7 +686,7 @@ TEST_CASE("integerArithmetics")
         vt<int64_t> {"-10", -10},
         vt<int64_t> {"-50 + 100 + -50", 0},
         vt<int64_t> {"-50 + 100 + -50", 0},
-        vt<int64_t> {"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50},
+        vt<int64_t> {"(5 + 10 * 2 + 15 + 3) * 2 + -10", 76},
     };
     run(tests);
 }
@@ -697,6 +694,8 @@ TEST_CASE("integerArithmetics")
 TEST_CASE("decimalArithmetics")
 {
     const std::array tests {
+        vt<double> {"4 / 2", 2.0},
+        vt<double> {"5 // 2", 2.0},
         vt<double> {"1.1", 1.1},
         vt<double> {"-2.2", -2.2},
         vt<double> {"(5.0 + 10 * 2 + 15 / 3) * 2 + -10", 50.0},
