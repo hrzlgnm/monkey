@@ -90,6 +90,8 @@ struct object
     [[nodiscard]] virtual auto operator>>(const object& /*other*/) const -> const object* { return nullptr; }
 };
 
+auto object_floor_div(const object* lhs, const object* rhs) -> const object*;
+
 auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&;
 
 template<>
@@ -173,8 +175,6 @@ struct decimal_object : object
 
     value_type value {};
 };
-
-auto floor_div(const object* lhs, const object* rhs) -> const object*;
 
 struct boolean_object : hashable_object
 {

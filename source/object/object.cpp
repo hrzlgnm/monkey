@@ -568,7 +568,7 @@ auto decimal_object::operator>(const object& other) const -> const object*
     return gt_helper<decimal_object, integer_object>(this, other);
 }
 
-auto floor_div(const object* lhs, const object* rhs) -> const object*
+auto object_floor_div(const object* lhs, const object* rhs) -> const object*
 {
     const auto* div = (*lhs / *rhs);
     if (div->is(object::object_type::decimal)) {

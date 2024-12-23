@@ -90,7 +90,7 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
         case logical_or:
             return *left || *right;
         case double_slash:
-            return floor_div(left, right);
+            return object_floor_div(left, right);
         default:
             return {};
     }
