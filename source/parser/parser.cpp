@@ -32,6 +32,8 @@
 #include <lexer/token_type.hpp>
 #include <overloaded.hpp>
 
+#include "ast/assign_expression.hpp"
+
 namespace
 {
 enum precedence : std::uint8_t
@@ -159,8 +161,11 @@ auto parser::next_token() -> void
 auto parser::parse_statement() -> statement*
 {
     using enum token_type;
-    if (current_token_is(let) || current_token_is(ident) && peek_token_is(assign)) {
+    if (current_token_is(let)) {
         return parse_let_statement();
+    }
+    if (current_token_is(ident) && peek_token_is(assign)) {
+        return parse_assign_statement();
     }
     if (current_token_is(ret)) {
         return parse_return_statement();
@@ -181,8 +186,7 @@ auto parser::parse_let_statement() -> statement*
 {
     auto* stmt = make<let_statement>();
     using enum token_type;
-    stmt->reassign = current_token_is(ident);
-    if (!stmt->reassign && !get(ident)) {
+    if (!get(ident)) {
         return {};
     }
     stmt->name = parse_identifier();
@@ -197,6 +201,26 @@ auto parser::parse_let_statement() -> statement*
         func_expr->name = stmt->name->value;
     }
     stmt->value = expr;
+
+    if (peek_token_is(semicolon)) {
+        next_token();
+    }
+    return stmt;
+}
+
+auto parser::parse_assign_statement() -> statement*
+{
+    auto* stmt = make<assign_expression>();
+    using enum token_type;
+
+    stmt->name = parse_identifier();
+
+    if (!get(assign)) {
+        return {};
+    }
+
+    next_token();
+    stmt->value = parse_expression(lowest);
 
     if (peek_token_is(semicolon)) {
         next_token();
@@ -710,6 +734,16 @@ auto require_let_statement(const statement* stmt, const std::string& expected_id
     return let_stmt;
 }
 
+auto require_assign_expression(const statement* stmt, const std::string& expected_identifier)
+    -> const assign_expression*
+{
+    auto* assign_expr = dynamic_cast<const assign_expression*>(stmt);
+    INFO("expected assign expression, got: ", stmt->string());
+    REQUIRE(assign_expr);
+    REQUIRE_EQ(assign_expr->name->value, expected_identifier);
+    return assign_expr;
+}
+
 TEST_SUITE_BEGIN("parsing");
 
 TEST_CASE("letStatement")
@@ -720,12 +754,31 @@ TEST_CASE("letStatement")
 let x = 5;
 let y = 10;
 let foobar = 838383;
-x = 4;
         )");
-    REQUIRE_EQ(program->statements.size(), 4);
-    auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar", "x"};
+    REQUIRE_EQ(program->statements.size(), 3);
+    auto expected_identifiers = std::vector<std::string> {
+        "x",
+        "y",
+        "foobar",
+    };
     for (size_t i = 0; i < 3; ++i) {
         require_let_statement(program->statements[i], expected_identifiers[i]);
+    }
+}
+
+TEST_CASE("assignExpression")
+{
+    using enum token_type;
+    auto [program, prsr] = check_program(
+        R"(
+x = 5;
+y = 10;
+foobar = 838383;
+        )");
+    REQUIRE_EQ(program->statements.size(), 3);
+    auto expected_identifiers = std::vector<std::string> {"x", "y", "foobar", "x"};
+    for (size_t i = 0; i < 3; ++i) {
+        require_assign_expression(program->statements[i], expected_identifiers[i]);
     }
 }
 
@@ -742,13 +795,34 @@ TEST_CASE("letStatements")
         lt {"let x = 5;", "x", 5},
         lt {"let y = true;", "y", true},
         lt {"let foobar = y;", "foobar", "y"},
-        lt {"foobar = y;", "foobar", "y"},
     };
 
     for (const auto& [input, expected_identifier, expected_value] : tests) {
         auto [prgrm, _] = check_program(input);
         auto* let_stmt = require_let_statement(prgrm->statements[0], expected_identifier);
         require_literal_expression(let_stmt->value, expected_value);
+    }
+}
+
+TEST_CASE("assignmentExpressions")
+{
+    struct lt
+    {
+        std::string_view input;
+        std::string expected_identifier;
+        expected_value_type expected_value;
+    };
+
+    std::array tests {
+        lt {"x = 5;", "x", 5},
+        lt {"y = true;", "y", true},
+        lt {"foobar = y;", "foobar", "y"},
+    };
+
+    for (const auto& [input, expected_identifier, expected_value] : tests) {
+        auto [prgrm, _] = check_program(input);
+        auto* assign_expr = require_assign_expression(prgrm->statements[0], expected_identifier);
+        require_literal_expression(assign_expr->value, expected_value);
     }
 }
 
@@ -1122,9 +1196,8 @@ TEST_CASE("whileStatement")
 
     REQUIRE(while_stmt->body);
     REQUIRE_EQ(while_stmt->body->statements.size(), 1);
-    const auto* let_statement = require_let_statement(while_stmt->body->statements[0], "x");
-    REQUIRE(let_statement->reassign);
-    require_binary_expression(let_statement->value, "x", token_type::plus, 1);
+    const auto* assign_expr = require_assign_expression(while_stmt->body->statements[0], "x");
+    require_binary_expression(assign_expr->value, "x", token_type::plus, 1);
 }
 
 TEST_CASE("breakStatement")

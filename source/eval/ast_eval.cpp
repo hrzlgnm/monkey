@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <ast/array_expression.hpp>
+#include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean.hpp>
 #include <ast/builtin_function_expression.hpp>
@@ -50,6 +51,15 @@ auto array_expression::eval(environment* env) const -> const object*
         arr.push_back(evaluated);
     }
     return make<array_object>(std::move(arr));
+}
+
+auto assign_expression::eval(environment* env) const -> const object*
+{
+    const auto* val = value->eval(env);
+    if (val->is_error()) {
+        return val;
+    }
+    return env->reassign(name->value, val);
 }
 
 namespace
@@ -297,11 +307,8 @@ auto let_statement::eval(environment* env) const -> const object*
     if (val->is_error()) {
         return val;
     }
-    if (reassign) {
-        return env->reassign(name->value, val);
-    }
     env->set(name->value, val);
-    return val;
+    return null_object();
 }
 
 auto return_statement::eval(environment* env) const -> const object*
@@ -987,6 +994,31 @@ TEST_CASE("ifElseExpressions")
         et {"if (1 > 2) { 10 } else { 20 }", 20},
         et {"if (1 < 2) { 10 } else { 20 }", 10},
     };
+    for (const auto& test : tests) {
+        const auto evaluated = run(test.input);
+        std::visit(
+            overloaded {
+                [&](const null_type& /*null*/) { REQUIRE(evaluated->is(object::object_type::null)); },
+                [&](const int64_t value) { require_eq(evaluated, value, test.input); },
+            },
+            test.expected);
+    }
+}
+
+TEST_CASE("assignExpressions")
+{
+    struct et
+    {
+        std::string_view input;
+        std::variant<null_type, int64_t> expected;
+    };
+
+    std::array tests {
+        et {R"(let x = 1; if (false) { x = x + 1; } x)", 1},
+        et {R"(let x = 1; let y = 1; if (y > 0) { y = y - 1; x = x + 1; } x)", 2},
+        et {R"(let a = 6; let b = a; let x = 1; x = x - 1; a = 5; b = b + a;)", 11},
+    };
+
     for (const auto& test : tests) {
         const auto evaluated = run(test.input);
         std::visit(
