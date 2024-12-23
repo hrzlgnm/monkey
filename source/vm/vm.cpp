@@ -35,13 +35,13 @@ vm::vm(frames frames, const constants* consts, constants* globals)
 auto vm::run() -> void
 {
     for (; current_frame().ip < static_cast<ssize_type>(current_frame().cl->fn->instrs.size()); current_frame().ip++) {
-        const auto instr_ptr = static_cast<size_t>(current_frame().ip);
-        const auto& code = current_frame().cl->fn->instrs;
-        const auto op_code = static_cast<opcodes>(code[instr_ptr]);
-        switch (op_code) {
+        const auto ip = static_cast<size_t>(current_frame().ip);
+        const auto& instr = current_frame().cl->fn->instrs;
+        const auto op = static_cast<opcodes>(instr[ip]);
+        switch (op) {
             case opcodes::constant: {
-                auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
+                auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
                 push(m_constants->at(const_idx));
             } break;
             case opcodes::add:
@@ -57,12 +57,10 @@ auto vm::run() -> void
             case opcodes::bit_rsh:
             case opcodes::logical_and:
             case opcodes::logical_or:
-                exec_binary_op(op_code);
-                break;
             case opcodes::equal:
             case opcodes::not_equal:
             case opcodes::greater_than:
-                exec_cmp(op_code);
+                exec_binary_op(op);
                 break;
             case opcodes::pop:
                 pop();
@@ -80,42 +78,40 @@ auto vm::run() -> void
                 exec_minus();
                 break;
             case opcodes::jump: {
-                auto pos = read_uint16_big_endian(code, instr_ptr + 1UL);
+                auto pos = read_uint16_big_endian(instr, ip + 1UL);
                 current_frame().ip = pos - 1;
             } break;
             case opcodes::jump_not_truthy: {
-                auto pos = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
+                auto pos = read_uint16_big_endian(instr, ip + 1UL);
                 const auto* condition = pop();
                 if (!condition->is_truthy()) {
                     current_frame().ip = pos - 1;
                 }
-
             } break;
             case opcodes::null:
                 push(null_object());
                 break;
             case opcodes::set_global: {
-                auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
+                auto global_index = read_uint16_big_endian(instr, ip + 1UL);
                 m_globals->at(global_index) = pop();
             } break;
             case opcodes::get_global: {
-                auto global_index = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
+                auto global_index = read_uint16_big_endian(instr, ip + 1UL);
                 push(m_globals->at(global_index));
             } break;
             case opcodes::array: {
-                auto num_elements = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
+                auto num_elements = read_uint16_big_endian(instr, ip + 1UL);
                 auto* arr = build_array(m_sp - num_elements, m_sp);
                 m_sp -= num_elements;
                 push(arr);
             } break;
             case opcodes::hash: {
-                auto num_elements = read_uint16_big_endian(code, instr_ptr + 1UL);
                 current_frame().ip += 2;
-
+                auto num_elements = read_uint16_big_endian(instr, ip + 1UL);
                 auto* hsh = build_hash(m_sp - num_elements, m_sp);
                 m_sp -= num_elements;
                 push(hsh);
@@ -126,13 +122,13 @@ auto vm::run() -> void
                 exec_index(left, index);
             } break;
             case opcodes::call: {
-                auto num_args = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
+                auto num_args = instr[ip + 1UL];
                 exec_call(num_args);
             } break;
             case opcodes::return_value: {
                 const auto* return_value = pop();
-                auto frame = pop_frame();
+                auto& frame = pop_frame();
                 m_sp = static_cast<size_t>(frame.base_ptr) - 1;
                 push(return_value);
             } break;
@@ -142,34 +138,34 @@ auto vm::run() -> void
                 push(null_object());
             } break;
             case opcodes::set_local: {
-                auto local_index = code[instr_ptr + 1UL];
+                auto local_index = instr[ip + 1UL];
                 current_frame().ip += 1;
                 auto& frame = current_frame();
                 m_stack[static_cast<size_t>(frame.base_ptr) + local_index] = pop();
             } break;
             case opcodes::get_local: {
-                auto local_index = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
+                auto local_index = instr[ip + 1UL];
                 auto& frame = current_frame();
                 push(m_stack[static_cast<size_t>(frame.base_ptr) + local_index]);
             } break;
             case opcodes::get_builtin: {
-                auto builtin_index = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
+                auto builtin_index = instr[ip + 1UL];
                 const auto* const builtin = builtin_function_expression::builtins[builtin_index];
                 push(make<builtin_object>(builtin));
             } break;
-            case opcodes::closure: {
-                auto const_idx = read_uint16_big_endian(code, instr_ptr + 1UL);
-                auto num_free = code[instr_ptr + 3UL];
-                current_frame().ip += 3;
-                push_closure(const_idx, num_free);
-            } break;
             case opcodes::get_free: {
-                auto free_index = code[instr_ptr + 1UL];
                 current_frame().ip += 1;
+                auto free_index = instr[ip + 1UL];
                 const auto* current_closure = current_frame().cl;
                 push(current_closure->free[free_index]);
+            } break;
+            case opcodes::closure: {
+                current_frame().ip += 3;
+                auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
+                auto num_free = instr[ip + 3UL];
+                push_closure(const_idx, num_free);
             } break;
             case opcodes::current_closure: {
                 push(current_frame().cl);
@@ -207,35 +203,42 @@ namespace
 
 auto apply_binary_operator(opcodes opcode, const object* left, const object* right) -> const object*
 {
+    using enum opcodes;
     switch (opcode) {
-        case opcodes::add:
+        case add:
             return *left + *right;
-        case opcodes::mul:
+        case mul:
             return *left * *right;
-        case opcodes::sub:
+        case sub:
             return *left - *right;
-        case opcodes::div:
+        case div:
             return *left / *right;
-        case opcodes::mod:
+        case mod:
             return *left % *right;
-        case opcodes::bit_and:
+        case bit_and:
             return *left & *right;
-        case opcodes::bit_or:
+        case bit_or:
             return *left | *right;
-        case opcodes::bit_xor:
+        case bit_xor:
             return *left ^ *right;
-        case opcodes::bit_lsh:
+        case bit_lsh:
             return *left << *right;
-        case opcodes::bit_rsh:
+        case bit_rsh:
             return *left >> *right;
-        case opcodes::logical_and:
+        case logical_and:
             return *left && *right;
-        case opcodes::logical_or:
+        case logical_or:
             return *left || *right;
+        case equal:
+            return *left == *right;
+        case not_equal:
+            return *left != *right;
+        case greater_than:
+            return *left > *right;
         case opcodes::floor_div:
             return object_floor_div(left, right);
         default:
-            return {};
+            return nullptr;
     }
 }
 }  // namespace
@@ -250,37 +253,6 @@ auto vm::exec_binary_op(opcodes opcode) -> void
     }
     throw std::runtime_error(
         fmt::format("unsupported types for binary operation: {} {} {}", left->type(), opcode, right->type()));
-}
-
-namespace
-{
-auto exec_obj_cmp(opcodes opcode, const object* lhs, const object* rhs) -> const object*
-{
-    using enum opcodes;
-    switch (opcode) {
-        case equal:
-            return *lhs == *rhs;
-        case not_equal:
-            return *lhs != *rhs;
-        case greater_than:
-            return *lhs > *rhs;
-        default:
-            throw std::runtime_error(fmt::format("unknown operator {}", opcode));
-    }
-}
-
-}  // namespace
-
-auto vm::exec_cmp(opcodes opcode) -> void
-{
-    const auto* right = pop();
-    const auto* left = pop();
-    if (const auto* val = exec_obj_cmp(opcode, left, right); val != nullptr) {
-        push(val);
-        return;
-    }
-
-    throw std::runtime_error(fmt::format("unknown operator {} ({} {})", opcode, left->type(), right->type()));
 }
 
 auto vm::exec_bang() -> void
