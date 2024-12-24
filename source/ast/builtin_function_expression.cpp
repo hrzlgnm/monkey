@@ -207,9 +207,7 @@ const builtin_function_expression builtin_type {
             return make_error("wrong number of arguments to type(): expected=1, got={}", arguments.size());
         }
         const auto& val = arguments[0];
-        std::ostringstream strm;
-        strm << val->type();
-        return make<string_object>(strm.str());
+        return make<string_object>(fmt::format("{}", val->type()));
     }};
 }  // namespace
 
