@@ -23,7 +23,7 @@
 auto compiler::create() -> compiler
 {
     auto* symbols = symbol_table::create();
-    for (size_t idx = 0; const auto& builtin : builtin_function_expression::builtins) {
+    for (size_t idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
         symbols->define_builtin(idx++, builtin->name);
     }
     return {make<constants>(), symbols};

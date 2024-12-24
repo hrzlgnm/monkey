@@ -14,9 +14,14 @@
 #include <fmt/format.h>
 #include <fmt/std.h>
 
+auto operator==(const symbol_pointer& lhs, const symbol_pointer& rhs) -> bool
+{
+    return lhs.index == rhs.index && lhs.scope == rhs.scope && lhs.level == rhs.level;
+}
+
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool
 {
-    return lhs.name == rhs.name && lhs.scope == rhs.scope && lhs.index == rhs.index;
+    return lhs.name == rhs.name && lhs.scope == rhs.scope && lhs.index == rhs.index && lhs.ptr == rhs.ptr;
 }
 
 auto operator<<(std::ostream& ost, symbol_scope scope) -> std::ostream&
@@ -168,12 +173,12 @@ TEST_CASE("define")
 {
     using enum symbol_scope;
     auto expected = string_map<symbol> {
-        {"a", symbol {"a", global, 0}},
-        {"b", symbol {"b", global, 1}},
-        {"c", symbol {"c", local, 0}},
-        {"d", symbol {"d", local, 1}},
-        {"e", symbol {"e", local, 0}},
-        {"f", symbol {"f", local, 1}},
+        {"a", symbol {"a", global, 0, std::nullopt}},
+        {"b", symbol {"b", global, 1, std::nullopt}},
+        {"c", symbol {"c", local, 0, std::nullopt}},
+        {"d", symbol {"d", local, 1, std::nullopt}},
+        {"e", symbol {"e", local, 0, std::nullopt}},
+        {"f", symbol {"f", local, 1, std::nullopt}},
     };
 
     auto globals = symbol_table::create();
@@ -203,8 +208,8 @@ TEST_CASE("resolve")
 
     using enum symbol_scope;
     std::array expecteds {
-        symbol {"a", global, 0},
-        symbol {"b", global, 1},
+        symbol {"a", global, 0, std::nullopt},
+        symbol {"b", global, 1, std::nullopt},
     };
 
     for (const auto& expected : expecteds) {
@@ -219,10 +224,10 @@ TEST_CASE("resolve")
 
         using enum symbol_scope;
         std::array expecteds {
-            symbol {"a", global, 0},
-            symbol {"b", global, 1},
-            symbol {"c", local, 0},
-            symbol {"d", local, 1},
+            symbol {"a", global, 0, std::nullopt},
+            symbol {"b", global, 1, std::nullopt},
+            symbol {"c", local, 0, std::nullopt},
+            symbol {"d", local, 1, std::nullopt},
         };
         for (const auto& expected : expecteds) {
             CHECK_EQ(locals->resolve(expected.name), expected);
@@ -236,12 +241,12 @@ TEST_CASE("resolve")
 
             using enum symbol_scope;
             std::array expecteds {
-                symbol {"a", global, 0},
-                symbol {"b", global, 1},
-                symbol {"c", free, 0},
-                symbol {"d", free, 1},
-                symbol {"e", local, 0},
-                symbol {"f", local, 1},
+                symbol {"a", global, 0, std::nullopt},
+                symbol {"b", global, 1, std::nullopt},
+                symbol {"c", free, 0, std::nullopt},
+                symbol {"d", free, 1, std::nullopt},
+                symbol {"e", local, 0, std::nullopt},
+                symbol {"f", local, 1, std::nullopt},
             };
             for (const auto& expected : expecteds) {
                 CHECK_EQ(nested->resolve(expected.name), expected);
@@ -261,10 +266,10 @@ TEST_CASE("defineResolveBuiltin")
 {
     using enum symbol_scope;
     std::array expecteds {
-        symbol {"a", builtin, 0},
-        symbol {"c", builtin, 1},
-        symbol {"e", builtin, 2},
-        symbol {"f", builtin, 3},
+        symbol {"a", builtin, 0, std::nullopt},
+        symbol {"c", builtin, 1, std::nullopt},
+        symbol {"e", builtin, 2, std::nullopt},
+        symbol {"f", builtin, 3, std::nullopt},
     };
 
     auto globals = symbol_table::create();
@@ -288,7 +293,7 @@ TEST_CASE("defineAndResolveFunctionName")
     auto globals = symbol_table::create();
     globals->define_function_name("a");
 
-    auto expected = symbol {"a", function, 0};
+    auto expected = symbol {"a", function, 0, std::nullopt};
 
     auto actual = globals->resolve("a");
     REQUIRE(actual.has_value());
