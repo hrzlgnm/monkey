@@ -1,11 +1,15 @@
+#include <cstdint>
 #include <functional>
+#include <iterator>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "builtin_function_expression.hpp"
 
+#include <fmt/base.h>
 #include <fmt/format.h>
+#include <gc.hpp>
 #include <object/object.hpp>
 
 builtin_function_expression::builtin_function_expression(
