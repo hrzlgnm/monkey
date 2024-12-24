@@ -36,6 +36,7 @@ struct symbol_pointer
     size_t index {};
 };
 
+auto operator==(const symbol_pointer& lhs, const symbol_pointer& rhs) -> bool;
 auto operator<<(std::ostream& ost, const symbol_pointer& ptr) -> std::ostream&;
 
 template<>
