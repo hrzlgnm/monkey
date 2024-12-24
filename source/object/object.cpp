@@ -1166,7 +1166,7 @@ TEST_SUITE("object tests")
         REQUIRE_EQ(hash_object {{{1, &str_obj}}}.inspect(), R"({1: "str"})");
         REQUIRE_EQ(ret_obj.inspect(), R"([123, 124])");
     }
-    TEST_CASE("equal")
+    TEST_CASE("operator ==")
     {
         require_eq(int_obj, integer_object {i1});
         require_eq(dec_obj, decimal_object {d1});
@@ -1182,7 +1182,7 @@ TEST_SUITE("object tests")
         require_eq(hash_obj, hash_object {{{2, &true_obj}, {1, &str_obj}}});
     }
 
-    TEST_CASE("not equal")
+    TEST_CASE("operator !=")
     {
         require_ne(int_obj, integer_object {122});
         require_ne(decimal_object {d2}, integer_object {i1});
