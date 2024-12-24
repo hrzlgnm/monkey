@@ -868,29 +868,52 @@ TEST_SUITE("object tests")
         REQUIRE_EQ(hash_object {{{1, &str_obj}}}.inspect(), R"({1: "str"})");
         REQUIRE_EQ(ret_obj.inspect(), R"({2: true, 1: "str"})");
     }
+    auto require_eq(const object& lhs, const object& rhs) -> void
+    {
+        const auto* res = lhs == rhs;
+        if (res == nullptr) {
+            INFO("operator ", lhs.type(), " == ", rhs.type(), " is not defined ");
+            REQUIRE(res != nullptr);
+            return;
+        }
+        INFO("expected ",
+             lhs.inspect(),
+             " != ",
+             rhs.inspect(),
+             " to be: ",
+             tru()->inspect(),
+             " with type: ",
+             tru()->type(),
+             " got: ",
+             res->inspect(),
+             " with type: ",
+             res->type(),
+             " instead");
+        REQUIRE((*res == *tru()) == tru());
+    }
 
     TEST_CASE("equal")
     {
-        REQUIRE_EQ(int_obj == integer_object {i1}, tru());
-        REQUIRE_EQ(dec_obj == decimal_object {d1}, tru());
-        REQUIRE_EQ(decimal_object {d3} == integer_object {i1}, tru());
-        REQUIRE_EQ(true_obj == boolean_object {true}, tru());
-        REQUIRE_EQ(true_obj == integer_object {1}, tru());
-        REQUIRE_EQ(true_obj == decimal_object {1}, tru());
-        REQUIRE_EQ(integer_object {1} == true_obj, tru());
-        REQUIRE_EQ(decimal_object {1} == true_obj, tru());
-        REQUIRE_EQ(false_obj == boolean_object {false}, tru());
-        REQUIRE_EQ(null_obj == null_object {}, tru());
-        REQUIRE_EQ(array_obj == array_object {{&int_obj, &int2_obj}}, tru());
-        REQUIRE_EQ(hash_obj == hash_object {{{2, &true_obj}, {1, &str_obj}}}, tru());
+        require_eq(int_obj, integer_object {i1});
+        require_eq(dec_obj, decimal_object {d1});
+        require_eq(decimal_object {d3}, integer_object {i1});
+        require_eq(true_obj, boolean_object {true});
+        require_eq(true_obj, integer_object {1});
+        require_eq(true_obj, decimal_object {1});
+        require_eq(integer_object {1}, true_obj);
+        require_eq(decimal_object {1}, true_obj);
+        require_eq(false_obj, boolean_object {false});
+        require_eq(null_obj, null_object {});
+        require_eq(array_obj, array_object {{&int_obj, &int2_obj}});
+        require_eq(hash_obj, hash_object {{{2, &true_obj}, {1, &str_obj}}});
     }
 
-    auto require_ne(const object& lhs, const object& rhs)->void
+    auto require_ne(const object& lhs, const object& rhs) -> void
     {
         const auto* res = lhs != rhs;
-        INFO("operator ", lhs.type(), " != ", rhs.type(), " is not defined ");
-        REQUIRE(res != nullptr);
         if (res == nullptr) {
+            INFO("operator ", lhs.type(), " != ", rhs.type(), " is not defined ");
+            REQUIRE(res != nullptr);
             return;
         }
         INFO("expected ",
@@ -952,12 +975,12 @@ TEST_SUITE("object tests")
         REQUIRE_EQ(false_obj || null_obj, fals());
     }
 
-    auto require_add(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_add(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs + rhs;
-        INFO("operator ", lhs.type(), " + ", rhs.type(), " is not defined ");
-        REQUIRE(res != nullptr);
         if (res == nullptr) {
+            INFO("operator ", lhs.type(), " + ", rhs.type(), " is not defined ");
+            REQUIRE(res != nullptr);
             return;
         }
         INFO("expected ",
@@ -990,12 +1013,12 @@ TEST_SUITE("object tests")
             hash_obj, hash_object {{{3, &false_obj}}}, hash_object {{{1, &str_obj}, {2, &true_obj}, {3, &false_obj}}});
     }
 
-    auto require_sub(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_sub(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs - rhs;
-        INFO("operator ", lhs.type(), " - ", rhs.type(), " is not defined ");
-        REQUIRE(res != nullptr);
         if (res == nullptr) {
+            INFO("operator ", lhs.type(), " - ", rhs.type(), " is not defined ");
+            REQUIRE(res != nullptr);
             return;
         }
         INFO("expected ",
@@ -1026,12 +1049,12 @@ TEST_SUITE("object tests")
         require_sub(false_obj, integer_object {1}, integer_object {-1});
     }
 
-    auto require_mul(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_mul(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs * rhs;
-        INFO("operator ", lhs.type(), " * ", rhs.type(), " is not defined ");
-        REQUIRE(res != nullptr);
         if (res == nullptr) {
+            INFO("operator ", lhs.type(), " * ", rhs.type(), " is not defined ");
+            REQUIRE(res != nullptr);
             return;
         }
         INFO("expected ",
@@ -1065,26 +1088,26 @@ TEST_SUITE("object tests")
         require_mul(integer_object {2}, string_object {"abc"}, string_object {"abcabc"});
     }
 
-    auto require_nan(const object* expected)->void
+    auto require_nan(const object* expected) -> void
     {
         REQUIRE(expected != nullptr);
         REQUIRE(expected->is(decimal));
         REQUIRE(std::isnan(expected->as<decimal_object>()->value));
     }
 
-    auto require_inf(const object* expected)->void
+    auto require_inf(const object* expected) -> void
     {
         REQUIRE(expected != nullptr);
         REQUIRE(expected->is(decimal));
         REQUIRE(std::isinf(expected->as<decimal_object>()->value));
     }
 
-    auto require_div(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_div(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs / rhs;
-        INFO("operator ", lhs.type(), " / ", rhs.type(), " is not defined ");
-        REQUIRE(res != nullptr);
         if (res == nullptr) {
+            INFO("operator ", lhs.type(), " / ", rhs.type(), " is not defined ");
+            REQUIRE(res != nullptr);
             return;
         }
         INFO("expected ",
@@ -1118,12 +1141,12 @@ TEST_SUITE("object tests")
         require_inf(integer_object {-1} / decimal_object {0});
     }
 
-    auto require_floor_div(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_floor_div(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = object_floor_div(&lhs, &rhs);
-        INFO("operator ", lhs.type(), " / ", rhs.type(), " is not defined ");
-        REQUIRE(res != nullptr);
         if (res == nullptr) {
+            INFO("operator ", lhs.type(), " // ", rhs.type(), " is not defined ");
+            REQUIRE(res != nullptr);
             return;
         }
         INFO("expected ",
@@ -1155,7 +1178,7 @@ TEST_SUITE("object tests")
         require_floor_div(integer_object {1}, integer_object {0}, error_object {"division by zero"});
     }
 
-    auto require_mod(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_mod(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs % rhs;
         if (res == nullptr) {
@@ -1195,7 +1218,7 @@ TEST_SUITE("object tests")
         require_nan(integer_object {1} % decimal_object {0});
     }
 
-    auto require_bit_and(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_bit_and(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs & rhs;
         if (res == nullptr) {
@@ -1229,7 +1252,7 @@ TEST_SUITE("object tests")
         require_bit_and(false_obj, integer_object {1}, integer_object {0});
     }
 
-    auto require_bit_or(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_bit_or(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs | rhs;
         if (res == nullptr) {
@@ -1263,7 +1286,7 @@ TEST_SUITE("object tests")
         require_bit_or(false_obj, integer_object {1}, integer_object {1});
     }
 
-    auto require_bit_xor(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_bit_xor(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs ^ rhs;
         if (res == nullptr) {
@@ -1297,7 +1320,7 @@ TEST_SUITE("object tests")
         require_bit_xor(false_obj, integer_object {1}, integer_object {1});
     }
 
-    auto require_bit_shl(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_bit_shl(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs << rhs;
         if (res == nullptr) {
@@ -1331,7 +1354,7 @@ TEST_SUITE("object tests")
         require_bit_shl(false_obj, integer_object {1}, integer_object {0});
     }
 
-    auto require_bit_shr(const object& lhs, const object& rhs, const object& expected)->void
+    auto require_bit_shr(const object& lhs, const object& rhs, const object& expected) -> void
     {
         const auto* res = lhs >> rhs;
         if (res == nullptr) {
