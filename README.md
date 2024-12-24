@@ -8,7 +8,7 @@
   - [Licensing](#licensing)
   <!--toc:end-->
 
-This is the monkey project.
+This is the cappuccino language project.
 
 ## Building
 
