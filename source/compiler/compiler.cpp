@@ -23,7 +23,7 @@
 auto compiler::create() -> compiler
 {
     auto* symbols = symbol_table::create();
-    for (std::size_t idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
+    for (size_t idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
         symbols->define_builtin(idx++, builtin->name);
     }
     return {make<constants>(), symbols};
@@ -41,13 +41,13 @@ auto compiler::compile(const program* program) -> void
     program->compile(*this);
 }
 
-auto compiler::add_constant(object* obj) -> std::size_t
+auto compiler::add_constant(object* obj) -> size_t
 {
     m_consts->push_back(obj);
     return m_consts->size() - 1;
 }
 
-auto compiler::add_instructions(const instructions& ins) -> std::size_t
+auto compiler::add_instructions(const instructions& ins) -> size_t
 {
     auto& scope = m_scopes[m_scope_index];
     auto pos = scope.instrs.size();
@@ -55,7 +55,7 @@ auto compiler::add_instructions(const instructions& ins) -> std::size_t
     return pos;
 }
 
-auto compiler::emit(opcodes opcode, const operands& operands) -> std::size_t
+auto compiler::emit(opcodes opcode, const operands& operands) -> size_t
 {
     auto& scope = m_scopes[m_scope_index];
     scope.previous_instr = scope.last_instr;
@@ -90,7 +90,7 @@ auto compiler::replace_last_pop_with_return() -> void
     m_scopes[m_scope_index].last_instr.opcode = return_value;
 }
 
-auto compiler::replace_instruction(std::size_t pos, const instructions& instr) -> void
+auto compiler::replace_instruction(size_t pos, const instructions& instr) -> void
 {
     auto& scope = m_scopes[m_scope_index];
     for (auto idx = 0UL; const auto& inst : instr) {
@@ -99,7 +99,7 @@ auto compiler::replace_instruction(std::size_t pos, const instructions& instr) -
     }
 }
 
-auto compiler::change_operand(std::size_t pos, std::size_t operand) -> void
+auto compiler::change_operand(size_t pos, size_t operand) -> void
 {
     auto& scope = m_scopes[m_scope_index];
     auto opcode = static_cast<opcodes>(scope.instrs[pos]);
@@ -185,7 +185,7 @@ auto compiler::free_symbols() const -> std::vector<symbol>
     return m_symbols->free();
 }
 
-auto compiler::number_symbol_definitions() const -> std::size_t
+auto compiler::number_symbol_definitions() const -> size_t
 {
     return m_symbols->num_definitions();
 }
@@ -252,7 +252,7 @@ auto check_instructions(const std::vector<instructions>& instructions, const ::i
 auto check_constants(const std::vector<expected_value>& expecteds, const constants& consts)
 {
     CHECK_EQ(expecteds.size(), consts.size());
-    for (std::size_t idx = 0; const auto& expected : expecteds) {
+    for (size_t idx = 0; const auto& expected : expecteds) {
         const auto& actual = consts.at(idx);
         std::visit(
             overloaded {
@@ -266,7 +266,7 @@ auto check_constants(const std::vector<expected_value>& expecteds, const constan
     }
 }
 
-template<std::size_t N>
+template<size_t N>
 auto run(std::array<ctc, N>&& tests)
 {
     for (const auto& [input, constants, instructions] : tests) {
