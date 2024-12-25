@@ -1171,6 +1171,7 @@ TEST_SUITE("object tests")
         REQUIRE_EQ(hash_object {{{1, &str_obj}}}.inspect(), R"({1: "str"})");
         REQUIRE_EQ(ret_obj.inspect(), R"([123, 124])");
     }
+
     TEST_CASE("operator ==")
     {
         require_eq(int_obj, integer_object {i1});
@@ -1244,6 +1245,7 @@ TEST_SUITE("object tests")
         require_add(
             hash_obj, hash_object {{{3, &false_obj}}}, hash_object {{{1, &str_obj}, {2, &true_obj}, {3, &false_obj}}});
     }
+
     TEST_CASE("operator -")
     {
         require_sub(integer_object {3}, integer_object {1}, integer_object {2});
