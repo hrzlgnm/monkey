@@ -376,7 +376,7 @@ struct function_object : object
 
 struct compiled_function_object : object
 {
-    compiled_function_object(instructions&& instr, size_t locals, size_t args)
+    compiled_function_object(instructions&& instr, int locals, int args)
         : instrs {std::move(instr)}
         , num_locals {locals}
         , num_arguments {args}
@@ -390,8 +390,8 @@ struct compiled_function_object : object
     [[nodiscard]] auto inspect() const -> std::string override;
 
     instructions instrs;
-    size_t num_locals {};
-    size_t num_arguments {};
+    int num_locals {};
+    int num_arguments {};
     bool inside_loop {};
 };
 
@@ -408,7 +408,7 @@ struct closure_object : object
     [[nodiscard]] auto type() const -> object_type override { return object_type::closure; }
 
     [[nodiscard]] auto inspect() const -> std::string override;
-    [[nodiscard]] auto clone() const -> closure_object*;
+    [[nodiscard]] auto as_mutable() const -> closure_object*;
 
     const compiled_function_object* fn {};
     std::vector<const object*> free;

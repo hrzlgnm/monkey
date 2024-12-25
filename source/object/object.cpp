@@ -764,9 +764,11 @@ auto compiled_function_object::inspect() const -> std::string
     return fmt::format("{{\n{}}}", to_string(instrs));
 }
 
-[[nodiscard]] auto closure_object::clone() const -> closure_object*
+[[nodiscard]] auto closure_object::as_mutable() const -> closure_object*
 {
-    return make<closure_object>(fn, free);
+    // NOLINTBEGIN(cppcoreguidelines-pro-type-const-cast)
+    return const_cast<closure_object*>(this);
+    // NOLINTEND(cppcoreguidelines-pro-type-const-cast)
 }
 
 auto closure_object::inspect() const -> std::string
