@@ -47,6 +47,7 @@ auto assign_expression::compile(compiler& comp) const -> void
     } else if (sym.scope == symbol_scope::free) {
         comp.emit(opcodes::set_free, sym.index);
     } else {
+        assert(sym.ptr.has_value());
         const auto& val = sym.ptr.value();
         comp.emit(opcodes::set_outer,
                   {static_cast<operands::value_type>(val.level),

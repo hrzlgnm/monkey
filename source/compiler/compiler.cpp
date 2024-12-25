@@ -23,7 +23,7 @@
 auto compiler::create() -> compiler
 {
     auto* symbols = symbol_table::create();
-    for (std::size_t idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
+    for (auto idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
         symbols->define_builtin(idx++, builtin->name);
     }
     return {make<constants>(), symbols};
@@ -164,6 +164,7 @@ auto compiler::load_symbol(const symbol& sym) -> void
             emit(current_closure);
             break;
         case outer: {
+            assert(sym.ptr.has_value());
             const auto& val = sym.ptr.value();
             emit(get_outer,
                  {
