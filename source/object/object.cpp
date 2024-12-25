@@ -791,10 +791,10 @@ namespace
 {
 // NOLINTBEGIN(*)
 
-auto op_defined(const object* res, const std::string_view& op, const object& lhs, const object& rhs) -> bool
+auto op_defined(const object* res, std::string_view op, const object& lhs, const object& rhs) -> bool
 {
     if (res == nullptr) {
-        INFO("operator ", lhs.type(), " == ", rhs.type(), " is not defined ");
+        INFO("operator ", lhs.type(), " ", op, " ", rhs.type(), " is not defined ");
         REQUIRE(res != nullptr);
         return false;
     }
