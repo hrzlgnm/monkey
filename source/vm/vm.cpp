@@ -342,7 +342,7 @@ void vm::exec_get_outer(const size_t ip, const instructions& instr)
     }
 }
 
-auto vm::build_array(size_t start, size_t end) const -> object*
+auto vm::build_array(size_t start, size_t end) const -> const object*
 {
     array_object::value_type arr;
     for (auto idx = start; idx < end; idx++) {
@@ -351,7 +351,7 @@ auto vm::build_array(size_t start, size_t end) const -> object*
     return make<array_object>(std::move(arr));
 }
 
-auto vm::build_hash(size_t start, size_t end) const -> object*
+auto vm::build_hash(size_t start, size_t end) const -> const object*
 {
     hash_object::value_type hsh;
     for (auto idx = start; idx < end; idx += 2) {
