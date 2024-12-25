@@ -322,7 +322,7 @@ TEST_CASE("shadowFunctionNames")
     globals->define_function_name("a");
     globals->define("a");
 
-    auto expected = symbol {"a", global, 0};
+    auto expected = symbol {"a", global, 0, std::nullopt};
     auto resolved = globals->resolve("a");
     REQUIRE(resolved.has_value());
     REQUIRE_EQ(resolved.value(), expected);
