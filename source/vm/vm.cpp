@@ -44,11 +44,11 @@ auto vm::run() -> void
             case opcodes::constant: {
                 current_frame().ip += 2;
                 const auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
-                const auto* constant = m_constants->at(const_idx);
+                const auto* constant = (*m_constants)[const_idx];
                 if (constant == nullptr) {
                     throw std::runtime_error(fmt::format("constant at index {} does not exist", const_idx));
                 }
-                push(m_constants->at(const_idx));
+                push((*m_constants)[const_idx]);
             } break;
             case opcodes::add:
             case opcodes::sub:
@@ -99,12 +99,12 @@ auto vm::run() -> void
             case opcodes::set_global: {
                 current_frame().ip += 2;
                 const auto global_index = read_uint16_big_endian(instr, ip + 1UL);
-                m_globals->at(global_index) = pop();
+                (*m_globals)[global_index] = pop();
             } break;
             case opcodes::get_global: {
                 auto global_index = read_uint16_big_endian(instr, ip + 1UL);
                 current_frame().ip += 2;
-                const auto* global = m_globals->at(global_index);
+                const auto* global = (*m_globals)[global_index];
                 if (global == nullptr) {
                     throw std::runtime_error(fmt::format("global at index {} does not exits", global_index));
                 }
@@ -451,7 +451,7 @@ auto vm::pop_frame() -> frame&
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 {
-    const auto* constant = m_constants->at(const_idx);
+    const auto* constant = (*m_constants)[const_idx];
     if (!constant->is(object::object_type::compiled_function)) {
         throw std::runtime_error("not a function");
     }
