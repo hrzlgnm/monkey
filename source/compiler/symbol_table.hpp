@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <fmt/ostream.h>
+#include <gc.hpp>
 
 template<typename Value>
 using string_map = std::map<std::string, Value, std::less<>>;
@@ -63,9 +64,12 @@ struct fmt::formatter<symbol> : ostream_formatter
 
 struct symbol_table
 {
-    static auto create() -> symbol_table*;
+    static auto create() -> symbol_table* { return make<symbol_table>(); }
 
-    static auto create_enclosed(symbol_table* outer, bool inside_loop = false) -> symbol_table*;
+    static auto create_enclosed(symbol_table* outer, bool inside_loop = false) -> symbol_table*
+    {
+        return make<symbol_table>(outer, inside_loop);
+    }
 
     explicit symbol_table(symbol_table* outer = {}, bool inside_loop = {});
     auto define(const std::string& name) -> symbol;
