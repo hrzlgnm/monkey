@@ -30,9 +30,9 @@ struct fmt::formatter<symbol_scope> : ostream_formatter
 
 struct symbol_pointer
 {
-    int level;
-    symbol_scope scope;
-    size_t index {};
+    int level {};
+    symbol_scope scope {};
+    std::size_t index {};
 };
 
 auto operator==(const symbol_pointer& lhs, const symbol_pointer& rhs) -> bool;
@@ -47,7 +47,7 @@ struct symbol
 {
     std::string name;
     symbol_scope scope {};
-    size_t index {};
+    std::size_t index {};
     std::optional<symbol_pointer> ptr;
 
     [[nodiscard]] auto is_local() const -> bool { return scope == symbol_scope::local; }

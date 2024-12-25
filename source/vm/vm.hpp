@@ -13,34 +13,19 @@ constexpr size_t stack_size = 2048UL;
 constexpr size_t globals_size = 65536UL;
 constexpr size_t max_frames = 1024UL;
 
-using ssize_type = int;
-
 struct frame
 {
     closure_object* cl {};
-    ssize_type ip {};
-    ssize_type base_ptr {};
+    int ip {};
+    int base_ptr {};
 };
 
 using frames = std::array<frame, max_frames>;
 
 struct vm
 {
-    static auto create(bytecode code) -> vm
-    {
-        return create_with_state(std::move(code), make<constants>(globals_size));
-    }
-
-    static auto create_with_state(bytecode code, constants* globals) -> vm
-    {
-        auto* main_fn = make<compiled_function_object>(std::move(code.instrs), 0ULL, 0ULL);
-        auto* main_closure = make<closure_object>(main_fn);
-        const frame main_frame {.cl = main_closure};
-        frames frms;
-        frms[0] = main_frame;
-        return vm {frms, code.consts, globals};
-    }
-
+    static auto create(bytecode code) -> vm;
+    static auto create_with_state(bytecode code, constants* globals) -> vm;
     auto run() -> void;
     auto push(const object* obj) -> void;
     [[nodiscard]] auto last_popped() const -> const object*;
@@ -52,12 +37,11 @@ struct vm
     auto exec_bang() -> void;
     auto exec_minus() -> void;
     auto exec_index(const object* left, const object* index) -> void;
-    auto exec_call(size_t num_args) -> void;
-    void exec_set_outer(size_t ip, const instructions& instr);
-    void exec_get_outer(size_t ip, const instructions& instr);
-    [[nodiscard]] auto build_array(size_t start, size_t end) const -> object*;
-    [[nodiscard]] auto build_hash(size_t start, size_t end) const -> object*;
-
+    auto exec_call(int num_args) -> void;
+    void exec_set_outer(int ip, const instructions& instr);
+    void exec_get_outer(int ip, const instructions& instr);
+    [[nodiscard]] auto build_array(int start, int end) const -> const object*;
+    [[nodiscard]] auto build_hash(int start, int end) const -> const object*;
     auto current_frame() -> frame&;
     auto push_frame(frame frm) -> void;
     auto pop_frame() -> frame&;
@@ -66,7 +50,7 @@ struct vm
     const constants* m_constants {};
     constants* m_globals {};
     constants m_stack {stack_size};
-    size_t m_sp {0};
+    int m_sp {0};
     frames m_frames;
-    size_t m_frame_index {1};
+    int m_frame_index {1};
 };
