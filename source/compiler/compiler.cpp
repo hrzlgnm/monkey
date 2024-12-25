@@ -713,16 +713,16 @@ TEST_CASE("stringExpression")
     using enum opcodes;
     std::array tests {
         ctc {
-            R"("monkey")",
-            {{"monkey"}},
+            R"("cappuchin")",
+            {{"cappuchin"}},
             {
                 make(constant, 0),
                 make(pop),
             },
         },
         ctc {
-            R"("mon" + "key")",
-            {{"mon", "key"}},
+            R"("cappu" + "chin")",
+            {{"cappu", "chin"}},
             {
                 make(constant, 0),
                 make(constant, 1),

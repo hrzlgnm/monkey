@@ -792,10 +792,10 @@ TEST_CASE("globalLetStatements")
 TEST_CASE("stringExpression")
 {
     const std::array tests {
-        vt<std::string> {R"("monkey")", "monkey"},
-        vt<std::string> {R"("mon" + "key")", "monkey"},
-        vt<std::string> {R"("mon" + "key" + "banana")", "monkeybanana"},
-        vt<std::string> {R"("mon" + "k" + "a" + "S")", "monkaS"},
+        vt<std::string> {R"("cappuchin")", "cappuchin"},
+        vt<std::string> {R"("cappu" + "chin)", "cappuchin"},
+        vt<std::string> {R"("cappu" + "chin" + "banana")", "cappuchinbanana"},
+        vt<std::string> {R"("cappu" + "c" + "h" + "i")", "cappuchi"},
     };
     run(tests);
 }
@@ -803,8 +803,8 @@ TEST_CASE("stringExpression")
 TEST_CASE("stringIntMultiplication")
 {
     const std::array tests {
-        vt<std::string> {R"("monkey" * 2)", "monkeymonkey"},
-        vt<std::string> {R"(2 * "mon" + "key" * 3)", "monmonkeykeykey"},
+        vt<std::string> {R"("cappuchin" * 2)", "cappuchincappuchin"},
+        vt<std::string> {R"(2 * "cappu" + "chin" * 3)", "cappucappuchinchinchin"},
     };
     run(tests);
 }

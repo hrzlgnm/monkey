@@ -3,10 +3,10 @@ cmake_minimum_required(VERSION 3.18)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include(cmake/prelude.cmake)
 project(
-  monkey
+  cappuchin
   VERSION 0.1.0
-  DESCRIPTION "Monkey programming language"
-  HOMEPAGE_URL "https://github.com/hrzlgnm/monkey"
+  DESCRIPTION "Cappuchin programming language"
+  HOMEPAGE_URL "https://github.com/hrzlgnm/Cappuchin"
   LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -17,11 +17,11 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/fmt.cmake)
 
 # ---- Declare library ----
 add_library(
-  monkey_lib OBJECT
+  cappuchin_lib OBJECT
 )
-add_library(monkey::lib ALIAS monkey_lib)
+add_library(cappuchin::lib ALIAS cappuchin_lib)
 
-target_sources(monkey_lib
+target_sources(cappuchin_lib
   PRIVATE
     source/ast/array_expression.cpp
     source/ast/assign_expression.cpp
@@ -55,7 +55,7 @@ target_sources(monkey_lib
     source/vm/vm.cpp
 )
 
-target_precompile_headers(monkey_lib
+target_precompile_headers(cappuchin_lib
   PRIVATE
     <algorithm>
     <array>
@@ -79,20 +79,20 @@ target_precompile_headers(monkey_lib
 )
 
 target_include_directories(
-  monkey_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
-target_compile_definitions(monkey_lib PUBLIC DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+  cappuchin_lib PUBLIC "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/source>")
+target_compile_definitions(cappuchin_lib PUBLIC DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 if(MSVC)
-    target_compile_definitions(monkey_lib
+    target_compile_definitions(cappuchin_lib
     PUBLIC DOCTEST_CONFIG_NO_EXCEPTIONS_BUT_WITH_ALL_ASSERTS)
 endif()
-target_compile_features(monkey_lib PUBLIC cxx_std_20)
-target_link_libraries(monkey_lib PRIVATE doctest::dll doctest::doctest fmt::fmt)
+target_compile_features(cappuchin_lib PUBLIC cxx_std_20)
+target_link_libraries(cappuchin_lib PRIVATE doctest::dll doctest::doctest fmt::fmt)
 
-add_executable(monkey_exe source/main.cpp)
-add_executable(monkey::exe ALIAS monkey_exe)
-target_compile_definitions(monkey_exe PRIVATE DOCTEST_CONFIG_DISABLE)
-set_property(TARGET monkey_exe PROPERTY OUTPUT_NAME monkey)
-target_compile_features(monkey_exe PRIVATE cxx_std_20)
-target_link_libraries(monkey_exe PRIVATE fmt::fmt monkey_lib)
+add_executable(cappuchin_exe source/main.cpp)
+add_executable(cappuchin::exe ALIAS cappuchin_exe)
+target_compile_definitions(cappuchin_exe PRIVATE DOCTEST_CONFIG_DISABLE)
+set_property(TARGET cappuchin_exe PROPERTY OUTPUT_NAME cappuchin)
+target_compile_features(cappuchin_exe PRIVATE cxx_std_20)
+target_link_libraries(cappuchin_exe PRIVATE fmt::fmt cappuchin_lib)
 
 include(cmake/dev-mode.cmake)

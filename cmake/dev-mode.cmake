@@ -7,9 +7,9 @@ add_custom_target(
   run-exe
   COMMENT runs
   executable
-  COMMAND monkey_exe
+  COMMAND cappuchin_exe
   VERBATIM)
-add_dependencies(run-exe monkey_exe)
+add_dependencies(run-exe cappuchin_exe)
 
 include(cmake/lint-targets.cmake)
 include(cmake/spell-targets.cmake)
