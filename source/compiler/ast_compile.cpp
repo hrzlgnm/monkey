@@ -312,8 +312,8 @@ auto function_expression::compile(compiler& comp) const -> void
     for (const auto& sym : free) {
         comp.load_symbol(sym);
     }
-    auto function_index =
-        comp.add_constant(make<compiled_function_object>(std::move(instrs), num_locals, parameters.size()));
+    auto function_index = comp.add_constant(
+        make<compiled_function_object>(std::move(instrs), num_locals, static_cast<int>(parameters.size())));
     comp.emit(closure, {function_index, free.size()});
 }
 
