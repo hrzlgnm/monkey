@@ -39,7 +39,9 @@ auto array_expression::compile(compiler& comp) const -> void
 auto assign_expression::compile(compiler& comp) const -> void
 {
     value->compile(comp);
-    const auto sym = comp.resolve_symbol(name->value).value();
+    const auto maybe_symbol = comp.resolve_symbol(name->value);
+    assert(maybe_symbol.has_value());
+    const auto& sym = maybe_symbol.value();
     if (sym.scope == symbol_scope::global) {
         comp.emit(opcodes::set_global, sym.index);
     } else if (sym.scope == symbol_scope::local) {
