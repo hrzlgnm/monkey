@@ -52,7 +52,7 @@ vm::vm(frames frames, const constants* consts, constants* globals)
 auto vm::run() -> void
 {
     for (; current_frame().ip < current_frame().cl->fn->instrs.size(); current_frame().ip++) {
-        const auto ip = static_cast<std::size_t>(current_frame().ip);
+        const auto ip = current_frame().ip;
         const auto& instr = current_frame().cl->fn->instrs;
         const auto op = static_cast<opcodes>(instr[ip]);
         switch (op) {
