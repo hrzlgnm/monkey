@@ -45,6 +45,11 @@ struct compiler
 
     auto emit(opcodes opcode, std::size_t operand) -> std::size_t { return emit(opcode, std::vector {operand}); }
 
+    auto emit(opcodes opcode, int operand) -> std::size_t
+    {
+        return emit(opcode, std::vector {static_cast<std::size_t>(operand)});
+    }
+
     [[nodiscard]] auto last_instruction_is(opcodes opcode) const -> bool;
     auto remove_last_pop() -> void;
     auto replace_last_pop_with_return() -> void;
