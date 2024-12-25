@@ -19,7 +19,7 @@ struct bytecode
 struct emitted_instruction
 {
     opcodes opcode {};
-    size_t position {};
+    std::size_t position {};
 };
 
 struct compilation_scope
@@ -39,17 +39,22 @@ struct compiler
         return compiler {constants, symbols};
     }
 
-    [[nodiscard]] auto add_constant(object* obj) -> size_t;
-    [[nodiscard]] auto add_instructions(const instructions& ins) -> size_t;
-    auto emit(opcodes opcode, const operands& operands = {}) -> size_t;
+    [[nodiscard]] auto add_constant(object* obj) -> std::size_t;
+    [[nodiscard]] auto add_instructions(const instructions& ins) -> std::size_t;
+    auto emit(opcodes opcode, const operands& operands = {}) -> std::size_t;
 
-    auto emit(opcodes opcode, size_t operand) -> size_t { return emit(opcode, std::vector {operand}); }
+    auto emit(opcodes opcode, std::size_t operand) -> std::size_t { return emit(opcode, std::vector {operand}); }
+
+    auto emit(opcodes opcode, int operand) -> std::size_t
+    {
+        return emit(opcode, std::vector {static_cast<std::size_t>(operand)});
+    }
 
     [[nodiscard]] auto last_instruction_is(opcodes opcode) const -> bool;
     auto remove_last_pop() -> void;
     auto replace_last_pop_with_return() -> void;
-    auto replace_instruction(size_t pos, const instructions& instr) -> void;
-    auto change_operand(size_t pos, size_t operand) -> void;
+    auto replace_instruction(std::size_t pos, const instructions& instr) -> void;
+    auto change_operand(std::size_t pos, std::size_t operand) -> void;
     [[nodiscard]] auto byte_code() const -> bytecode;
     [[nodiscard]] auto current_instrs() const -> const instructions&;
     auto enter_scope(bool inside_loop = false) -> void;
@@ -59,7 +64,7 @@ struct compiler
     auto load_symbol(const symbol& sym) -> void;
     [[nodiscard]] auto resolve_symbol(const std::string& name) const -> std::optional<symbol>;
     [[nodiscard]] auto free_symbols() const -> std::vector<symbol>;
-    [[nodiscard]] auto number_symbol_definitions() const -> size_t;
+    [[nodiscard]] auto number_symbol_definitions() const -> int;
     [[nodiscard]] auto consts() const -> constants*;
 
     [[nodiscard]] auto all_symbols() const -> const symbol_table* { return m_symbols; }
@@ -68,6 +73,6 @@ struct compiler
     constants* m_consts {};
     symbol_table* m_symbols;
     std::vector<compilation_scope> m_scopes;
-    size_t m_scope_index {0};
+    std::size_t m_scope_index {0};
     compiler(constants* consts, symbol_table* symbols);
 };

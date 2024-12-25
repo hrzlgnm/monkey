@@ -27,6 +27,21 @@
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
 
+auto vm::create(bytecode code) -> vm
+{
+    return create_with_state(std::move(code), make<constants>(globals_size));
+}
+
+auto vm::create_with_state(bytecode code, constants* globals) -> vm
+{
+    auto* main_fn = make<compiled_function_object>(std::move(code.instrs), 0, 0);
+    auto* main_closure = make<closure_object>(main_fn);
+    const frame main_frame {.cl = main_closure};
+    frames frms;
+    frms[0] = main_frame;
+    return vm {frms, code.consts, globals};
+}
+
 vm::vm(frames frames, const constants* consts, constants* globals)
     : m_constants {consts}
     , m_globals {globals}
@@ -36,19 +51,19 @@ vm::vm(frames frames, const constants* consts, constants* globals)
 
 auto vm::run() -> void
 {
-    for (; current_frame().ip < static_cast<ssize_type>(current_frame().cl->fn->instrs.size()); current_frame().ip++) {
-        const auto ip = static_cast<size_t>(current_frame().ip);
+    for (; current_frame().ip < current_frame().cl->fn->instrs.size(); current_frame().ip++) {
+        const auto ip = current_frame().ip;
         const auto& instr = current_frame().cl->fn->instrs;
         const auto op = static_cast<opcodes>(instr[ip]);
         switch (op) {
             case opcodes::constant: {
                 current_frame().ip += 2;
                 const auto const_idx = read_uint16_big_endian(instr, ip + 1UL);
-                const auto* constant = m_constants->at(const_idx);
+                const auto* constant = (*m_constants)[const_idx];
                 if (constant == nullptr) {
                     throw std::runtime_error(fmt::format("constant at index {} does not exist", const_idx));
                 }
-                push(m_constants->at(const_idx));
+                push((*m_constants)[const_idx]);
             } break;
             case opcodes::add:
             case opcodes::sub:
@@ -99,12 +114,12 @@ auto vm::run() -> void
             case opcodes::set_global: {
                 current_frame().ip += 2;
                 const auto global_index = read_uint16_big_endian(instr, ip + 1UL);
-                m_globals->at(global_index) = pop();
+                (*m_globals)[global_index] = pop();
             } break;
             case opcodes::get_global: {
                 auto global_index = read_uint16_big_endian(instr, ip + 1UL);
                 current_frame().ip += 2;
-                const auto* global = m_globals->at(global_index);
+                const auto* global = (*m_globals)[global_index];
                 if (global == nullptr) {
                     throw std::runtime_error(fmt::format("global at index {} does not exits", global_index));
                 }
@@ -137,13 +152,13 @@ auto vm::run() -> void
             case opcodes::brake: {
                 current_frame().ip += 1;
                 auto& frame = pop_frame();
-                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
+                m_sp = frame.base_ptr - 1;
                 push(fals());
             } break;
             case opcodes::cont: {
                 current_frame().ip += 1;
                 auto& frame = pop_frame();
-                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
+                m_sp = frame.base_ptr - 1;
                 push(tru());
             } break;
             case opcodes::return_value: {
@@ -152,25 +167,25 @@ auto vm::run() -> void
                 while (frame.cl->fn->inside_loop) {
                     frame = pop_frame();
                 }
-                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
+                m_sp = frame.base_ptr - 1;
                 push(return_value);
             } break;
             case opcodes::ret: {
                 auto& frame = pop_frame();
-                m_sp = static_cast<size_t>(frame.base_ptr) - 1;
+                m_sp = frame.base_ptr - 1;
                 push(null());
             } break;
             case opcodes::set_local: {
                 current_frame().ip += 1;
                 const auto local_index = instr[ip + 1UL];
                 auto& frame = current_frame();
-                m_stack[static_cast<size_t>(frame.base_ptr) + local_index] = pop();
+                m_stack[frame.base_ptr + local_index] = pop();
             } break;
             case opcodes::get_local: {
                 current_frame().ip += 1;
                 const auto local_index = instr[ip + 1UL];
                 auto& frame = current_frame();
-                push(m_stack[static_cast<size_t>(frame.base_ptr) + local_index]);
+                push(m_stack[frame.base_ptr + local_index]);
             } break;
             case opcodes::set_outer:
                 current_frame().ip += 3;
@@ -314,7 +329,7 @@ auto vm::exec_minus() -> void
     throw std::runtime_error(fmt::format("unsupported type for negation {}", operand->type()));
 }
 
-void vm::exec_set_outer(const size_t ip, const instructions& instr)
+void vm::exec_set_outer(const int ip, const instructions& instr)
 {
     const auto level = instr[ip + 1UL];
     const auto scope = static_cast<symbol_scope>(instr[ip + 2UL]);
@@ -327,7 +342,7 @@ void vm::exec_set_outer(const size_t ip, const instructions& instr)
     }
 }
 
-void vm::exec_get_outer(const size_t ip, const instructions& instr)
+void vm::exec_get_outer(const int ip, const instructions& instr)
 {
     const auto level = instr[ip + 1UL];
     const auto scope = static_cast<symbol_scope>(instr[ip + 2UL]);
@@ -342,7 +357,7 @@ void vm::exec_get_outer(const size_t ip, const instructions& instr)
     }
 }
 
-auto vm::build_array(size_t start, size_t end) const -> object*
+auto vm::build_array(int start, int end) const -> const object*
 {
     array_object::value_type arr;
     for (auto idx = start; idx < end; idx++) {
@@ -351,7 +366,7 @@ auto vm::build_array(size_t start, size_t end) const -> object*
     return make<array_object>(std::move(arr));
 }
 
-auto vm::build_hash(size_t start, size_t end) const -> object*
+auto vm::build_hash(int start, int end) const -> const object*
 {
     hash_object::value_type hsh;
     for (auto idx = start; idx < end; idx += 2) {
@@ -383,7 +398,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
             push(null());
             return;
         }
-        push(left->as<array_object>()->value[static_cast<size_t>(idx)]);
+        push(left->as<array_object>()->value[static_cast<std::size_t>(idx)]);
         return;
     }
     if (left->is(string) && index->is(integer)) {
@@ -393,7 +408,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
             push(null());
             return;
         }
-        push(make<string_object>(left->as<string_object>()->value.substr(static_cast<size_t>(idx), 1)));
+        push(make<string_object>(left->as<string_object>()->value.substr(static_cast<std::size_t>(idx), 1)));
         return;
     }
     if (left->is(hash) && index->is_hashable()) {
@@ -403,7 +418,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
     push(make_error("invalid index operation: {}[{}]", left->type(), index->type()));
 }
 
-auto vm::exec_call(size_t num_args) -> void
+auto vm::exec_call(int num_args) -> void
 {
     const auto* callee = m_stack[m_sp - 1 - num_args];
     using enum object::object_type;
@@ -413,8 +428,8 @@ auto vm::exec_call(size_t num_args) -> void
             throw std::runtime_error(
                 fmt::format("wrong number of arguments: want={}, got={}", clsr->fn->num_arguments, num_args));
         }
-        const frame frm {.cl = clsr->as_mutable(), .ip = -1, .base_ptr = static_cast<ssize_type>(m_sp - num_args)};
-        m_sp = static_cast<size_t>(frm.base_ptr) + clsr->fn->num_locals;
+        const frame frm {.cl = clsr->as_mutable(), .ip = -1, .base_ptr = m_sp - num_args};
+        m_sp = frm.base_ptr + clsr->fn->num_locals;
         push_frame(frm);
         return;
     }
@@ -451,9 +466,10 @@ auto vm::pop_frame() -> frame&
 
 auto vm::push_closure(uint16_t const_idx, uint8_t num_free) -> void
 {
-    const auto* constant = m_constants->at(const_idx);
+    const auto* constant = (*m_constants)[const_idx];
     if (!constant->is(object::object_type::compiled_function)) {
-        throw std::runtime_error("not a function");
+        throw std::runtime_error(
+            fmt::format("expected a compiled_function, got an object of type {}", constant->type()));
     }
     array_object::value_type free;
     for (auto i = 0UL; i < num_free; i++) {
@@ -634,7 +650,7 @@ auto require_eq(const std::variant<T...>& expected, const object*& actual, std::
         expected);
 }
 
-template<size_t N, typename... Expecteds>
+template<std::size_t N, typename... Expecteds>
 auto run(const std::array<vt<Expecteds...>, N>& tests)
 {
     for (const auto& [input, expected] : tests) {

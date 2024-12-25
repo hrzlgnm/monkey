@@ -57,10 +57,13 @@ auto are_almost_equal(double a, double b) -> bool
 template<typename T>
 auto eq_helper(const T* t, const object& other) -> const object*
 {
-    if constexpr (std::is_same_v<T, decimal_object>) {
-        return native_bool_to_object(other.is(t->type()) && are_almost_equal(t->value, other.as<T>()->value));
-    }
     return native_bool_to_object(other.is(t->type()) && t->value == other.as<T>()->value);
+}
+
+template<>
+auto eq_helper(const decimal_object* t, const object& other) -> const object*
+{
+    return native_bool_to_object(other.is(t->type()) && are_almost_equal(t->value, other.as<decimal_object>()->value));
 }
 
 template<typename T>
@@ -791,10 +794,10 @@ namespace
 {
 // NOLINTBEGIN(*)
 
-auto op_defined(const object* res, const std::string_view& op, const object& lhs, const object& rhs) -> bool
+auto op_defined(const object* res, std::string_view op, const object& lhs, const object& rhs) -> bool
 {
     if (res == nullptr) {
-        INFO("operator ", lhs.type(), " == ", rhs.type(), " is not defined ");
+        INFO("operator ", lhs.type(), " ", op, " ", rhs.type(), " is not defined ");
         REQUIRE(res != nullptr);
         return false;
     }
@@ -1168,6 +1171,7 @@ TEST_SUITE("object tests")
         REQUIRE_EQ(hash_object {{{1, &str_obj}}}.inspect(), R"({1: "str"})");
         REQUIRE_EQ(ret_obj.inspect(), R"([123, 124])");
     }
+
     TEST_CASE("operator ==")
     {
         require_eq(int_obj, integer_object {i1});
@@ -1241,6 +1245,7 @@ TEST_SUITE("object tests")
         require_add(
             hash_obj, hash_object {{{3, &false_obj}}}, hash_object {{{1, &str_obj}, {2, &true_obj}, {3, &false_obj}}});
     }
+
     TEST_CASE("operator -")
     {
         require_sub(integer_object {3}, integer_object {1}, integer_object {2});

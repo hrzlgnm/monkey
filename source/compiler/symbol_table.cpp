@@ -1,5 +1,4 @@
 #include <array>
-#include <cstddef>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -12,7 +11,7 @@
 #include <doctest/doctest.h>
 #include <fmt/base.h>
 #include <fmt/format.h>
-#include <fmt/std.h>
+#include <fmt/std.h>  // for formatting std::optional
 #include <gc.hpp>
 
 auto operator==(const symbol_pointer& lhs, const symbol_pointer& rhs) -> bool
@@ -81,7 +80,7 @@ auto symbol_table::define(const std::string& name) -> symbol
            };
 }
 
-auto symbol_table::define_builtin(size_t index, const std::string& name) -> symbol
+auto symbol_table::define_builtin(int index, const std::string& name) -> symbol
 {
     return m_store[name] = symbol {
                .name = name,
@@ -161,7 +160,11 @@ auto symbol_table::free() const -> const std::vector<symbol>&
 auto symbol_table::define_free(const symbol& sym) -> symbol
 {
     m_free.push_back(sym);
-    return m_store[sym.name] = symbol {.name = sym.name, .scope = symbol_scope::free, .index = m_free.size() - 1};
+    return m_store[sym.name] = symbol {
+               .name = sym.name,
+               .scope = symbol_scope::free,
+               .index = static_cast<int>(m_free.size()) - 1,
+           };
 }
 
 auto symbol_table::debug() const -> void
@@ -286,7 +289,7 @@ TEST_CASE("defineResolveBuiltin")
     auto globals = symbol_table::create();
     auto first = symbol_table::create_enclosed(globals);
     auto nested = symbol_table::create_enclosed(first);
-    for (size_t i = 0; const auto& expected : expecteds) {
+    for (auto i = 0; const auto& expected : expecteds) {
         globals->define_builtin(i, expected.name);
         i++;
     }
@@ -318,7 +321,7 @@ TEST_CASE("shadowFunctionNames")
     globals->define_function_name("a");
     globals->define("a");
 
-    auto expected = symbol {"a", global, 0};
+    auto expected = symbol {"a", global, 0, std::nullopt};
     auto resolved = globals->resolve("a");
     REQUIRE(resolved.has_value());
     REQUIRE_EQ(resolved.value(), expected);

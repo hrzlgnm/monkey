@@ -1,3 +1,4 @@
+#include <cassert>
 #include <stdexcept>
 #include <utility>
 
@@ -39,7 +40,9 @@ auto array_expression::compile(compiler& comp) const -> void
 auto assign_expression::compile(compiler& comp) const -> void
 {
     value->compile(comp);
-    const auto sym = comp.resolve_symbol(name->value).value();
+    const auto maybe_symbol = comp.resolve_symbol(name->value);
+    assert(maybe_symbol.has_value());
+    const auto& sym = maybe_symbol.value();
     if (sym.scope == symbol_scope::global) {
         comp.emit(opcodes::set_global, sym.index);
     } else if (sym.scope == symbol_scope::local) {
@@ -47,6 +50,7 @@ auto assign_expression::compile(compiler& comp) const -> void
     } else if (sym.scope == symbol_scope::free) {
         comp.emit(opcodes::set_free, sym.index);
     } else {
+        assert(sym.ptr.has_value());
         const auto& val = sym.ptr.value();
         comp.emit(opcodes::set_outer,
                   {static_cast<operands::value_type>(val.level),
@@ -312,8 +316,8 @@ auto function_expression::compile(compiler& comp) const -> void
     for (const auto& sym : free) {
         comp.load_symbol(sym);
     }
-    auto function_index =
-        comp.add_constant(make<compiled_function_object>(std::move(instrs), num_locals, parameters.size()));
+    auto function_index = comp.add_constant(
+        make<compiled_function_object>(std::move(instrs), num_locals, static_cast<int>(parameters.size())));
     comp.emit(closure, {function_index, free.size()});
 }
 

@@ -248,7 +248,7 @@ auto index_expression::eval(environment* env) const -> const object*
         if (index < 0 || index > max) {
             return null();
         }
-        return arr[static_cast<size_t>(index)];
+        return arr[static_cast<std::size_t>(index)];
     }
 
     if (evaluated_left->is(string) && evaluated_index->is(integer)) {
@@ -258,7 +258,7 @@ auto index_expression::eval(environment* env) const -> const object*
         if (index < 0 || index > max) {
             return null();
         }
-        return make<string_object>(str.substr(static_cast<size_t>(index), 1));
+        return make<string_object>(str.substr(static_cast<std::size_t>(index), 1));
     }
 
     if (evaluated_left->is(hash)) {
