@@ -2,7 +2,9 @@
 
 #include <object/object.hpp>
 
+struct object;
 struct compiler;
+struct environment;
 
 struct expression
 {
