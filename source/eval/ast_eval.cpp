@@ -955,7 +955,7 @@ return 1;
             "unknown operator: string - string",
         },
         et {
-            R"({"name": "Monkey"}[fn(x) { x }];)",
+            R"({"name": "Cappuchin"}[fn(x) { x }];)",
             "unusable as hash key: function",
         },
     };

@@ -2,7 +2,7 @@
 
 <!--toc:start-->
 
-- [monkey](#monkey)
+- [cappuchin](#cappuchin)
   - [Building](#building)
   - [Contributing](#contributing)
   - [Licensing](#licensing)

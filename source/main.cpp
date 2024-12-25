@@ -27,7 +27,7 @@ namespace
 {
 constexpr auto prompt = ">> ";
 
-constexpr auto monkey_face = R"r(
+constexpr auto cappuchin_face = R"r(
              __,__
      .--. .-"     "-. .--.
     / .. \/ .-. .-. \/ .. \
@@ -41,15 +41,15 @@ constexpr auto monkey_face = R"r(
             '-----'
 )r";
 
-auto monkey_business()
+auto cappuchin_business()
 {
-    std::cerr << monkey_face;
-    std::cerr << "Woops! We ran into some monkey business here!\n  ";
+    std::cerr << cappuchin_face;
+    std::cerr << "Woops! We ran into some cappuchin business here!\n  ";
 }
 
 auto print_parse_errors(const std::vector<std::string>& errors)
 {
-    monkey_business();
+    cappuchin_business();
     std::cerr << "  parser errors: \n";
     for (const auto& error : errors) {
         std::cerr << "    " << error << '\n';
@@ -212,7 +212,7 @@ auto run_file(const command_line_args& opts) -> int
 
 auto run_repl(const command_line_args& opts) -> int
 {
-    std::cout << "Hello " << get_logged_in_user() << ". This is the Monkey programming language using engine "
+    std::cout << "Hello " << get_logged_in_user() << ". This is the Cappuchin programming language using engine "
               << opts.mode << ".\n";
     std::cout << "Feel free to type in commands\n";
     auto* global_env = make<environment>();
@@ -289,7 +289,7 @@ auto main(int argc, char* argv[]) -> int
         return run_repl(opts);
 
     } catch (const std::exception& e) {
-        monkey_business();
+        cappuchin_business();
         std::cerr << "Caught an exception: " << e.what() << '\n';
         return 1;
     }
