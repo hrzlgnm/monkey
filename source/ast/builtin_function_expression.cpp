@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <iterator>
