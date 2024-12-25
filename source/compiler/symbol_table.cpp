@@ -11,7 +11,7 @@
 #include <doctest/doctest.h>
 #include <fmt/base.h>
 #include <fmt/format.h>
-#include <fmt/std.h>
+#include <fmt/std.h>  // for formatting std::optional
 #include <gc.hpp>
 
 auto operator==(const symbol_pointer& lhs, const symbol_pointer& rhs) -> bool
