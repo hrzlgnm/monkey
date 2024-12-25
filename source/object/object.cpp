@@ -57,10 +57,13 @@ auto are_almost_equal(double a, double b) -> bool
 template<typename T>
 auto eq_helper(const T* t, const object& other) -> const object*
 {
-    if constexpr (std::is_same_v<T, decimal_object>) {
-        return native_bool_to_object(other.is(t->type()) && are_almost_equal(t->value, other.as<T>()->value));
-    }
     return native_bool_to_object(other.is(t->type()) && t->value == other.as<T>()->value);
+}
+
+template<>
+auto eq_helper(const decimal_object* t, const object& other) -> const object*
+{
+    return native_bool_to_object(other.is(t->type()) && are_almost_equal(t->value, other.as<decimal_object>()->value));
 }
 
 template<typename T>
