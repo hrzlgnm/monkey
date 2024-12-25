@@ -59,7 +59,7 @@ struct compiler
     auto load_symbol(const symbol& sym) -> void;
     [[nodiscard]] auto resolve_symbol(const std::string& name) const -> std::optional<symbol>;
     [[nodiscard]] auto free_symbols() const -> std::vector<symbol>;
-    [[nodiscard]] auto number_symbol_definitions() const -> std::size_t;
+    [[nodiscard]] auto number_symbol_definitions() const -> int;
     [[nodiscard]] auto consts() const -> constants*;
 
     [[nodiscard]] auto all_symbols() const -> const symbol_table* { return m_symbols; }

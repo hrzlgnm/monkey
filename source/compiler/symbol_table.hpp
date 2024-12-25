@@ -32,7 +32,7 @@ struct symbol_pointer
 {
     int level {};
     symbol_scope scope {};
-    std::size_t index {};
+    int index {};
 };
 
 auto operator==(const symbol_pointer& lhs, const symbol_pointer& rhs) -> bool;
@@ -47,7 +47,7 @@ struct symbol
 {
     std::string name;
     symbol_scope scope {};
-    std::size_t index {};
+    int index {};
     std::optional<symbol_pointer> ptr;
 
     [[nodiscard]] auto is_local() const -> bool { return scope == symbol_scope::local; }
@@ -68,7 +68,7 @@ struct symbol_table
     explicit symbol_table(symbol_table* outer = {}, bool inside_loop = {});
     auto define(const std::string& name) -> symbol;
     auto define_outer(const symbol& original, int level) -> symbol;
-    auto define_builtin(size_t index, const std::string& name) -> symbol;
+    auto define_builtin(int index, const std::string& name) -> symbol;
     auto define_function_name(const std::string& name) -> symbol;
     auto resolve(const std::string& name, int level = 0) -> std::optional<symbol>;
 
@@ -78,7 +78,7 @@ struct symbol_table
 
     [[nodiscard]] auto inside_loop() const -> bool { return m_inside_loop; }
 
-    [[nodiscard]] auto num_definitions() const -> size_t { return m_defs; }
+    [[nodiscard]] auto num_definitions() const -> int { return m_defs; }
 
     [[nodiscard]] auto free() const -> const std::vector<symbol>&;
     auto debug() const -> void;
@@ -87,7 +87,7 @@ struct symbol_table
     auto define_free(const symbol& sym) -> symbol;
     symbol_table* m_outer {};
     string_map<symbol> m_store;
-    size_t m_defs {};
+    int m_defs {};
     std::vector<symbol> m_free;
     bool m_inside_loop {};
 };

@@ -81,7 +81,7 @@ auto symbol_table::define(const std::string& name) -> symbol
            };
 }
 
-auto symbol_table::define_builtin(size_t index, const std::string& name) -> symbol
+auto symbol_table::define_builtin(int index, const std::string& name) -> symbol
 {
     return m_store[name] = symbol {
                .name = name,
@@ -161,7 +161,11 @@ auto symbol_table::free() const -> const std::vector<symbol>&
 auto symbol_table::define_free(const symbol& sym) -> symbol
 {
     m_free.push_back(sym);
-    return m_store[sym.name] = symbol {.name = sym.name, .scope = symbol_scope::free, .index = m_free.size() - 1};
+    return m_store[sym.name] = symbol {
+               .name = sym.name,
+               .scope = symbol_scope::free,
+               .index = static_cast<int>(m_free.size()) - 1,
+           };
 }
 
 auto symbol_table::debug() const -> void

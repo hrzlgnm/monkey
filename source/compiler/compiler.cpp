@@ -185,7 +185,7 @@ auto compiler::free_symbols() const -> std::vector<symbol>
     return m_symbols->free();
 }
 
-auto compiler::number_symbol_definitions() const -> std::size_t
+auto compiler::number_symbol_definitions() const -> int
 {
     return m_symbols->num_definitions();
 }
