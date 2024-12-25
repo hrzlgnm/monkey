@@ -1,8 +1,10 @@
 #pragma once
 
-#include <object/object.hpp>
+#include <string>
 
 struct compiler;
+struct environment;
+struct object;
 
 struct expression
 {

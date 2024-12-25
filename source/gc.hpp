@@ -1,4 +1,6 @@
 #pragma once
+
+#include <concepts>
 #include <cstdlib>
 #include <utility>
 #include <vector>
@@ -25,6 +27,24 @@ class gc
         return allocations;
     }
 };
+
+template<typename T, typename... Args>
+    requires std::derived_from<T, struct object>
+auto make(Args&&... args) -> T*
+{
+    T* p = new T(std::forward<Args>(args)...);
+    gc<object>::track(p);
+    return p;
+}
+
+template<typename T, typename... Args>
+    requires std::derived_from<T, struct expression>
+auto make(Args&&... args) -> T*
+{
+    T* p = new T(std::forward<Args>(args)...);
+    gc<expression>::track(p);
+    return p;
+}
 
 template<typename T, typename... Args>
 auto make(Args&&... args) -> T*
