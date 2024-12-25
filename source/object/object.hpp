@@ -408,7 +408,7 @@ struct closure_object : object
     [[nodiscard]] auto type() const -> object_type override { return object_type::closure; }
 
     [[nodiscard]] auto inspect() const -> std::string override;
-    [[nodiscard]] auto clone() const -> closure_object*;
+    [[nodiscard]] auto as_mutable() const -> closure_object*;
 
     const compiled_function_object* fn {};
     std::vector<const object*> free;

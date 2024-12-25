@@ -1,7 +1,12 @@
 #pragma once
+
+#include <concepts>
 #include <cstdlib>
 #include <utility>
 #include <vector>
+
+#include <ast/expression.hpp>
+#include <object/object.hpp>
 
 template<typename T>
 class gc
@@ -25,6 +30,24 @@ class gc
         return allocations;
     }
 };
+
+template<typename O, typename... Args>
+    requires std::derived_from<O, struct object>
+auto make(Args&&... args) -> O*
+{
+    O* p = new O(std::forward<Args>(args)...);
+    gc<object>::track(p);
+    return p;
+}
+
+template<typename E, typename... Args>
+    requires std::derived_from<E, struct expression>
+auto make(Args&&... args) -> E*
+{
+    E* p = new E(std::forward<Args>(args)...);
+    gc<expression>::track(p);
+    return p;
+}
 
 template<typename T, typename... Args>
 auto make(Args&&... args) -> T*
