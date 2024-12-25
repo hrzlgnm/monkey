@@ -290,7 +290,7 @@ TEST_CASE("defineResolveBuiltin")
     auto globals = symbol_table::create();
     auto first = symbol_table::create_enclosed(globals);
     auto nested = symbol_table::create_enclosed(first);
-    for (size_t i = 0; const auto& expected : expecteds) {
+    for (auto i = 0; const auto& expected : expecteds) {
         globals->define_builtin(i, expected.name);
         i++;
     }

@@ -219,7 +219,7 @@ auto run_repl(const command_line_args& opts) -> int
     auto* symbols = symbol_table::create();
     constants consts;
     constants globals(globals_size);
-    for (auto idx = 0UL; const auto& builtin : builtin_function_expression::builtins()) {
+    for (auto idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
         global_env->set(builtin->name, make<builtin_object>(builtin));
         symbols->define_builtin(idx, builtin->name);
         idx++;
