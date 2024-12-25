@@ -1,5 +1,4 @@
 #include <array>
-#include <cstddef>
 #include <map>
 #include <optional>
 #include <ostream>
