@@ -54,6 +54,16 @@ auto operator<<(std::ostream& ost, const symbol_pointer& ptr) -> std::ostream&
     return ost << fmt::format("symbol_pointer{{{}, {}, {}}}", ptr.level, ptr.scope, ptr.index);
 }
 
+auto symbol_table::create() -> symbol_table*
+{
+    return make<symbol_table>();
+}
+
+auto symbol_table::create_enclosed(symbol_table* outer, bool inside_loop) -> symbol_table*
+{
+    return make<symbol_table>(outer, inside_loop);
+}
+
 symbol_table::symbol_table(symbol_table* outer, bool inside_loop)
     : m_outer {outer}
     , m_inside_loop {inside_loop}

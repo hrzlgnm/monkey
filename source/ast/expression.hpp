@@ -1,10 +1,10 @@
 #pragma once
 
-#include <object/object.hpp>
+#include <string>
 
-struct object;
 struct compiler;
 struct environment;
+struct object;
 
 struct expression
 {
