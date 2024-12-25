@@ -133,7 +133,6 @@ auto symbol_table::resolve(const std::string& name, int level) -> std::optional<
     if (m_store.contains(name)) {
         return m_store[name];
     }
-    auto maybe_symbol = m_outer->resolve(name);
     if (m_outer != nullptr) {
         level = level + 1;
         auto maybe_symbol = m_outer->resolve(name, level);
