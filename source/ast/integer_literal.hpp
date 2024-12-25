@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 #include "expression.hpp"
 
@@ -8,5 +9,5 @@ struct integer_literal : expression
     [[nodiscard]] auto eval(environment* env) const -> object* override;
     auto compile(compiler& comp) const -> void override;
 
-    int64_t value {};
+    std::int64_t value {};
 };
