@@ -1,3 +1,4 @@
+#include <cassert>
 #include <stdexcept>
 #include <string>
 
@@ -80,6 +81,11 @@ void analyzer::visit(const assign_expression& expr)
         fail(fmt::format("identifier not found: {}", expr.name->value));
     }
     const auto& symbol = maybe_symbol.value();
+    if (symbol.is_outer()) {
+        if (!symbol.ptr.has_value()) {
+            fail("invalid symbol pointer in a outer symbol");
+        }
+    }
     if (symbol.is_function() || (symbol.is_outer() && symbol.ptr.value().is_function())) {
         fail(fmt::format("cannot reassign the current function being defined: {}", expr.name->value));
     }
