@@ -130,8 +130,8 @@ auto symbol_table::define_outer(const symbol& original, int level) -> symbol
 auto symbol_table::resolve(const std::string& name, int level) -> std::optional<symbol>
 {
     using enum symbol_scope;
-    if (m_store.contains(name)) {
-        return m_store[name];
+    if (const auto itr = m_store.find(name); itr != m_store.end()) {
+        return itr->second;
     }
     if (m_outer != nullptr) {
         level = level + 1;
