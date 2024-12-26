@@ -13,10 +13,12 @@
 #include <gc.hpp>
 #include <object/object.hpp>
 
+#include "visitor.hpp"
+
 builtin_function::builtin_function(std::string name,
                                    std::vector<std::string> params,
                                    std::function<const object*(array_object::value_type&& arguments)> bod)
-    : callable_expression {std::move(params)}
+    : parameters {std::move(params)}
     , name {std::move(name)}
     , body {std::move(bod)}
 {
@@ -25,6 +27,11 @@ builtin_function::builtin_function(std::string name,
 auto builtin_function::string() const -> std::string
 {
     return fmt::format("{}(){{...}}", name);
+}
+
+void builtin_function::accept(visitor& visitor) const
+{
+    visitor.visit(*this);
 }
 
 namespace

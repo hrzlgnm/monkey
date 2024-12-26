@@ -5,6 +5,7 @@
 
 #include <compiler/compiler.hpp>
 #include <eval/environment.hpp>
+#include <eval/evaluator.hpp>
 #include <fmt/base.h>
 #include <lexer/lexer.hpp>
 #include <object/object.hpp>
@@ -53,8 +54,9 @@ fibonacci(35);
         duration = end - start;
     } else {
         environment env;
+        evaluator ev(&env);
         auto start = std::chrono::steady_clock::now();
-        result = prgrm->eval(&env);
+        result = ev.evaluate(prgrm);
         auto end = std::chrono::steady_clock::now();
         duration = end - start;
     }

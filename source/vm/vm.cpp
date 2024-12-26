@@ -381,10 +381,10 @@ namespace
 {
 auto exec_hash(const hash_object::value_type& hsh, const hashable_object::hash_key_type& key) -> const object*
 {
-    if (!hsh.contains(key)) {
-        return null();
+    if (const auto itr = hsh.find(key); itr != hsh.end()) {
+        return itr->second;
     }
-    return hsh.at(key);
+    return null();
 }
 }  // namespace
 

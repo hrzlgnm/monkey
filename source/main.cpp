@@ -16,6 +16,7 @@
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
+#include <eval/evaluator.hpp>
 #include <fmt/base.h>
 #include <fmt/format.h>
 #include <gc.hpp>
@@ -23,6 +24,8 @@
 #include <object/object.hpp>
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
+
+#include "ast/program.hpp"
 
 namespace
 {
@@ -193,7 +196,7 @@ auto run_file(const command_line_args& opts) -> int
         auto machine = vm::create(cmplr.byte_code());
         machine.run();
         const auto* result = machine.last_popped();
-        if (!result->is(object::object_type::nll)) {
+        if (!result->is_null()) {
             std::cout << result->inspect() << '\n';
         }
     } else {
@@ -201,8 +204,9 @@ auto run_file(const command_line_args& opts) -> int
         for (const auto& builtin : builtin_function::builtins()) {
             global_env->set(builtin->name, make<builtin_object>(builtin));
         }
-        const auto* result = prgrm->eval(global_env);
-        if (!result->is(object::object_type::nll)) {
+        evaluator ev {global_env};
+        const auto* result = ev.evaluate(prgrm);
+        if (!result->is_null()) {
             std::cout << result->inspect() << '\n';
         }
         if (opts.debug) {
@@ -272,8 +276,10 @@ auto run_repl(const command_line_args& opts) -> int
             }
         } else {
             try {
-                const auto* result = prgrm->eval(global_env);
-                if (result != nullptr && !result->is(object::object_type::nll)) {
+                evaluator ev {global_env};
+
+                const auto* result = ev.evaluate(prgrm);
+                if (!result->is_null()) {
                     std::cout << result->inspect() << '\n';
                 }
             } catch (const std::exception& e) {

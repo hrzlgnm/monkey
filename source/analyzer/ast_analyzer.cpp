@@ -151,8 +151,8 @@ auto function_literal::check(symbol_table* symbols) const -> void
         inner->define_function_name(name);
     }
 
-    for (const auto& parameter : parameters) {
-        inner->define(parameter);
+    for (const auto* parameter : parameters) {
+        inner->define(parameter->value);
     }
 
     body->check(inner);

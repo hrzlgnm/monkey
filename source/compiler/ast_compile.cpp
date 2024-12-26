@@ -298,8 +298,8 @@ auto function_literal::compile(compiler& comp) const -> void
     if (!name.empty()) {
         comp.define_function_name(name);
     }
-    for (const auto& param : parameters) {
-        comp.define_symbol(param);
+    for (const auto* param : parameters) {
+        comp.define_symbol(param->value);
     }
     body->compile(comp);
 
