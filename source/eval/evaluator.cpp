@@ -415,15 +415,16 @@ void evaluator::visit(const function_literal& expr)
 void evaluator::apply_function(const object* function_or_builtin, array_object::value_type&& args)
 {
     if (function_or_builtin->is(object::object_type::function)) {
-        auto* old_env = m_env;
         const auto* func = function_or_builtin->as<function_object>();
         auto* locals = make<environment>(func->closure_env);
         for (auto arg_itr = args.begin(); const auto* parameter : func->parameters) {
             locals->set(parameter->value, *(arg_itr++));
         }
-        m_env = locals;
-        func->body->accept(*this);
-        m_env = old_env;
+        {
+            evaluator local(locals);
+            func->body->accept(local);
+            m_result = local.m_result;
+        }
         if (m_result->is_return_value()) {
             m_result = m_result->as<return_value_object>()->return_value;
         }

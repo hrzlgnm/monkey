@@ -18,8 +18,8 @@
 builtin_function::builtin_function(std::string name,
                                    std::vector<std::string> params,
                                    std::function<const object*(array_object::value_type&& arguments)> bod)
-    : parameters {std::move(params)}
-    , name {std::move(name)}
+    : name {std::move(name)}
+    , parameters {std::move(params)}
     , body {std::move(bod)}
 {
 }
