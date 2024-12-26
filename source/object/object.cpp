@@ -11,6 +11,7 @@
 
 #include "object.hpp"
 
+#include <ast/util.hpp>
 #include <builtin/builtin.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>

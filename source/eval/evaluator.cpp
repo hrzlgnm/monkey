@@ -433,7 +433,7 @@ void evaluator::apply_function(const object* function_or_builtin, array_object::
         m_result = builtin->builtin->body(std::move(args));
         return;
     }
-    m_result = make_error("not a function {}", m_result->type());
+    m_result = make_error("calling a value of type {} is not supported", function_or_builtin->type());
 }
 
 auto evaluator::evaluate_expressions(const expressions& exprs) -> array_object::value_type
@@ -1125,6 +1125,10 @@ TEST_CASE("builtinFunctions")
         bt {R"(type("c"))", "string"},
         bt {R"(type())", error {"wrong number of arguments to type(): expected=1, got=0"}},
         bt {R"(type(type))", {"builtin"}},
+        bt {R"(chr())", error {"wrong number of arguments to chr(): expected=1, got=0"}},
+        bt {R"(chr("65"))", error {"argument of type string to chr() is not supported"}},
+        bt {R"(chr(128))", error {"number 128 is out of range to be an ascii character"}},
+        bt {R"(chr(65))", {"A"}},
     };
 
     for (const auto& test : tests) {

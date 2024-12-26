@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <functional>
 #include <iterator>
@@ -25,7 +26,7 @@ builtin::builtin(std::string name,
 namespace
 {
 
-const builtin builtin_len {
+const builtin len {
     "len",
     {"val"},
     [](const array_object::value_type& arguments) -> const object*
@@ -52,29 +53,29 @@ const builtin builtin_len {
         return make_error("argument of type {} to len() is not supported", maybe_string_or_array_or_hash->type());
     }};
 
-const builtin builtin_puts {"puts",
-                            {"val"},
-                            [](const array_object::value_type& arguments) -> const object*
-                            {
-                                using enum object::object_type;
-                                for (bool first = true; const auto& arg : arguments) {
-                                    if (!first) {
-                                        fmt::print(" ");
-                                    }
-                                    if (arg->is(string)) {
-                                        fmt::print("{}", arg->as<string_object>()->value);
-                                    } else {
-                                        fmt::print("{}", arg->inspect());
-                                    }
-                                    first = false;
-                                }
-                                fmt::print("\n");
-                                return null();
-                            }};
+const builtin pts {"puts",
+                   {"val..."},
+                   [](const array_object::value_type& arguments) -> const object*
+                   {
+                       using enum object::object_type;
+                       for (bool first = true; const auto& arg : arguments) {
+                           if (!first) {
+                               fmt::print(" ");
+                           }
+                           if (arg->is(string)) {
+                               fmt::print("{}", arg->as<string_object>()->value);
+                           } else {
+                               fmt::print("{}", arg->inspect());
+                           }
+                           first = false;
+                       }
+                       fmt::print("\n");
+                       return null();
+                   }};
 
-const builtin builtin_first {
+const builtin first {
     "first",
-    {"arr"},
+    {"arr|str"},
     [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
@@ -99,9 +100,9 @@ const builtin builtin_first {
         return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
     }};
 
-const builtin builtin_last {
+const builtin last {
     "last",
-    {"arr"},
+    {"arr|str"},
     [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
@@ -126,9 +127,9 @@ const builtin builtin_last {
         return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
     }};
 
-const builtin builtin_rest {
+const builtin rest {
     "rest",
-    {"arr"},
+    {"arr|str"},
     [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 1) {
@@ -155,9 +156,9 @@ const builtin builtin_rest {
         return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
     }};
 
-const builtin builtin_push {
+const builtin push {
     "push",
-    {"arr", "val"},
+    {"arr|str|hsh", "val|str|hashable", "val"},
     [](const array_object::value_type& arguments) -> const object*
     {
         if (arguments.size() != 2 && arguments.size() != 3) {
@@ -197,22 +198,39 @@ const builtin builtin_push {
         return make_error("invalid call to push()");
     }};
 
-const builtin builtin_type {"type",
-                            {"val"},
-                            [](const array_object::value_type& arguments) -> const object*
-                            {
-                                if (arguments.size() != 1) {
-                                    return make_error("wrong number of arguments to type(): expected=1, got={}",
-                                                      arguments.size());
-                                }
-                                const auto& val = arguments[0];
-                                return make<string_object>(fmt::format("{}", val->type()));
-                            }};
+const builtin type {"type",
+                    {"val"},
+                    [](const array_object::value_type& arguments) -> const object*
+                    {
+                        if (arguments.size() != 1) {
+                            return make_error("wrong number of arguments to type(): expected=1, got={}",
+                                              arguments.size());
+                        }
+                        const auto& val = arguments[0];
+                        return make<string_object>(fmt::format("{}", val->type()));
+                    }};
+const builtin chr {"chr",
+                   {"int"},
+                   [](const array_object::value_type& arguments) -> const object*
+                   {
+                       if (arguments.size() != 1) {
+                           return make_error("wrong number of arguments to chr(): expected=1, got={}",
+                                             arguments.size());
+                       }
+                       const auto* val = arguments[0];
+                       if (val->is(object::object_type::integer)) {
+                           const auto& as_int = val->as<integer_object>()->value;
+                           if (isascii(static_cast<int>(as_int))) {
+                               return make<string_object>(fmt::format("{}", static_cast<char>(as_int)));
+                           }
+                           return make_error("number {} is out of range to be an ascii character", as_int);
+                       }
+                       return make_error("argument of type {} to chr() is not supported", val->type());
+                   }};
 }  // namespace
 
 auto builtin::builtins() -> const std::vector<const builtin*>&
 {
-    static const std::vector<const builtin*> bltns {
-        &builtin_len, &builtin_puts, &builtin_first, &builtin_last, &builtin_rest, &builtin_push, &builtin_type};
+    static const std::vector<const builtin*> bltns {&len, &pts, &first, &last, &rest, &push, &type, &chr};
     return bltns;
 };
