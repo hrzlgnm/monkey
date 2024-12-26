@@ -77,7 +77,6 @@ struct compiler final : public visitor
     void visit(const block_statement& expr) final;
     void visit(const boolean_literal& expr) final;
     void visit(const break_statement& expr) final;
-    void visit(const builtin_function& expr) final {};
     void visit(const call_expression& expr) final;
     void visit(const continue_statement& expr) final;
     void visit(const decimal_literal& expr) final;
@@ -94,6 +93,8 @@ struct compiler final : public visitor
     void visit(const string_literal& expr) final;
     void visit(const unary_expression& expr) final;
     void visit(const while_statement& expr) final;
+
+    void visit(const builtin_function& expr) final {}
 
   private:
     constants* m_consts {};

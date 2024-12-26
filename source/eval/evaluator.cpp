@@ -391,8 +391,6 @@ void evaluator::visit(const unary_expression& expr)
     }
 }
 
-void evaluator::visit(const builtin_function& expr) {}
-
 void evaluator::visit(const call_expression& expr)
 {
     expr.function->accept(*this);
