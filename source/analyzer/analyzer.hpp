@@ -1,11 +1,16 @@
 #pragma once
 
+#include <variant>
+
 #include <ast/expression.hpp>
 #include <ast/program.hpp>
 #include <ast/visitor.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
+#include <lexer/token_type.hpp>
 #include <object/object.hpp>
+
+using seen = std::variant<std::monostate, object::object_type, token_type, symbol>;
 
 struct analyzer final : visitor
 {
@@ -30,16 +35,14 @@ struct analyzer final : visitor
     void visit(const break_statement& expr) final;
     void visit(const call_expression& expr) final;
     void visit(const continue_statement& expr) final;
-
-    void visit(const boolean_literal& /* expr */) final {}
-
-    void visit(const decimal_literal& /* expr */) final {}
-
-    void visit(const integer_literal& /* expr */) final {}
-
-    void visit(const string_literal& /* expr */) final {}
+    void visit(const boolean_literal& /* expr */) final;
+    void visit(const decimal_literal& /* expr */) final;
+    void visit(const integer_literal& /* expr */) final;
+    void visit(const string_literal& /* expr */) final;
 
   private:
+    void see(const seen& s);
+    std::vector<seen> m_seen;
     symbol_table* m_symbols;
 };
 

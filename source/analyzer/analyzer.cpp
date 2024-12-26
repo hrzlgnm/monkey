@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 
@@ -22,8 +24,14 @@
 #include <eval/environment.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
+#include <fmt/std.h>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
+
+#include "lexer/token.hpp"
+#include "lexer/token_type.hpp"
+#include "object/object.hpp"
+#include "overloaded.hpp"
 
 namespace
 {
@@ -70,6 +78,7 @@ void analyzer::visit(const array_literal& expr)
     for (const auto* element : expr.elements) {
         element->accept(*this);
     }
+    see(object::object_type::array);
 }
 
 void analyzer::visit(const assign_expression& expr)
@@ -83,6 +92,8 @@ void analyzer::visit(const assign_expression& expr)
     if (symbol.is_function() || (symbol.is_outer() && symbol.ptr.value().is_function())) {
         fail(fmt::format("cannot reassign the current function being defined: {}", expr.name->value));
     }
+    see(symbol);
+    see(token_type::assign);
     // NOLINTEND(bugprone-unchecked-optional-access)
     expr.value->accept(*this);
 }
@@ -90,6 +101,7 @@ void analyzer::visit(const assign_expression& expr)
 void analyzer::visit(const binary_expression& expr)
 {
     expr.left->accept(*this);
+    see(expr.op);
     expr.right->accept(*this);
 }
 
@@ -99,6 +111,7 @@ void analyzer::visit(const hash_literal& expr)
         key->accept(*this);
         value->accept(*this);
     }
+    see(object::object_type::hash);
 }
 
 void analyzer::visit(const identifier& expr)
@@ -107,6 +120,7 @@ void analyzer::visit(const identifier& expr)
     if (!symbol.has_value()) {
         fail(fmt::format("identifier not found: {}", expr.value));
     }
+    see(symbol.value());
 }
 
 void analyzer::visit(const if_expression& expr)
@@ -125,12 +139,15 @@ void analyzer::visit(const while_statement& expr)
     auto* inner = symbol_table::create_enclosed(m_symbols, /*inside_loop=*/true);
     analyzer w {inner};
     expr.body->accept(w);
+    std::copy(w.m_seen.cbegin(), w.m_seen.cend(), std::back_inserter(m_seen));
 }
 
 void analyzer::visit(const index_expression& expr)
 {
     expr.left->accept(*this);
+    see(token_type::lbracket);
     expr.index->accept(*this);
+    see(token_type::rbracket);
 }
 
 void analyzer::visit(const program& expr)
@@ -150,12 +167,14 @@ void analyzer::visit(const let_statement& expr)
         }
     }
     m_symbols->define(expr.name->value);
+    see(m_symbols->resolve(expr.name->value).value());
     expr.value->accept(*this);
 }
 
 void analyzer::visit(const return_statement& expr)
 {
     expr.value->accept(*this);
+    see(token_type::ret);
 }
 
 void analyzer::visit(const break_statement& /*expr*/)
@@ -186,6 +205,7 @@ void analyzer::visit(const block_statement& expr)
 
 void analyzer::visit(const unary_expression& expr)
 {
+    see(expr.op);
     expr.right->accept(*this);
 }
 
@@ -194,6 +214,7 @@ void analyzer::visit(const function_literal& expr)
     auto* inner = symbol_table::create_enclosed(m_symbols);
     if (!expr.name.empty()) {
         inner->define_function_name(expr.name);
+        see(inner->resolve(expr.name).value());
     }
 
     for (const auto* parameter : expr.parameters) {
@@ -201,14 +222,57 @@ void analyzer::visit(const function_literal& expr)
     }
     analyzer f(inner);
     expr.body->accept(f);
+    std::copy(f.m_seen.cbegin(), f.m_seen.cend(), std::back_inserter(m_seen));
 }
 
 void analyzer::visit(const call_expression& expr)
 {
     expr.function->accept(*this);
+
+    fmt::println("{} ", m_seen.back());
+    const auto callable = std::visit(
+        overloaded {
+            [&](const std::monostate&) { return false; },
+            [&](const object::object_type o)
+            {
+                return o == object::object_type::function || o == object::object_type::compiled_function
+                    || o == object::object_type::closure;
+            },
+            [&](const symbol& s) { return s.is_global() || s.is_function() || s.is_builtin(); },
+            [&](const token_type) { return false; },
+        },
+        m_seen.back());
+    if (!callable) {
+        fail(fmt::format("type error: {} is not callable", m_seen.back()));
+    }
     for (const auto* arg : expr.arguments) {
         arg->accept(*this);
     }
+}
+
+void analyzer::visit(const boolean_literal& /* expr */)
+{
+    see(object::object_type::boolean);
+}
+
+void analyzer::visit(const decimal_literal& /* expr */)
+{
+    see(object::object_type::decimal);
+}
+
+void analyzer::visit(const integer_literal& /* expr */)
+{
+    see(object::object_type::integer);
+}
+
+void analyzer::visit(const string_literal& /* expr */)
+{
+    see(object::object_type::string);
+}
+
+void analyzer::see(const seen& s)
+{
+    m_seen.push_back(s);
 }
 
 namespace
@@ -273,6 +337,7 @@ TEST_SUITE("analyzer")
             test {.input = "{2: x}", .expected_exception_string = "identifier not found: x"},
             test {.input = "let f = fn(x) { if (x > 0) { f(x - 1); f = 2; } }",
                   .expected_exception_string = "cannot reassign the current function being defined: f"},
+            test {.input = "1(2);", .expected_exception_string = "type error: variant(integer) is not callable"},
         };
         for (const auto& test : tests) {
             INFO(test.input, " expected error: ", test.expected_exception_string);
