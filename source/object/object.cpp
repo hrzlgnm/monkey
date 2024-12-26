@@ -6,7 +6,6 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -794,20 +793,20 @@ namespace
 {
 // NOLINTBEGIN(*)
 
-auto op_defined(const object* res, std::string_view op, const object& lhs, const object& rhs) -> bool
+auto check_op_defined(const object* res, std::string_view op, const object& lhs, const object& rhs) -> bool
 {
     if (res == nullptr) {
         INFO("operator ", lhs.type(), " ", op, " ", rhs.type(), " is not defined ");
-        REQUIRE(res != nullptr);
+        CHECK(res != nullptr);
         return false;
     }
     return true;
 }
 
-auto require_eq(const object& lhs, const object& rhs) -> void
+auto check_eq(const object& lhs, const object& rhs) -> void
 {
     const auto* res = lhs == rhs;
-    if (!op_defined(res, "==", lhs, rhs)) {
+    if (!check_op_defined(res, "==", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -823,13 +822,13 @@ auto require_eq(const object& lhs, const object& rhs) -> void
          " with type: ",
          res->type(),
          " instead");
-    REQUIRE((*res == *tru()) == tru());
+    CHECK((*res == *tru()) == tru());
 }
 
-auto require_ne(const object& lhs, const object& rhs) -> void
+auto check_ne(const object& lhs, const object& rhs) -> void
 {
     const auto* res = lhs != rhs;
-    if (!op_defined(res, "!=", lhs, rhs)) {
+    if (!check_op_defined(res, "!=", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -845,13 +844,13 @@ auto require_ne(const object& lhs, const object& rhs) -> void
          " with type: ",
          res->type(),
          " instead");
-    REQUIRE((*res == *tru()) == tru());
+    CHECK((*res == *tru()) == tru());
 }
 
-auto require_add(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_add(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs + rhs;
-    if (!op_defined(res, "+", lhs, rhs)) {
+    if (!check_op_defined(res, "+", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -866,13 +865,13 @@ auto require_add(const object& lhs, const object& rhs, const object& expected) -
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_sub(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_sub(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs - rhs;
-    if (!op_defined(res, "-", lhs, rhs)) {
+    if (!check_op_defined(res, "-", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -887,13 +886,13 @@ auto require_sub(const object& lhs, const object& rhs, const object& expected) -
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_mul(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_mul(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs * rhs;
-    if (!op_defined(res, "*", lhs, rhs)) {
+    if (!check_op_defined(res, "*", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -908,27 +907,27 @@ auto require_mul(const object& lhs, const object& rhs, const object& expected) -
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_nan(const object* expected) -> void
+auto check_nan(const object* expected) -> void
 {
     REQUIRE(expected != nullptr);
     REQUIRE(expected->is(decimal));
-    REQUIRE(std::isnan(expected->as<decimal_object>()->value));
+    CHECK(std::isnan(expected->as<decimal_object>()->value));
 }
 
-auto require_inf(const object* expected) -> void
+auto check_inf(const object* expected) -> void
 {
     REQUIRE(expected != nullptr);
     REQUIRE(expected->is(decimal));
-    REQUIRE(std::isinf(expected->as<decimal_object>()->value));
+    CHECK(std::isinf(expected->as<decimal_object>()->value));
 }
 
-auto require_div(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_div(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs / rhs;
-    if (!op_defined(res, "/", lhs, rhs)) {
+    if (!check_op_defined(res, "/", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -943,13 +942,13 @@ auto require_div(const object& lhs, const object& rhs, const object& expected) -
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_floor_div(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_floor_div(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = object_floor_div(&lhs, &rhs);
-    if (!op_defined(res, "//", lhs, rhs)) {
+    if (!check_op_defined(res, "//", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -964,13 +963,13 @@ auto require_floor_div(const object& lhs, const object& rhs, const object& expec
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_mod(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_mod(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs % rhs;
-    if (!op_defined(res, "%", lhs, rhs)) {
+    if (!check_op_defined(res, "%", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -985,13 +984,13 @@ auto require_mod(const object& lhs, const object& rhs, const object& expected) -
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_bit_and(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_bit_and(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs & rhs;
-    if (!op_defined(res, "&", lhs, rhs)) {
+    if (!check_op_defined(res, "&", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -1006,13 +1005,13 @@ auto require_bit_and(const object& lhs, const object& rhs, const object& expecte
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_bit_or(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_bit_or(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs | rhs;
-    if (!op_defined(res, "|", lhs, rhs)) {
+    if (!check_op_defined(res, "|", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -1027,13 +1026,13 @@ auto require_bit_or(const object& lhs, const object& rhs, const object& expected
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_bit_xor(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_bit_xor(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs ^ rhs;
-    if (!op_defined(res, "^", lhs, rhs)) {
+    if (!check_op_defined(res, "^", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -1048,13 +1047,13 @@ auto require_bit_xor(const object& lhs, const object& rhs, const object& expecte
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_bit_shl(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_bit_shl(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs << rhs;
-    if (!op_defined(res, "<<", lhs, rhs)) {
+    if (!check_op_defined(res, "<<", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -1069,13 +1068,13 @@ auto require_bit_shl(const object& lhs, const object& rhs, const object& expecte
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
-auto require_bit_shr(const object& lhs, const object& rhs, const object& expected) -> void
+auto check_bit_shr(const object& lhs, const object& rhs, const object& expected) -> void
 {
     const auto* res = lhs >> rhs;
-    if (!op_defined(res, ">", lhs, rhs)) {
+    if (!check_op_defined(res, ">", lhs, rhs)) {
         return;
     }
     INFO("expected ",
@@ -1090,7 +1089,7 @@ auto require_bit_shr(const object& lhs, const object& rhs, const object& expecte
          res->inspect(),
          " with type: ",
          res->type());
-    REQUIRE((*res == expected) == tru());
+    CHECK((*res == expected) == tru());
 }
 
 TEST_SUITE("object tests")
@@ -1117,86 +1116,86 @@ TEST_SUITE("object tests")
 
     TEST_CASE("is truthy")
     {
-        REQUIRE_FALSE(integer_object {0}.is_truthy());
-        REQUIRE_FALSE(string_object {""}.is_truthy());
-        REQUIRE_FALSE(false_obj.is_truthy());
-        REQUIRE_FALSE(null()->is_truthy());
-        REQUIRE_FALSE(array_object {{}}.is_truthy());
-        REQUIRE_FALSE(hash_object {{}}.is_truthy());
-        REQUIRE_FALSE(decimal_object {0}.is_truthy());
-        REQUIRE(integer_object {1}.is_truthy());
-        REQUIRE(decimal_object {1}.is_truthy());
-        REQUIRE(string_object {"1"}.is_truthy());
-        REQUIRE(true_obj.is_truthy());
-        REQUIRE(array_object {{&int_obj}}.is_truthy());
-        REQUIRE(integer_object {1}.is_truthy());
-        REQUIRE(integer_object {1}.is_truthy());
-        REQUIRE(error_object {{}}.is_truthy());
-        REQUIRE(return_value_object {tru()}.is_truthy());
-        REQUIRE(function_obj.is_truthy());
-        REQUIRE(builtin_obj.is_truthy());
-        REQUIRE(cmpld_obj.is_truthy());
-        REQUIRE(clsr_obj.is_truthy());
+        CHECK_FALSE(integer_object {0}.is_truthy());
+        CHECK_FALSE(string_object {""}.is_truthy());
+        CHECK_FALSE(false_obj.is_truthy());
+        CHECK_FALSE(null()->is_truthy());
+        CHECK_FALSE(array_object {{}}.is_truthy());
+        CHECK_FALSE(hash_object {{}}.is_truthy());
+        CHECK_FALSE(decimal_object {0}.is_truthy());
+        CHECK(integer_object {1}.is_truthy());
+        CHECK(decimal_object {1}.is_truthy());
+        CHECK(string_object {"1"}.is_truthy());
+        CHECK(true_obj.is_truthy());
+        CHECK(array_object {{&int_obj}}.is_truthy());
+        CHECK(integer_object {1}.is_truthy());
+        CHECK(integer_object {1}.is_truthy());
+        CHECK(error_object {{}}.is_truthy());
+        CHECK(return_value_object {tru()}.is_truthy());
+        CHECK(function_obj.is_truthy());
+        CHECK(builtin_obj.is_truthy());
+        CHECK(cmpld_obj.is_truthy());
+        CHECK(clsr_obj.is_truthy());
     }
     TEST_CASE("type")
     {
         using enum object::object_type;
-        REQUIRE_EQ(int_obj.type(), integer);
-        REQUIRE_EQ(dec_obj.type(), decimal);
-        REQUIRE_EQ(true_obj.type(), boolean);
-        REQUIRE_EQ(str_obj.type(), string);
-        REQUIRE_EQ(brake()->type(), brek);
-        REQUIRE_EQ(cont()->type(), cntn);
-        REQUIRE_EQ(null()->type(), nll);
-        REQUIRE_EQ(err_obj.type(), error);
-        REQUIRE_EQ(array_obj.type(), array);
-        REQUIRE_EQ(hash_obj.type(), hash);
-        REQUIRE_EQ(return_value_object {&int_obj}.type(), return_value);
-        REQUIRE_EQ(function_obj.type(), function);
-        REQUIRE_EQ(cmpld_obj.type(), compiled_function);
-        REQUIRE_EQ(clsr_obj.type(), closure);
-        REQUIRE_EQ(builtin_obj.type(), builtin);
+        CHECK_EQ(int_obj.type(), integer);
+        CHECK_EQ(dec_obj.type(), decimal);
+        CHECK_EQ(true_obj.type(), boolean);
+        CHECK_EQ(str_obj.type(), string);
+        CHECK_EQ(brake()->type(), brek);
+        CHECK_EQ(cont()->type(), cntn);
+        CHECK_EQ(null()->type(), nll);
+        CHECK_EQ(err_obj.type(), error);
+        CHECK_EQ(array_obj.type(), array);
+        CHECK_EQ(hash_obj.type(), hash);
+        CHECK_EQ(return_value_object {&int_obj}.type(), return_value);
+        CHECK_EQ(function_obj.type(), function);
+        CHECK_EQ(cmpld_obj.type(), compiled_function);
+        CHECK_EQ(clsr_obj.type(), closure);
+        CHECK_EQ(builtin_obj.type(), builtin);
     }
     TEST_CASE("inspect")
     {
-        REQUIRE_EQ(int_obj.inspect(), "123");
-        REQUIRE_EQ(dec_obj.inspect(), "12.3");
-        REQUIRE_EQ(true_obj.inspect(), "true");
-        REQUIRE_EQ(str_obj.inspect(), R"("str")");
-        REQUIRE_EQ(err_obj.inspect(), "ERROR: error");
-        REQUIRE_EQ(brake()->inspect(), "break");
-        REQUIRE_EQ(cont()->inspect(), "continue");
-        REQUIRE_EQ(null()->inspect(), "null");
-        REQUIRE_EQ(array_obj.inspect(), "[123, 124]");
-        REQUIRE_EQ(hash_object {{{1, &str_obj}}}.inspect(), R"({1: "str"})");
-        REQUIRE_EQ(ret_obj.inspect(), R"([123, 124])");
+        CHECK_EQ(int_obj.inspect(), "123");
+        CHECK_EQ(dec_obj.inspect(), "12.3");
+        CHECK_EQ(true_obj.inspect(), "true");
+        CHECK_EQ(str_obj.inspect(), R"("str")");
+        CHECK_EQ(err_obj.inspect(), "ERROR: error");
+        CHECK_EQ(brake()->inspect(), "break");
+        CHECK_EQ(cont()->inspect(), "continue");
+        CHECK_EQ(null()->inspect(), "null");
+        CHECK_EQ(array_obj.inspect(), "[123, 124]");
+        CHECK_EQ(hash_object {{{1, &str_obj}}}.inspect(), R"({1: "str"})");
+        CHECK_EQ(ret_obj.inspect(), R"([123, 124])");
     }
 
     TEST_CASE("operator ==")
     {
-        require_eq(int_obj, integer_object {i1});
-        require_eq(dec_obj, decimal_object {d1});
-        require_eq(decimal_object {d3}, integer_object {i1});
-        require_eq(true_obj, boolean_object {true});
-        require_eq(true_obj, integer_object {1});
-        require_eq(true_obj, decimal_object {1});
-        require_eq(integer_object {1}, true_obj);
-        require_eq(decimal_object {1}, true_obj);
-        require_eq(false_obj, boolean_object {false});
-        require_eq(null_obj, null_object {});
-        require_eq(array_obj, array_object {{&int_obj, &int2_obj}});
-        require_eq(hash_obj, hash_object {{{2, &true_obj}, {1, &str_obj}}});
+        check_eq(int_obj, integer_object {i1});
+        check_eq(dec_obj, decimal_object {d1});
+        check_eq(decimal_object {d3}, integer_object {i1});
+        check_eq(true_obj, boolean_object {true});
+        check_eq(true_obj, integer_object {1});
+        check_eq(true_obj, decimal_object {1});
+        check_eq(integer_object {1}, true_obj);
+        check_eq(decimal_object {1}, true_obj);
+        check_eq(false_obj, boolean_object {false});
+        check_eq(null_obj, null_object {});
+        check_eq(array_obj, array_object {{&int_obj, &int2_obj}});
+        check_eq(hash_obj, hash_object {{{2, &true_obj}, {1, &str_obj}}});
     }
 
     TEST_CASE("operator !=")
     {
-        require_ne(int_obj, integer_object {122});
-        require_ne(decimal_object {d2}, integer_object {i1});
-        require_ne(true_obj, false_obj);
-        require_ne(false_obj, null_obj);
-        require_ne(null_obj, true_obj);
-        require_ne(hash_obj, hash_object {{{2, &str_obj}, {1, &int_obj}}});
-        require_ne(array_obj, array_object {{&int2_obj, &int_obj}});
+        check_ne(int_obj, integer_object {122});
+        check_ne(decimal_object {d2}, integer_object {i1});
+        check_ne(true_obj, false_obj);
+        check_ne(false_obj, null_obj);
+        check_ne(null_obj, true_obj);
+        check_ne(hash_obj, hash_object {{{2, &str_obj}, {1, &int_obj}}});
+        check_ne(array_obj, array_object {{&int2_obj, &int_obj}});
     }
 
     TEST_CASE("operator >")
@@ -1233,146 +1232,146 @@ TEST_SUITE("object tests")
 
     TEST_CASE("operator +")
     {
-        require_add(integer_object {1}, integer_object {1}, integer_object {2});
-        require_add(decimal_object {1}, integer_object {1}, decimal_object {2});
-        require_add(true_obj, integer_object {1}, integer_object {2});
-        require_add(true_obj, decimal_object {1}, decimal_object {2});
-        require_add(integer_object {1}, true_obj, integer_object {2});
-        require_add(decimal_object {1}, true_obj, decimal_object {2});
-        require_add(false_obj, decimal_object {1}, decimal_object {1});
-        require_add(false_obj, integer_object {1}, integer_object {1});
-        require_add(array_obj, array_obj, array_object {{&int_obj, &int2_obj, &int_obj, &int2_obj}});
-        require_add(
+        check_add(integer_object {1}, integer_object {1}, integer_object {2});
+        check_add(decimal_object {1}, integer_object {1}, decimal_object {2});
+        check_add(true_obj, integer_object {1}, integer_object {2});
+        check_add(true_obj, decimal_object {1}, decimal_object {2});
+        check_add(integer_object {1}, true_obj, integer_object {2});
+        check_add(decimal_object {1}, true_obj, decimal_object {2});
+        check_add(false_obj, decimal_object {1}, decimal_object {1});
+        check_add(false_obj, integer_object {1}, integer_object {1});
+        check_add(array_obj, array_obj, array_object {{&int_obj, &int2_obj, &int_obj, &int2_obj}});
+        check_add(
             hash_obj, hash_object {{{3, &false_obj}}}, hash_object {{{1, &str_obj}, {2, &true_obj}, {3, &false_obj}}});
     }
 
     TEST_CASE("operator -")
     {
-        require_sub(integer_object {3}, integer_object {1}, integer_object {2});
-        require_sub(decimal_object {3}, integer_object {1}, decimal_object {2});
-        require_sub(integer_object {3}, decimal_object {1}, decimal_object {2});
-        require_sub(true_obj, integer_object {1}, integer_object {0});
-        require_sub(true_obj, decimal_object {1}, decimal_object {0});
-        require_sub(integer_object {2}, true_obj, integer_object {1});
-        require_sub(decimal_object {2}, true_obj, decimal_object {1});
-        require_sub(false_obj, decimal_object {1}, decimal_object {-1});
-        require_sub(false_obj, integer_object {1}, integer_object {-1});
+        check_sub(integer_object {3}, integer_object {1}, integer_object {2});
+        check_sub(decimal_object {3}, integer_object {1}, decimal_object {2});
+        check_sub(integer_object {3}, decimal_object {1}, decimal_object {2});
+        check_sub(true_obj, integer_object {1}, integer_object {0});
+        check_sub(true_obj, decimal_object {1}, decimal_object {0});
+        check_sub(integer_object {2}, true_obj, integer_object {1});
+        check_sub(decimal_object {2}, true_obj, decimal_object {1});
+        check_sub(false_obj, decimal_object {1}, decimal_object {-1});
+        check_sub(false_obj, integer_object {1}, integer_object {-1});
     }
 
     TEST_CASE("operator *")
     {
-        require_mul(integer_object {1}, integer_object {1}, integer_object {1});
-        require_mul(decimal_object {2}, integer_object {2}, decimal_object {4});
-        require_mul(true_obj, integer_object {2}, integer_object {2});
-        require_mul(true_obj, decimal_object {2}, decimal_object {2});
-        require_mul(integer_object {2}, true_obj, integer_object {2});
-        require_mul(decimal_object {2}, true_obj, decimal_object {2});
-        require_mul(false_obj, decimal_object {1}, decimal_object {0});
-        require_mul(false_obj, integer_object {1}, integer_object {0});
-        require_mul(integer_object {2}, array_obj, array_object {{&int_obj, &int2_obj, &int_obj, &int2_obj}});
-        require_mul(array_obj, integer_object {2}, array_object {{&int_obj, &int2_obj, &int_obj, &int2_obj}});
-        require_mul(string_object {"abc"}, integer_object {2}, string_object {"abcabc"});
-        require_mul(integer_object {2}, string_object {"abc"}, string_object {"abcabc"});
+        check_mul(integer_object {1}, integer_object {1}, integer_object {1});
+        check_mul(decimal_object {2}, integer_object {2}, decimal_object {4});
+        check_mul(true_obj, integer_object {2}, integer_object {2});
+        check_mul(true_obj, decimal_object {2}, decimal_object {2});
+        check_mul(integer_object {2}, true_obj, integer_object {2});
+        check_mul(decimal_object {2}, true_obj, decimal_object {2});
+        check_mul(false_obj, decimal_object {1}, decimal_object {0});
+        check_mul(false_obj, integer_object {1}, integer_object {0});
+        check_mul(integer_object {2}, array_obj, array_object {{&int_obj, &int2_obj, &int_obj, &int2_obj}});
+        check_mul(array_obj, integer_object {2}, array_object {{&int_obj, &int2_obj, &int_obj, &int2_obj}});
+        check_mul(string_object {"abc"}, integer_object {2}, string_object {"abcabc"});
+        check_mul(integer_object {2}, string_object {"abc"}, string_object {"abcabc"});
     }
 
     TEST_CASE("operator /")
     {
-        require_div(integer_object {1}, integer_object {1}, decimal_object {1});
-        require_div(decimal_object {4}, integer_object {2}, decimal_object {2});
-        require_div(true_obj, integer_object {2}, decimal_object {0.5});
-        require_div(true_obj, decimal_object {1}, decimal_object {1});
-        require_div(integer_object {2}, true_obj, decimal_object {2});
-        require_div(decimal_object {2}, true_obj, decimal_object {2});
-        require_div(false_obj, decimal_object {1}, decimal_object {0});
-        require_div(false_obj, integer_object {1}, decimal_object {0});
-        require_div(integer_object {1}, integer_object {0}, error_object {"division by zero"});
-        require_div(integer_object {1}, false_obj, error_object {"division by zero"});
-        require_inf(integer_object {1} / decimal_object {0});
-        require_inf(integer_object {-1} / decimal_object {0});
+        check_div(integer_object {1}, integer_object {1}, decimal_object {1});
+        check_div(decimal_object {4}, integer_object {2}, decimal_object {2});
+        check_div(true_obj, integer_object {2}, decimal_object {0.5});
+        check_div(true_obj, decimal_object {1}, decimal_object {1});
+        check_div(integer_object {2}, true_obj, decimal_object {2});
+        check_div(decimal_object {2}, true_obj, decimal_object {2});
+        check_div(false_obj, decimal_object {1}, decimal_object {0});
+        check_div(false_obj, integer_object {1}, decimal_object {0});
+        check_div(integer_object {1}, integer_object {0}, error_object {"division by zero"});
+        check_div(integer_object {1}, false_obj, error_object {"division by zero"});
+        check_inf(integer_object {1} / decimal_object {0});
+        check_inf(integer_object {-1} / decimal_object {0});
     }
 
     TEST_CASE("operator //")
     {
-        require_floor_div(integer_object {1}, integer_object {1}, decimal_object {1});
-        require_floor_div(decimal_object {5}, integer_object {2}, decimal_object {2});
-        require_floor_div(decimal_object {-5}, integer_object {2}, decimal_object {-3});
-        require_floor_div(true_obj, integer_object {-2}, decimal_object {-1});
-        require_floor_div(true_obj, decimal_object {1}, decimal_object {1});
-        require_floor_div(integer_object {2}, true_obj, decimal_object {2});
-        require_floor_div(decimal_object {2}, true_obj, decimal_object {2});
-        require_floor_div(false_obj, decimal_object {1}, decimal_object {0});
-        require_floor_div(false_obj, integer_object {1}, decimal_object {0});
-        require_floor_div(integer_object {1}, integer_object {0}, error_object {"division by zero"});
+        check_floor_div(integer_object {1}, integer_object {1}, decimal_object {1});
+        check_floor_div(decimal_object {5}, integer_object {2}, decimal_object {2});
+        check_floor_div(decimal_object {-5}, integer_object {2}, decimal_object {-3});
+        check_floor_div(true_obj, integer_object {-2}, decimal_object {-1});
+        check_floor_div(true_obj, decimal_object {1}, decimal_object {1});
+        check_floor_div(integer_object {2}, true_obj, decimal_object {2});
+        check_floor_div(decimal_object {2}, true_obj, decimal_object {2});
+        check_floor_div(false_obj, decimal_object {1}, decimal_object {0});
+        check_floor_div(false_obj, integer_object {1}, decimal_object {0});
+        check_floor_div(integer_object {1}, integer_object {0}, error_object {"division by zero"});
     }
     TEST_CASE("operator %")
     {
-        require_mod(integer_object {1}, integer_object {1}, integer_object {0});
-        require_mod(integer_object {-1}, integer_object {100}, integer_object {99});
-        require_mod(decimal_object {5}, integer_object {2}, decimal_object {1});
-        require_mod(decimal_object {-5}, integer_object {2}, decimal_object {1});
-        require_mod(true_obj, integer_object {-2}, integer_object {-1});
-        require_mod(true_obj, decimal_object {1}, decimal_object {0});
-        require_mod(integer_object {2}, true_obj, integer_object {0});
-        require_mod(decimal_object {2}, true_obj, decimal_object {0});
-        require_mod(false_obj, decimal_object {1}, decimal_object {0});
-        require_mod(false_obj, integer_object {1}, integer_object {0});
-        require_mod(integer_object {1}, integer_object {0}, error_object {"division by zero"});
-        require_mod(integer_object {1}, false_obj, error_object {"division by zero"});
-        require_nan(integer_object {1} % decimal_object {0});
+        check_mod(integer_object {1}, integer_object {1}, integer_object {0});
+        check_mod(integer_object {-1}, integer_object {100}, integer_object {99});
+        check_mod(decimal_object {5}, integer_object {2}, decimal_object {1});
+        check_mod(decimal_object {-5}, integer_object {2}, decimal_object {1});
+        check_mod(true_obj, integer_object {-2}, integer_object {-1});
+        check_mod(true_obj, decimal_object {1}, decimal_object {0});
+        check_mod(integer_object {2}, true_obj, integer_object {0});
+        check_mod(decimal_object {2}, true_obj, decimal_object {0});
+        check_mod(false_obj, decimal_object {1}, decimal_object {0});
+        check_mod(false_obj, integer_object {1}, integer_object {0});
+        check_mod(integer_object {1}, integer_object {0}, error_object {"division by zero"});
+        check_mod(integer_object {1}, false_obj, error_object {"division by zero"});
+        check_nan(integer_object {1} % decimal_object {0});
     }
 
     TEST_CASE("operator &")
     {
-        require_bit_and(integer_object {1}, integer_object {1}, integer_object {1});
-        require_bit_and(integer_object {-1}, integer_object {100}, integer_object {100});
-        require_bit_and(integer_object {5}, integer_object {2}, decimal_object {0});
-        require_bit_and(integer_object {-5}, integer_object {2}, decimal_object {2});
-        require_bit_and(true_obj, integer_object {-2}, integer_object {0});
-        require_bit_and(integer_object {2}, true_obj, integer_object {0});
-        require_bit_and(false_obj, integer_object {1}, integer_object {0});
+        check_bit_and(integer_object {1}, integer_object {1}, integer_object {1});
+        check_bit_and(integer_object {-1}, integer_object {100}, integer_object {100});
+        check_bit_and(integer_object {5}, integer_object {2}, decimal_object {0});
+        check_bit_and(integer_object {-5}, integer_object {2}, decimal_object {2});
+        check_bit_and(true_obj, integer_object {-2}, integer_object {0});
+        check_bit_and(integer_object {2}, true_obj, integer_object {0});
+        check_bit_and(false_obj, integer_object {1}, integer_object {0});
     }
 
     TEST_CASE("operator |")
     {
-        require_bit_or(integer_object {1}, integer_object {1}, integer_object {1});
-        require_bit_or(integer_object {-1}, integer_object {100}, integer_object {-1});
-        require_bit_or(integer_object {5}, integer_object {2}, decimal_object {7});
-        require_bit_or(integer_object {-5}, integer_object {2}, decimal_object {-5});
-        require_bit_or(true_obj, integer_object {-2}, integer_object {-1});
-        require_bit_or(integer_object {2}, true_obj, integer_object {3});
-        require_bit_or(false_obj, integer_object {1}, integer_object {1});
+        check_bit_or(integer_object {1}, integer_object {1}, integer_object {1});
+        check_bit_or(integer_object {-1}, integer_object {100}, integer_object {-1});
+        check_bit_or(integer_object {5}, integer_object {2}, decimal_object {7});
+        check_bit_or(integer_object {-5}, integer_object {2}, decimal_object {-5});
+        check_bit_or(true_obj, integer_object {-2}, integer_object {-1});
+        check_bit_or(integer_object {2}, true_obj, integer_object {3});
+        check_bit_or(false_obj, integer_object {1}, integer_object {1});
     }
 
     TEST_CASE("operator ^")
     {
-        require_bit_xor(integer_object {1}, integer_object {1}, integer_object {0});
-        require_bit_xor(integer_object {-1}, integer_object {100}, integer_object {-101});
-        require_bit_xor(integer_object {5}, integer_object {2}, decimal_object {7});
-        require_bit_xor(integer_object {-5}, integer_object {2}, decimal_object {-7});
-        require_bit_xor(true_obj, integer_object {-2}, integer_object {-1});
-        require_bit_xor(integer_object {2}, true_obj, integer_object {3});
-        require_bit_xor(false_obj, integer_object {1}, integer_object {1});
+        check_bit_xor(integer_object {1}, integer_object {1}, integer_object {0});
+        check_bit_xor(integer_object {-1}, integer_object {100}, integer_object {-101});
+        check_bit_xor(integer_object {5}, integer_object {2}, decimal_object {7});
+        check_bit_xor(integer_object {-5}, integer_object {2}, decimal_object {-7});
+        check_bit_xor(true_obj, integer_object {-2}, integer_object {-1});
+        check_bit_xor(integer_object {2}, true_obj, integer_object {3});
+        check_bit_xor(false_obj, integer_object {1}, integer_object {1});
     }
 
     TEST_CASE("operator <<")
     {
-        require_bit_shl(integer_object {1}, integer_object {1}, integer_object {2});
-        require_bit_shl(integer_object {-1}, integer_object {10}, integer_object {-1024});
-        require_bit_shl(integer_object {5}, integer_object {2}, decimal_object {20});
-        require_bit_shl(integer_object {-5}, integer_object {2}, decimal_object {-20});
-        require_bit_shl(true_obj, integer_object {2}, integer_object {4});
-        require_bit_shl(integer_object {2}, true_obj, integer_object {4});
-        require_bit_shl(false_obj, integer_object {1}, integer_object {0});
+        check_bit_shl(integer_object {1}, integer_object {1}, integer_object {2});
+        check_bit_shl(integer_object {-1}, integer_object {10}, integer_object {-1024});
+        check_bit_shl(integer_object {5}, integer_object {2}, decimal_object {20});
+        check_bit_shl(integer_object {-5}, integer_object {2}, decimal_object {-20});
+        check_bit_shl(true_obj, integer_object {2}, integer_object {4});
+        check_bit_shl(integer_object {2}, true_obj, integer_object {4});
+        check_bit_shl(false_obj, integer_object {1}, integer_object {0});
     }
 
     TEST_CASE("operator >>")
     {
-        require_bit_shr(integer_object {2}, integer_object {1}, integer_object {1});
-        require_bit_shr(integer_object {-10}, integer_object {2}, integer_object {-3});
-        require_bit_shr(integer_object {-5}, integer_object {2}, decimal_object {-2});
-        require_bit_shr(true_obj, integer_object {1}, integer_object {0});
-        require_bit_shr(integer_object {2}, true_obj, integer_object {1});
-        require_bit_shr(false_obj, integer_object {1}, integer_object {0});
+        check_bit_shr(integer_object {2}, integer_object {1}, integer_object {1});
+        check_bit_shr(integer_object {-10}, integer_object {2}, integer_object {-3});
+        check_bit_shr(integer_object {-5}, integer_object {2}, decimal_object {-2});
+        check_bit_shr(true_obj, integer_object {1}, integer_object {0});
+        check_bit_shr(integer_object {2}, true_obj, integer_object {1});
+        check_bit_shr(false_obj, integer_object {1}, integer_object {0});
     }
 }
 

@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include <analyzer/analyzer.hpp>
 #include <ast/builtin_function_expression.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
@@ -183,6 +184,7 @@ auto run_file(const command_line_args& opts) -> int
         return 1;
     }
     if (opts.mode == engine::vm) {
+        analyze_program(prgrm, nullptr);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
         if (opts.debug) {
@@ -195,6 +197,7 @@ auto run_file(const command_line_args& opts) -> int
             std::cout << result->inspect() << '\n';
         }
     } else {
+        analyze_program(prgrm, nullptr);
         auto* global_env = make<environment>();
         for (const auto& builtin : builtin_function_expression::builtins()) {
             global_env->set(builtin->name, make<builtin_object>(builtin));
@@ -238,6 +241,14 @@ auto run_repl(const command_line_args& opts) -> int
         }
         if (opts.mode == engine::vm) {
             try {
+                analyze_program(prgrm, symbols);
+            } catch (const std::exception& e) {
+                fmt::println("{}", e.what());
+                show_prompt();
+                continue;
+            }
+
+            try {
                 auto cmplr = compiler::create_with_state(&consts, symbols);
                 cmplr.compile(prgrm);
                 if (opts.debug) {
@@ -255,6 +266,13 @@ auto run_repl(const command_line_args& opts) -> int
                 continue;
             }
         } else {
+            try {
+                analyze_program(prgrm, symbols);
+            } catch (const std::exception& e) {
+                fmt::println("{}", e.what());
+                show_prompt();
+                continue;
+            }
             try {
                 const auto* result = prgrm->eval(global_env);
                 if (result != nullptr && !result->is(object::object_type::nll)) {
