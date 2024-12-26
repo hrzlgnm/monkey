@@ -433,7 +433,7 @@ void evaluator::apply_function(const object* function_or_builtin, array_object::
         m_result = builtin->builtin->body(std::move(args));
         return;
     }
-    m_result = make_error("not a function {}", m_result->type());
+    m_result = make_error("calling a value of type {} is not supported", function_or_builtin->type());
 }
 
 auto evaluator::evaluate_expressions(const expressions& exprs) -> array_object::value_type
