@@ -11,7 +11,7 @@
 
 #include "object.hpp"
 
-#include <ast/builtin_function_expression.hpp>
+#include <ast/builtin_function.hpp>
 #include <ast/callable_expression.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
@@ -143,7 +143,7 @@ auto object::operator||(const object& other) const -> const object*
     return native_bool_to_object(is_truthy() || other.is_truthy());
 }
 
-builtin_object::builtin_object(const builtin_function_expression* bltn)
+builtin_object::builtin_object(const builtin_function* bltn)
 
     : function_object {bltn, nullptr}
     , builtin {bltn}
@@ -1110,7 +1110,7 @@ TEST_SUITE("object tests")
     const hash_object hash_obj {{{1, &str_obj}, {2, &true_obj}}};
     const return_value_object ret_obj {&array_obj};
     const function_object function_obj {nullptr, nullptr};
-    const builtin_object builtin_obj {builtin_function_expression::builtins()[0]};
+    const builtin_object builtin_obj {builtin_function::builtins()[0]};
     const compiled_function_object cmpld_obj {{}, 0, 0};
     const closure_object clsr_obj {&cmpld_obj, {}};
 

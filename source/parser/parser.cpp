@@ -7,14 +7,14 @@
 
 #include "parser.hpp"
 
-#include <ast/array_expression.hpp>
+#include <ast/array_literal.hpp>
 #include <ast/binary_expression.hpp>
-#include <ast/boolean.hpp>
+#include <ast/boolean_literal.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
-#include <ast/function_expression.hpp>
-#include <ast/hash_literal_expression.hpp>
+#include <ast/function_literal.hpp>
+#include <ast/hash_literal.hpp>
 #include <ast/identifier.hpp>
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
@@ -197,7 +197,7 @@ auto parser::parse_let_statement() -> statement*
 
     next_token();
     auto* expr = parse_expression(lowest);
-    if (auto* func_expr = dynamic_cast<function_expression*>(expr); func_expr != nullptr) {
+    if (auto* func_expr = dynamic_cast<function_literal*>(expr); func_expr != nullptr) {
         func_expr->name = stmt->name->value;
     }
     stmt->value = expr;
@@ -313,7 +313,7 @@ auto parser::parse_unary_expression() -> expression*
 
 auto parser::parse_boolean() -> expression*
 {
-    return make<boolean>(current_token_is(token_type::tru));
+    return make<boolean_literal>(current_token_is(token_type::tru));
 }
 
 auto parser::parse_grouped_expression() -> expression*
@@ -391,7 +391,7 @@ auto parser::parse_function_expression() -> expression*
         return {};
     }
     auto* body = parse_block_statement();
-    return make<function_expression>(std::move(parameters), body);
+    return make<function_literal>(std::move(parameters), body);
 }
 
 auto parser::parse_function_parameters() -> std::vector<std::string>
@@ -505,7 +505,7 @@ auto parser::parse_expression_list(token_type end) -> std::vector<const expressi
 
 auto parser::parse_array_expression() -> expression*
 {
-    auto* array_expr = make<array_expression>();
+    auto* array_expr = make<array_literal>();
     array_expr->elements = parse_expression_list(token_type::rbracket);
     return array_expr;
 }
@@ -526,7 +526,7 @@ auto parser::parse_index_expression(expression* left) -> expression*
 
 auto parser::parse_hash_literal() -> expression*
 {
-    auto* hash = make<hash_literal_expression>();
+    auto* hash = make<hash_literal>();
     using enum token_type;
     while (!peek_token_is(rsquirly)) {
         next_token();
@@ -623,7 +623,7 @@ auto check_program(std::string_view input) -> parsed_program
 
 auto require_boolean_literal(const expression* expr, bool value) -> void
 {
-    auto* bool_expr = dynamic_cast<const boolean*>(expr);
+    auto* bool_expr = dynamic_cast<const boolean_literal*>(expr);
     INFO("expected boolean, got:", expr->string());
     REQUIRE(bool_expr);
     REQUIRE_EQ(bool_expr->value, value);
@@ -1232,7 +1232,7 @@ TEST_CASE("functionLiteral")
 {
     const char* input = "fn(x, y) { x + y; }";
     auto [prgrm, _] = check_program(input);
-    auto* fn_expr = require_expression<function_expression>(prgrm);
+    auto* fn_expr = require_expression<function_literal>(prgrm);
 
     REQUIRE_EQ(fn_expr->parameters.size(), 2);
 
@@ -1252,7 +1252,7 @@ TEST_CASE("functionLiteralWithName")
     const auto* input = R"(let myFunction = fn() { };)";
     auto [prgrm, _] = check_program(input);
     auto* let = require_let_statement(prgrm->statements[0], "myFunction");
-    auto* fnexpr = dynamic_cast<const function_expression*>(let->value);
+    auto* fnexpr = dynamic_cast<const function_literal*>(let->value);
     REQUIRE(fnexpr);
     REQUIRE_EQ(fnexpr->name, "myFunction");
 }
@@ -1272,7 +1272,7 @@ TEST_CASE("functionParameters")
     };
     for (const auto& [input, expected] : parameter_tests) {
         auto [prgrm, _] = check_program(input);
-        auto* fn_expr = require_expression<function_expression>(prgrm);
+        auto* fn_expr = require_expression<function_literal>(prgrm);
 
         REQUIRE_EQ(fn_expr->parameters.size(), expected.size());
         for (size_t index = 0; const auto& val : expected) {
@@ -1305,7 +1305,7 @@ TEST_CASE("stringLiteralExpression")
 TEST_CASE("arrayExpression")
 {
     auto [prgrm, _] = check_program("[1, 2 * 2, 3 + 3]");
-    auto* array_expr = require_expression<array_expression>(prgrm);
+    auto* array_expr = require_expression<array_literal>(prgrm);
     REQUIRE_EQ(array_expr->elements.size(), 3);
     require_integer_literal(array_expr->elements[0], 1);
     require_binary_expression(array_expr->elements[1], 2, token_type::asterisk, 2);
@@ -1323,7 +1323,7 @@ TEST_CASE("indexEpxression")
 TEST_CASE("hashLiteralStringKeys")
 {
     auto [prgrm, _] = check_program(R"({"one": 1, "two": 2, "three": 3})");
-    auto* hash_lit = require_expression<hash_literal_expression>(prgrm);
+    auto* hash_lit = require_expression<hash_literal>(prgrm);
     std::array keys {"one", "two", "three"};
     std::array values {1, 2, 3};
     for (auto idx = 0UL; const auto& [k, v] : hash_lit->pairs) {
@@ -1336,7 +1336,7 @@ TEST_CASE("hashLiteralStringKeys")
 TEST_CASE("hashLiteralWithExpression")
 {
     auto [prgrm, _] = check_program(R"({"one": 0 + 1, "two": 10 - 8, "three": 15 / 5})");
-    auto* hash_lit = require_expression<hash_literal_expression>(prgrm);
+    auto* hash_lit = require_expression<hash_literal>(prgrm);
     std::array keys {"one", "two", "three"};
 
     struct test
@@ -1358,7 +1358,7 @@ TEST_CASE("hashLiteralWithExpression")
 TEST_CASE("emptyHashLiteral")
 {
     auto [prgrm, _] = check_program(R"({})");
-    auto* hash_lit = require_expression<hash_literal_expression>(prgrm);
+    auto* hash_lit = require_expression<hash_literal>(prgrm);
     REQUIRE(hash_lit->pairs.empty());
 }
 

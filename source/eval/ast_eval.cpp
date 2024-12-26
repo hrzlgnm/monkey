@@ -9,17 +9,17 @@
 #include <variant>
 #include <vector>
 
-#include <ast/array_expression.hpp>
+#include <ast/array_literal.hpp>
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
-#include <ast/boolean.hpp>
-#include <ast/builtin_function_expression.hpp>
+#include <ast/boolean_literal.hpp>
+#include <ast/builtin_function.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/callable_expression.hpp>
 #include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
-#include <ast/function_expression.hpp>
-#include <ast/hash_literal_expression.hpp>
+#include <ast/function_literal.hpp>
+#include <ast/hash_literal.hpp>
 #include <ast/identifier.hpp>
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
@@ -39,7 +39,7 @@
 
 #include "environment.hpp"
 
-auto array_expression::eval(environment* env) const -> const object*
+auto array_literal::eval(environment* env) const -> const object*
 {
     array_object::value_type arr;
     for (const auto& element : elements) {
@@ -129,14 +129,14 @@ auto binary_expression::eval(environment* env) const -> const object*
     return make_error("unknown operator: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
 }
 
-auto boolean::eval(environment* /*env*/) const -> const object*
+auto boolean_literal::eval(environment* /*env*/) const -> const object*
 {
     return native_bool_to_object(value);
 }
 
-auto function_expression::call(environment* closure_env,
-                               environment* caller_env,
-                               const std::vector<const expression*>& arguments) const -> const object*
+auto function_literal::call(environment* closure_env,
+                            environment* caller_env,
+                            const std::vector<const expression*>& arguments) const -> const object*
 {
     auto* locals = make<environment>(closure_env);
     for (auto arg_itr = arguments.begin(); const auto& parameter : parameters) {
@@ -160,7 +160,7 @@ auto call_expression::eval(environment* env) const -> const object*
     return fn->callable->call(fn->closure_env, env, arguments);
 }
 
-auto hash_literal_expression::eval(environment* env) const -> const object*
+auto hash_literal::eval(environment* env) const -> const object*
 {
     hash_object::value_type result;
 
@@ -379,9 +379,9 @@ auto unary_expression::eval(environment* env) const -> const object*
     }
 }
 
-auto builtin_function_expression::call(environment* /*closure_env*/,
-                                       environment* caller_env,
-                                       const std::vector<const expression*>& arguments) const -> const object*
+auto builtin_function::call(environment* /*closure_env*/,
+                            environment* caller_env,
+                            const std::vector<const expression*>& arguments) const -> const object*
 {
     array_object::value_type args;
     std::transform(arguments.cbegin(),
@@ -503,7 +503,7 @@ auto run(std::string_view input) -> const object*
 {
     auto [prgrm, _] = check_program(input);
     environment env;
-    for (const auto& builtin : builtin_function_expression::builtins()) {
+    for (const auto& builtin : builtin_function::builtins()) {
         env.set(builtin->name, make<builtin_object>(builtin));
     }
     auto result = prgrm->eval(&env);

@@ -9,7 +9,7 @@
 
 #include "compiler.hpp"
 
-#include <ast/builtin_function_expression.hpp>
+#include <ast/builtin_function.hpp>
 #include <ast/program.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
@@ -24,7 +24,7 @@
 auto compiler::create() -> compiler
 {
     auto* symbols = symbol_table::create();
-    for (auto idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
+    for (auto idx = 0; const auto& builtin : builtin_function::builtins()) {
         symbols->define_builtin(idx++, builtin->name);
     }
     return {make<constants>(), symbols};

@@ -13,7 +13,7 @@
 
 #include "vm.hpp"
 
-#include <ast/builtin_function_expression.hpp>
+#include <ast/builtin_function.hpp>
 #include <ast/program.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
@@ -198,7 +198,7 @@ auto vm::run() -> void
             case opcodes::get_builtin: {
                 current_frame().ip += 1;
                 const auto builtin_index = instr[ip + 1UL];
-                const auto* const builtin = builtin_function_expression::builtins()[builtin_index];
+                const auto* const builtin = builtin_function::builtins()[builtin_index];
                 push(make<builtin_object>(builtin));
             } break;
             case opcodes::set_free: {

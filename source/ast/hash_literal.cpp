@@ -3,12 +3,12 @@
 #include <string>
 #include <vector>
 
-#include "hash_literal_expression.hpp"
+#include "hash_literal.hpp"
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
-auto hash_literal_expression::string() const -> std::string
+auto hash_literal::string() const -> std::string
 {
     std::vector<std::string> strpairs;
     std::transform(pairs.cbegin(),

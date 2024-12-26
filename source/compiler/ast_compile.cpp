@@ -2,16 +2,16 @@
 #include <stdexcept>
 #include <utility>
 
-#include <ast/array_expression.hpp>
+#include <ast/array_literal.hpp>
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
-#include <ast/boolean.hpp>
-#include <ast/builtin_function_expression.hpp>
+#include <ast/boolean_literal.hpp>
+#include <ast/builtin_function.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
-#include <ast/function_expression.hpp>
-#include <ast/hash_literal_expression.hpp>
+#include <ast/function_literal.hpp>
+#include <ast/hash_literal.hpp>
 #include <ast/identifier.hpp>
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
@@ -29,7 +29,7 @@
 #include "compiler.hpp"
 #include "symbol_table.hpp"
 
-auto array_expression::compile(compiler& comp) const -> void
+auto array_literal::compile(compiler& comp) const -> void
 {
     for (const auto& element : elements) {
         element->compile(comp);
@@ -123,12 +123,12 @@ auto binary_expression::compile(compiler& comp) const -> void
     }
 }
 
-auto boolean::compile(compiler& comp) const -> void
+auto boolean_literal::compile(compiler& comp) const -> void
 {
     comp.emit(value ? opcodes::tru : opcodes::fals);
 }
 
-auto hash_literal_expression::compile(compiler& comp) const -> void
+auto hash_literal::compile(compiler& comp) const -> void
 {
     for (const auto& [key, value] : pairs) {
         key->compile(comp);
@@ -292,7 +292,7 @@ auto unary_expression::compile(compiler& comp) const -> void
     }
 }
 
-auto function_expression::compile(compiler& comp) const -> void
+auto function_literal::compile(compiler& comp) const -> void
 {
     comp.enter_scope();
     if (!name.empty()) {
@@ -330,4 +330,4 @@ auto call_expression::compile(compiler& comp) const -> void
     comp.emit(opcodes::call, arguments.size());
 }
 
-auto builtin_function_expression::compile(compiler& /*comp*/) const -> void {}
+auto builtin_function::compile(compiler& /*comp*/) const -> void {}
