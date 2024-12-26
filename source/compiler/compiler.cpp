@@ -4,17 +4,37 @@
 #include <cstddef>
 #include <iterator>
 #include <optional>
+#include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "compiler.hpp"
 
-#include <ast/builtin_function.hpp>
+#include <ast/array_literal.hpp>
+#include <ast/assign_expression.hpp>
+#include <ast/binary_expression.hpp>
+#include <ast/boolean_literal.hpp>
+#include <ast/call_expression.hpp>
+#include <ast/decimal_literal.hpp>
+#include <ast/expression.hpp>
+#include <ast/function_literal.hpp>
+#include <ast/hash_literal.hpp>
+#include <ast/identifier.hpp>
+#include <ast/if_expression.hpp>
+#include <ast/index_expression.hpp>
+#include <ast/integer_literal.hpp>
 #include <ast/program.hpp>
+#include <ast/statements.hpp>
+#include <ast/string_literal.hpp>
+#include <ast/unary_expression.hpp>
+#include <builtin/builtin.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
+#include <fmt/format.h>
 #include <fmt/ranges.h>
 #include <gc.hpp>
+#include <lexer/token_type.hpp>
 #include <object/object.hpp>
 #include <overloaded.hpp>
 #include <parser/parser.hpp>
@@ -24,7 +44,7 @@
 auto compiler::create() -> compiler
 {
     auto* symbols = symbol_table::create();
-    for (auto idx = 0; const auto& builtin : builtin_function::builtins()) {
+    for (auto idx = 0; const auto& builtin : builtin::builtins()) {
         symbols->define_builtin(idx++, builtin->name);
     }
     return {make<constants>(), symbols};
@@ -39,7 +59,7 @@ compiler::compiler(constants* consts, symbol_table* symbols)
 
 auto compiler::compile(const program* program) -> void
 {
-    program->compile(*this);
+    program->accept(*this);
 }
 
 auto compiler::add_constant(object* obj) -> std::size_t
@@ -195,6 +215,307 @@ auto compiler::number_symbol_definitions() const -> int
 auto compiler::consts() const -> constants*
 {
     return m_consts;
+}
+
+void compiler::visit(const array_literal& expr)
+{
+    for (const auto& element : expr.elements) {
+        element->accept(*this);
+    }
+    emit(opcodes::array, expr.elements.size());
+}
+
+void compiler::visit(const assign_expression& expr)
+{
+    expr.value->accept(*this);
+    const auto maybe_symbol = resolve_symbol(expr.name->value);
+    assert(maybe_symbol.has_value());
+    const auto& sym = maybe_symbol.value();
+    if (sym.scope == symbol_scope::global) {
+        emit(opcodes::set_global, sym.index);
+    } else if (sym.scope == symbol_scope::local) {
+        emit(opcodes::set_local, sym.index);
+    } else if (sym.scope == symbol_scope::free) {
+        emit(opcodes::set_free, sym.index);
+    } else {
+        assert(sym.ptr.has_value());
+        const auto& val = sym.ptr.value();
+        emit(opcodes::set_outer,
+             {static_cast<operands::value_type>(val.level),
+              static_cast<operands::value_type>(val.scope),
+              static_cast<operands::value_type>(val.index)});
+    }
+}
+
+void compiler::visit(const binary_expression& expr)
+{
+    if (expr.op == token_type::less_than) {
+        expr.right->accept(*this);
+        expr.left->accept(*this);
+        emit(opcodes::greater_than);
+        return;
+    }
+    expr.left->accept(*this);
+    expr.right->accept(*this);
+    switch (expr.op) {
+        case token_type::plus:
+            emit(opcodes::add);
+            break;
+        case token_type::minus:
+            emit(opcodes::sub);
+            break;
+        case token_type::asterisk:
+            emit(opcodes::mul);
+            break;
+        case token_type::slash:
+            emit(opcodes::div);
+            break;
+        case token_type::percent:
+            emit(opcodes::mod);
+            break;
+        case token_type::double_slash:
+            emit(opcodes::floor_div);
+            break;
+        case token_type::ampersand:
+            emit(opcodes::bit_and);
+            break;
+        case token_type::pipe:
+            emit(opcodes::bit_or);
+            break;
+        case token_type::caret:
+            emit(opcodes::bit_xor);
+            break;
+        case token_type::shift_left:
+            emit(opcodes::bit_lsh);
+            break;
+        case token_type::shift_right:
+            emit(opcodes::bit_rsh);
+            break;
+        case token_type::logical_and:
+            emit(opcodes::logical_and);
+            break;
+        case token_type::logical_or:
+            emit(opcodes::logical_or);
+            break;
+        case token_type::greater_than:
+            emit(opcodes::greater_than);
+            break;
+        case token_type::equals:
+            emit(opcodes::equal);
+            break;
+        case token_type::not_equals:
+            emit(opcodes::not_equal);
+            break;
+        default:
+            throw std::runtime_error(fmt::format("unsupported operator {}", expr.op));
+    }
+}
+
+void compiler::visit(const boolean_literal& expr)
+{
+    emit(expr.value ? opcodes::tru : opcodes::fals);
+}
+
+void compiler::visit(const hash_literal& expr)
+{
+    for (const auto& [key, value] : expr.pairs) {
+        key->accept(*this);
+        value->accept(*this);
+    }
+    emit(opcodes::hash, expr.pairs.size() * 2);
+}
+
+void compiler::visit(const identifier& expr)
+{
+    auto maybe_symbol = resolve_symbol(expr.value);
+    if (!maybe_symbol.has_value()) {
+        throw std::runtime_error(fmt::format("undefined variable {}", expr.value));
+    }
+    const auto& symbol = maybe_symbol.value();
+    load_symbol(symbol);
+}
+
+void compiler::visit(const if_expression& expr)
+{
+    expr.condition->accept(*this);
+    using enum opcodes;
+    auto jump_not_truthy_pos = emit(jump_not_truthy, 0);
+    expr.consequence->accept(*this);
+    if (last_instruction_is(pop)) {
+        remove_last_pop();
+    }
+    auto jump_pos = emit(jump, 0);
+    auto after_consequence = current_instrs().size();
+    change_operand(jump_not_truthy_pos, after_consequence);
+
+    if (expr.alternative == nullptr) {
+        emit(null);
+    } else {
+        expr.alternative->accept(*this);
+        if (last_instruction_is(pop)) {
+            remove_last_pop();
+        }
+    }
+    auto after_alternative = current_instrs().size();
+    change_operand(jump_pos, after_alternative);
+}
+
+void compiler::visit(const while_statement& expr)
+{
+    using enum opcodes;
+    auto loop_start_pos = current_instrs().size();
+    expr.condition->accept(*this);
+    auto jump_not_truthy_pos = emit(jump_not_truthy, 0);
+
+    /* create a closure for the while loop body */
+    enter_scope(/*inside_loop=*/true);
+    expr.body->accept(*this);
+    /* add a continue opcode at the end, to detect whether break was called or not */
+    emit(cont);
+
+    auto free = free_symbols();
+    auto num_locals = number_symbol_definitions();
+    auto instrs = leave_scope();
+    for (const auto& sym : free) {
+        load_symbol(sym);
+    }
+    auto* cmpl = make<compiled_function_object>(std::move(instrs), num_locals, 0);
+    cmpl->inside_loop = true;
+    auto function_index = add_constant(cmpl);
+    emit(closure, {function_index, free.size()});
+    emit(call, 0);
+
+    auto jump_on_break_pos = emit(jump_not_truthy, 0);
+    emit(jump, loop_start_pos);
+
+    const auto after_body_pos = current_instrs().size();
+    change_operand(jump_not_truthy_pos, after_body_pos);
+    change_operand(jump_on_break_pos, after_body_pos);
+
+    emit(null);
+    emit(pop);
+}
+
+void compiler::visit(const index_expression& expr)
+{
+    expr.left->accept(*this);
+    expr.index->accept(*this);
+    emit(opcodes::index);
+}
+
+void compiler::visit(const integer_literal& expr)
+{
+    emit(opcodes::constant, add_constant(make<integer_object>(expr.value)));
+}
+
+void compiler::visit(const decimal_literal& expr)
+{
+    emit(opcodes::constant, add_constant(make<decimal_object>(expr.value)));
+}
+
+void compiler::visit(const program& expr)
+{
+    for (const auto& stmt : expr.statements) {
+        stmt->accept(*this);
+    }
+}
+
+void compiler::visit(const let_statement& expr)
+{
+    const auto sym = define_symbol(expr.name->value);
+    expr.value->accept(*this);
+    if (sym.is_local()) {
+        emit(opcodes::set_local, sym.index);
+    } else {
+        emit(opcodes::set_global, sym.index);
+    }
+}
+
+void compiler::visit(const return_statement& expr)
+{
+    expr.value->accept(*this);
+    emit(opcodes::return_value);
+}
+
+void compiler::visit(const break_statement& /*expr*/)
+{
+    emit(opcodes::brake);
+}
+
+void compiler::visit(const continue_statement& /*expr*/)
+{
+    emit(opcodes::cont);
+}
+
+void compiler::visit(const expression_statement& expr)
+{
+    expr.expr->accept(*this);
+    emit(opcodes::pop);
+}
+
+void compiler::visit(const block_statement& expr)
+{
+    for (const auto& stmt : expr.statements) {
+        stmt->accept(*this);
+    }
+}
+
+void compiler::visit(const string_literal& expr)
+{
+    emit(opcodes::constant, add_constant(make<string_object>(expr.value)));
+}
+
+void compiler::visit(const unary_expression& expr)
+{
+    expr.right->accept(*this);
+    switch (expr.op) {
+        case token_type::exclamation:
+            emit(opcodes::bang);
+            break;
+        case token_type::minus:
+            emit(opcodes::minus);
+            break;
+        default:
+            throw std::runtime_error(fmt::format("invalid operator {}", expr.op));
+    }
+}
+
+void compiler::visit(const function_literal& expr)
+{
+    enter_scope();
+    if (!expr.name.empty()) {
+        define_function_name(expr.name);
+    }
+    for (const auto* param : expr.parameters) {
+        define_symbol(param->value);
+    }
+    expr.body->accept(*this);
+
+    using enum opcodes;
+    if (last_instruction_is(pop)) {
+        replace_last_pop_with_return();
+    }
+    if (!last_instruction_is(return_value)) {
+        emit(ret);
+    }
+    auto free = free_symbols();
+    auto num_locals = number_symbol_definitions();
+    auto instrs = leave_scope();
+    for (const auto& sym : free) {
+        load_symbol(sym);
+    }
+    auto function_index = add_constant(
+        make<compiled_function_object>(std::move(instrs), num_locals, static_cast<int>(expr.parameters.size())));
+    emit(closure, {function_index, free.size()});
+}
+
+void compiler::visit(const call_expression& expr)
+{
+    expr.function->accept(*this);
+    for (const auto& arg : expr.arguments) {
+        arg->accept(*this);
+    }
+    emit(opcodes::call, expr.arguments.size());
 }
 
 namespace

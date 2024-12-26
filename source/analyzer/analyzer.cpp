@@ -1,11 +1,11 @@
 #include <stdexcept>
+#include <string>
 
 #include "analyzer.hpp"
 
 #include <ast/array_literal.hpp>
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
-#include <ast/builtin_function.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_literal.hpp>
@@ -15,8 +15,8 @@
 #include <ast/index_expression.hpp>
 #include <ast/program.hpp>
 #include <ast/statements.hpp>
-#include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <builtin/builtin.hpp>
 #include <compiler/symbol_table.hpp>
 #include <doctest/doctest.h>
 #include <eval/environment.hpp>
@@ -42,7 +42,7 @@ void analyze_program(const program* program,
         symbols = symbol_table::create_enclosed(existing_symbols);
     } else {
         symbols = symbol_table::create();
-        for (auto i = 0; const auto* builtin : builtin_function::builtins()) {
+        for (auto i = 0; const auto* builtin : builtin::builtins()) {
             symbols->define_builtin(i++, builtin->name);
         }
     }
@@ -79,9 +79,11 @@ void analyzer::visit(const assign_expression& expr)
         fail(fmt::format("identifier not found: {}", expr.name->value));
     }
     const auto& symbol = maybe_symbol.value();
+    // NOLINTBEGIN(bugprone-unchecked-optional-access)
     if (symbol.is_function() || (symbol.is_outer() && symbol.ptr.value().is_function())) {
         fail(fmt::format("cannot reassign the current function being defined: {}", expr.name->value));
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
     expr.value->accept(*this);
 }
 
@@ -143,7 +145,7 @@ void analyzer::visit(const let_statement& expr)
     auto symbol = m_symbols->resolve(expr.name->value);
     if (symbol.has_value()) {
         const auto& value = symbol.value();
-        if (value.is_local() || (value.is_global() && symbol->is_global())) {
+        if (value.is_local() || (value.is_global() && m_symbols->is_global())) {
             fail(fmt::format("{} is already defined", expr.name->value));
         }
     }

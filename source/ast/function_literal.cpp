@@ -4,7 +4,6 @@
 #include "function_literal.hpp"
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
 
 #include "identifier.hpp"
 #include "statements.hpp"

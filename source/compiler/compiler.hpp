@@ -3,6 +3,7 @@
 #include <cstddef>
 
 #include <ast/program.hpp>
+#include <ast/visitor.hpp>
 #include <code/code.hpp>
 #include <object/object.hpp>
 
@@ -29,7 +30,7 @@ struct compilation_scope
     emitted_instruction previous_instr;
 };
 
-struct compiler
+struct compiler final : public visitor
 {
     auto compile(const program* program) -> void;
     [[nodiscard]] static auto create() -> compiler;
@@ -68,6 +69,30 @@ struct compiler
     [[nodiscard]] auto consts() const -> constants*;
 
     [[nodiscard]] auto all_symbols() const -> const symbol_table* { return m_symbols; }
+
+  protected:
+    void visit(const array_literal& expr) final;
+    void visit(const assign_expression& expr) final;
+    void visit(const binary_expression& expr) final;
+    void visit(const block_statement& expr) final;
+    void visit(const boolean_literal& expr) final;
+    void visit(const break_statement& expr) final;
+    void visit(const call_expression& expr) final;
+    void visit(const continue_statement& expr) final;
+    void visit(const decimal_literal& expr) final;
+    void visit(const expression_statement& expr) final;
+    void visit(const function_literal& expr) final;
+    void visit(const hash_literal& expr) final;
+    void visit(const identifier& expr) final;
+    void visit(const if_expression& expr) final;
+    void visit(const index_expression& expr) final;
+    void visit(const integer_literal& expr) final;
+    void visit(const let_statement& expr) final;
+    void visit(const program& expr) final;
+    void visit(const return_statement& expr) final;
+    void visit(const string_literal& expr) final;
+    void visit(const unary_expression& expr) final;
+    void visit(const while_statement& expr) final;
 
   private:
     constants* m_consts {};

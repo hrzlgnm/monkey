@@ -12,13 +12,13 @@ struct evaluator final : visitor
     explicit evaluator(environment* existing_env = nullptr);
     auto evaluate(const program* prgrm) -> const object*;
 
+  protected:
     void visit(const array_literal& expr) final;
     void visit(const assign_expression& expr) final;
     void visit(const binary_expression& expr) final;
     void visit(const block_statement& expr) final;
     void visit(const boolean_literal& expr) final;
     void visit(const break_statement& expr) final;
-    void visit(const builtin_function& expr) final;
     void visit(const call_expression& expr) final;
     void visit(const continue_statement& expr) final;
     void visit(const decimal_literal& expr) final;
@@ -39,6 +39,6 @@ struct evaluator final : visitor
   private:
     void apply_function(const object* function_or_builtin, array_object::value_type&& args);
     auto evaluate_expressions(const expressions& exprs) -> array_object::value_type;
+    environment* m_env {};
     const object* m_result {};
-    environment* m_env;
 };

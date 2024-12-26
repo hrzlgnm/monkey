@@ -13,7 +13,6 @@
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean_literal.hpp>
-#include <ast/builtin_function.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
@@ -27,6 +26,7 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <builtin/builtin.hpp>
 #include <doctest/doctest.h>
 #include <fmt/base.h>
 #include <fmt/ranges.h>
@@ -391,8 +391,6 @@ void evaluator::visit(const unary_expression& expr)
     }
 }
 
-void evaluator::visit(const builtin_function& expr) {}
-
 void evaluator::visit(const call_expression& expr)
 {
     expr.function->accept(*this);
@@ -558,7 +556,7 @@ auto run(std::string_view input) -> const object*
 {
     auto [prgrm, _] = check_program(input);
     environment env;
-    for (const auto& builtin : builtin_function::builtins()) {
+    for (const auto& builtin : builtin::builtins()) {
         env.set(builtin->name, make<builtin_object>(builtin));
     }
     evaluator ev(&env);
