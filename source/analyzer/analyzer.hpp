@@ -31,13 +31,13 @@ struct analyzer final : visitor
     void visit(const call_expression& expr) final;
     void visit(const continue_statement& expr) final;
 
-    void visit(const boolean_literal& expr) final {}
+    void visit(const boolean_literal& /* expr */) final {}
 
-    void visit(const decimal_literal& expr) final {}
+    void visit(const decimal_literal& /* expr */) final {}
 
-    void visit(const integer_literal& expr) final {}
+    void visit(const integer_literal& /* expr */) final {}
 
-    void visit(const string_literal& expr) final {}
+    void visit(const string_literal& /* expr */) final {}
 
   private:
     symbol_table* m_symbols;
