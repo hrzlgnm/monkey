@@ -394,22 +394,22 @@ auto parser::parse_function_expression() -> expression*
     return make<function_literal>(std::move(parameters), body);
 }
 
-auto parser::parse_function_parameters() -> std::vector<std::string>
+auto parser::parse_function_parameters() -> identifiers
 {
     using enum token_type;
-    std::vector<std::string> parameters;
+    identifiers parameters;
     if (peek_token_is(rparen)) {
         next_token();
         return parameters;
     }
     next_token();
     auto* param = parse_identifier();
-    parameters.push_back(param->value);
+    parameters.push_back(param);
     while (peek_token_is(comma)) {
         next_token();
         next_token();
         param = parse_identifier();
-        parameters.push_back(param->value);
+        parameters.push_back(param);
     }
     if (!get(rparen)) {
         return {};
@@ -1236,8 +1236,8 @@ TEST_CASE("functionLiteral")
 
     REQUIRE_EQ(fn_expr->parameters.size(), 2);
 
-    REQUIRE_EQ(fn_expr->parameters[0], "x");
-    REQUIRE_EQ(fn_expr->parameters[1], "y");
+    REQUIRE_EQ(fn_expr->parameters[0]->value, "x");
+    REQUIRE_EQ(fn_expr->parameters[1]->value, "y");
 
     auto* block = dynamic_cast<const block_statement*>(fn_expr->body);
     REQUIRE_EQ(block->statements.size(), 1);
@@ -1276,7 +1276,7 @@ TEST_CASE("functionParameters")
 
         REQUIRE_EQ(fn_expr->parameters.size(), expected.size());
         for (size_t index = 0; const auto& val : expected) {
-            REQUIRE_EQ(fn_expr->parameters[index], val);
+            REQUIRE_EQ(fn_expr->parameters[index]->value, val);
             ++index;
         }
     }

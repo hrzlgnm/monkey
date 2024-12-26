@@ -1,21 +1,18 @@
 #pragma once
 
-#include <vector>
-
-#include "callable_expression.hpp"
+#include "identifier.hpp"
 #include "statements.hpp"
 
-struct function_literal : callable_expression
+struct function_literal final : expression
 {
-    function_literal(std::vector<std::string>&& params, const statement* bod);
+    function_literal(identifiers&& params, const block_statement* bod);
 
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] auto call(environment* closure_env,
-                            environment* caller_env,
-                            const std::vector<const expression*>& arguments) const -> const object* override;
+    void accept(struct visitor& visitor) const final;
     auto compile(compiler& comp) const -> void override;
     auto check(symbol_table* symbols) const -> void override;
 
-    const statement* body {};
     std::string name;
+    identifiers parameters;
+    const block_statement* body {};
 };

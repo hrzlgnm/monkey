@@ -31,7 +31,6 @@ target_sources(cappuchin_lib
     source/ast/boolean_literal.cpp
     source/ast/builtin_function.cpp
     source/ast/call_expression.cpp
-    source/ast/callable_expression.cpp
     source/ast/decimal_literal.cpp
     source/ast/function_literal.cpp
     source/ast/hash_literal.cpp
@@ -47,8 +46,8 @@ target_sources(cappuchin_lib
     source/compiler/ast_compile.cpp
     source/compiler/compiler.cpp
     source/compiler/symbol_table.cpp
-    source/eval/ast_eval.cpp
     source/eval/environment.cpp
+    source/eval/evaluator.cpp
     source/lexer/lexer.cpp
     source/lexer/token.cpp
     source/lexer/token_type.cpp

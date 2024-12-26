@@ -3,10 +3,10 @@
 
 #include "expression.hpp"
 
-struct integer_literal : expression
+struct integer_literal final : expression
 {
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] auto eval(environment* env) const -> object* override;
+    void accept(struct visitor& visitor) const final;
     auto compile(compiler& comp) const -> void override;
 
     auto check(symbol_table* /*symbols*/) const -> void override {}

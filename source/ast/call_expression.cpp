@@ -5,8 +5,14 @@
 #include <fmt/format.h>
 
 #include "util.hpp"
+#include "visitor.hpp"
 
 auto call_expression::string() const -> std::string
 {
     return fmt::format("{}({})", function->string(), join(arguments, ", "));
+}
+
+void call_expression::accept(visitor& visitor) const
+{
+    visitor.visit(*this);
 }

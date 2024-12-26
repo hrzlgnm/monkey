@@ -12,7 +12,6 @@
 #include "object.hpp"
 
 #include <ast/builtin_function.hpp>
-#include <ast/callable_expression.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
@@ -145,8 +144,7 @@ auto object::operator||(const object& other) const -> const object*
 
 builtin_object::builtin_object(const builtin_function* bltn)
 
-    : function_object {bltn, nullptr}
-    , builtin {bltn}
+    : builtin {bltn}
 {
 }
 
@@ -636,7 +634,7 @@ auto return_value_object::inspect() const -> std::string
 
 auto function_object::inspect() const -> std::string
 {
-    return callable->string();
+    return fmt::format("fn({}) {{\n{}\n}}", join(parameters), body->string());
 }
 
 auto error_object::operator==(const object& other) const -> const object*
@@ -1109,7 +1107,7 @@ TEST_SUITE("object tests")
     const array_object array_obj {{&int_obj, &int2_obj}};
     const hash_object hash_obj {{{1, &str_obj}, {2, &true_obj}}};
     const return_value_object ret_obj {&array_obj};
-    const function_object function_obj {nullptr, nullptr};
+    const function_object function_obj {{}, nullptr, nullptr};
     const builtin_object builtin_obj {builtin_function::builtins()[0]};
     const compiled_function_object cmpld_obj {{}, 0, 0};
     const closure_object clsr_obj {&cmpld_obj, {}};

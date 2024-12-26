@@ -1,16 +1,14 @@
 #pragma once
 
-#include <vector>
-
 #include "expression.hpp"
 
-struct call_expression : expression
+struct call_expression final : expression
 {
     [[nodiscard]] auto string() const -> std::string override;
-    [[nodiscard]] auto eval(environment* env) const -> const object* override;
+    void accept(struct visitor& visitor) const final;
     auto compile(compiler& comp) const -> void override;
     auto check(symbol_table* symbols) const -> void override;
 
     expression* function {};
-    std::vector<const expression*> arguments;
+    expressions arguments;
 };

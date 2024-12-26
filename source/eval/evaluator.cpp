@@ -1,13 +1,13 @@
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <deque>
-#include <iterator>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
+
+#include "evaluator.hpp"
 
 #include <ast/array_literal.hpp>
 #include <ast/assign_expression.hpp>
@@ -15,7 +15,6 @@
 #include <ast/boolean_literal.hpp>
 #include <ast/builtin_function.hpp>
 #include <ast/call_expression.hpp>
-#include <ast/callable_expression.hpp>
 #include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_literal.hpp>
@@ -39,26 +38,38 @@
 
 #include "environment.hpp"
 
-auto array_literal::eval(environment* env) const -> const object*
+evaluator::evaluator(environment* existing_env)
+    : m_env {existing_env != nullptr ? existing_env : make<environment>()}
+    , m_result {null()}
 {
-    array_object::value_type arr;
-    for (const auto& element : elements) {
-        const auto* evaluated = element->eval(env);
-        if (evaluated->is_error()) {
-            return evaluated;
-        }
-        arr.push_back(evaluated);
-    }
-    return make<array_object>(std::move(arr));
 }
 
-auto assign_expression::eval(environment* env) const -> const object*
+auto evaluator::evaluate(const program* prgrm) -> const object*
 {
-    const auto* val = value->eval(env);
-    if (val->is_error()) {
-        return val;
+    prgrm->accept(*this);
+    return m_result;
+}
+
+void evaluator::visit(const array_literal& expr)
+{
+    array_object::value_type arr;
+    for (const auto& element : expr.elements) {
+        element->accept(*this);
+        if (m_result->is_error()) {
+            return;
+        }
+        arr.push_back(m_result);
     }
-    return env->reassign(name->value, val);
+    m_result = make<array_object>(std::move(arr));
+}
+
+void evaluator::visit(const assign_expression& expr)
+{
+    expr.value->accept(*this);
+    if (m_result->is_error()) {
+        return;
+    }
+    m_env->reassign(expr.name->value, m_result);
 }
 
 namespace
@@ -108,114 +119,100 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
 
 }  // namespace
 
-auto binary_expression::eval(environment* env) const -> const object*
+void evaluator::visit(const binary_expression& expr)
 {
-    const auto* evaluated_left = left->eval(env);
-    if (evaluated_left->is_error()) {
-        return evaluated_left;
+    expr.left->accept(*this);
+    if (m_result->is_error()) {
+        return;
     }
+    const object* evaluated_left = m_result;
+    expr.right->accept(*this);
+    if (m_result->is_error()) {
+        return;
+    }
+    const object* evaluated_right = m_result;
 
-    const auto* evaluated_right = right->eval(env);
-    if (evaluated_right->is_error()) {
-        return evaluated_right;
-    }
-    if (const auto* val = apply_binary_operator(op, evaluated_left, evaluated_right); val != nullptr) {
-        return val;
+    if (const auto* val = apply_binary_operator(expr.op, evaluated_left, evaluated_right); val != nullptr) {
+        m_result = val;
+        return;
     }
     if (evaluated_left->type() != evaluated_right->type()) {
-        return make_error("type mismatch: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
+        m_result = make_error("type mismatch: {} {} {}", evaluated_left->type(), expr.op, evaluated_right->type());
+        return;
     }
 
-    return make_error("unknown operator: {} {} {}", evaluated_left->type(), op, evaluated_right->type());
+    m_result = make_error("unknown operator: {} {} {}", evaluated_left->type(), expr.op, evaluated_right->type());
 }
 
-auto boolean_literal::eval(environment* /*env*/) const -> const object*
+void evaluator::visit(const boolean_literal& expr)
 {
-    return native_bool_to_object(value);
+    m_result = native_bool_to_object(expr.value);
 }
 
-auto function_literal::call(environment* closure_env,
-                            environment* caller_env,
-                            const std::vector<const expression*>& arguments) const -> const object*
-{
-    auto* locals = make<environment>(closure_env);
-    for (auto arg_itr = arguments.begin(); const auto& parameter : parameters) {
-        if (arg_itr != arguments.end()) {
-            const expression* arg = *(arg_itr++);
-            locals->set(parameter, arg->eval(caller_env));
-        } else {
-            locals->set(parameter, {});
-        }
-    }
-    return body->eval(locals);
-}
-
-auto call_expression::eval(environment* env) const -> const object*
-{
-    const auto* evaluated = function->eval(env);
-    if (evaluated->is_error()) {
-        return evaluated;
-    }
-    const auto* fn = evaluated->as<function_object>();
-    return fn->callable->call(fn->closure_env, env, arguments);
-}
-
-auto hash_literal::eval(environment* env) const -> const object*
+void evaluator::visit(const hash_literal& expr)
 {
     hash_object::value_type result;
-
-    for (const auto& [key, value] : pairs) {
-        const auto* eval_key = key->eval(env);
+    for (const auto& [key, value] : expr.pairs) {
+        key->accept(*this);
+        const auto* eval_key = m_result;
         if (eval_key->is_error()) {
-            return eval_key;
+            return;
         }
         if (!eval_key->is_hashable()) {
-            return make_error("unusable as hash key {}", eval_key->type());
+            m_result = make_error("unusable as hash key {}", eval_key->type());
+            return;
         }
-        const auto* eval_val = value->eval(env);
+        value->accept(*this);
+        const auto* eval_val = m_result;
         if (eval_val->is_error()) {
-            return eval_val;
+            return;
         }
         result.insert({eval_key->as<hashable_object>()->hash_key(), eval_val});
     }
-    return make<hash_object>(std::move(result));
+    m_result = make<hash_object>(std::move(result));
 }
 
-auto identifier::eval(environment* env) const -> const object*
+void evaluator::visit(const identifier& expr)
 {
-    const auto* val = env->get(value);
-    if (val->is(object::object_type::nll)) {
-        return make_error("identifier not found: {}", value);
+    const auto* val = m_env->get(expr.value);
+    if (val->is_null()) {
+        m_result = make_error("identifier not found: {}", expr.value);
+        return;
     }
-    return val;
+    m_result = val;
 }
 
-auto if_expression::eval(environment* env) const -> const object*
+void evaluator::visit(const if_expression& expr)
 {
-    const auto* evaluated_condition = condition->eval(env);
+    expr.condition->accept(*this);
+    const auto* evaluated_condition = m_result;
     if (evaluated_condition->is_error()) {
-        return evaluated_condition;
+        return;
     }
     if (evaluated_condition->is_truthy()) {
-        return consequence->eval(env);
+        expr.consequence->accept(*this);
+        return;
     }
-    if (alternative != nullptr) {
-        return alternative->eval(env);
+    if (expr.alternative != nullptr) {
+        expr.alternative->accept(*this);
+        return;
     }
-    return null();
+    m_result = null();
 }
 
-auto while_statement::eval(environment* env) const -> const object*
+void evaluator::visit(const while_statement& expr)
 {
     while (true) {
-        const auto* evaluated_condition = condition->eval(env);
+        expr.condition->accept(*this);
+        const auto* evaluated_condition = m_result;
         if (evaluated_condition->is_error()) {
-            return evaluated_condition;
+            return;
         }
         if (evaluated_condition->is_truthy()) {
-            const auto* result = body->eval(env);
+            expr.body->accept(*this);
+            const auto* result = m_result;
             if (result->is_error() || result->is_return_value()) {
-                return result;
+                return;
             }
             if (result->is_break()) {
                 break;
@@ -227,18 +224,20 @@ auto while_statement::eval(environment* env) const -> const object*
             break;
         }
     }
-    return null();
+    m_result = null();
 }
 
-auto index_expression::eval(environment* env) const -> const object*
+void evaluator::visit(const index_expression& expr)
 {
-    const auto* evaluated_left = left->eval(env);
+    expr.left->accept(*this);
+    const auto* evaluated_left = m_result;
     if (evaluated_left->is_error()) {
-        return evaluated_left;
+        return;
     }
-    const auto* evaluated_index = index->eval(env);
+    expr.index->accept(*this);
+    const auto* evaluated_index = m_result;
     if (evaluated_index->is_error()) {
-        return evaluated_index;
+        return;
     }
     using enum object::object_type;
     if (evaluated_left->is(array) && evaluated_index->is(integer)) {
@@ -246,9 +245,11 @@ auto index_expression::eval(environment* env) const -> const object*
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(arr.size() - 1);
         if (index < 0 || index > max) {
-            return null();
+            m_result = null();
+            return;
         }
-        return arr[static_cast<std::size_t>(index)];
+        m_result = arr[static_cast<std::size_t>(index)];
+        return;
     }
 
     if (evaluated_left->is(string) && evaluated_index->is(integer)) {
@@ -256,144 +257,197 @@ auto index_expression::eval(environment* env) const -> const object*
         auto index = evaluated_index->as<integer_object>()->value;
         auto max = static_cast<int64_t>(str.size() - 1);
         if (index < 0 || index > max) {
-            return null();
+            m_result = null();
+            return;
         }
-        return make<string_object>(str.substr(static_cast<std::size_t>(index), 1));
+        m_result = make<string_object>(str.substr(static_cast<std::size_t>(index), 1));
+        return;
     }
 
     if (evaluated_left->is(hash)) {
         const auto& hsh = evaluated_left->as<hash_object>()->value;
         if (!evaluated_index->is_hashable()) {
-            return make_error("unusable as hash key: {}", evaluated_index->type());
+            m_result = make_error("unusable as hash key: {}", evaluated_index->type());
+            return;
         }
         const auto hash_key = evaluated_index->as<hashable_object>()->hash_key();
-        if (!hsh.contains(hash_key)) {
-            return null();
+        if (const auto itr = hsh.find(hash_key); itr != hsh.end()) {
+            m_result = itr->second;
+            return;
         }
-        return hsh.at(hash_key);
+        m_result = null();
+        return;
     }
-    return make_error("index operator not supported: {}", evaluated_left->type());
+    m_result = make_error("index operator not supported: {}", evaluated_left->type());
 }
 
-auto integer_literal::eval(environment* /*env*/) const -> object*
+void evaluator::visit(const integer_literal& expr)
 {
-    return make<integer_object>(value);
+    m_result = make<integer_object>(expr.value);
 }
 
-auto decimal_literal::eval(environment* /*env*/) const -> object*
+void evaluator::visit(const decimal_literal& expr)
 {
-    return make<decimal_object>(value);
+    m_result = make<decimal_object>(expr.value);
 }
 
-auto program::eval(environment* env) const -> const object*
+void evaluator::visit(const program& expr)
 {
-    const object* result = nullptr;
-    for (const auto* statement : statements) {
-        result = statement->eval(env);
-        if (result->is_error()) {
-            return result;
+    for (const auto* statement : expr.statements) {
+        statement->accept(*this);
+        if (m_result->is_error()) {
+            return;
         }
-        if (result->is_return_value()) {
-            return result->as<return_value_object>()->return_value;
+        if (m_result->is_return_value()) {
+            m_result = m_result->as<return_value_object>()->return_value;
+            return;
         }
     }
-    return result;
 }
 
-auto let_statement::eval(environment* env) const -> const object*
+void evaluator::visit(const let_statement& expr)
 {
-    const auto* val = value->eval(env);
-    if (val->is_error()) {
-        return val;
+    expr.value->accept(*this);
+    if (m_result->is_error()) {
+        return;
     }
-    env->set(name->value, val);
-    return null();
+    m_env->set(expr.name->value, m_result);
+    m_result = null();
 }
 
-auto return_statement::eval(environment* env) const -> const object*
+void evaluator::visit(const return_statement& expr)
 {
-    if (value != nullptr) {
-        const auto* evaluated = value->eval(env);
+    if (expr.value != nullptr) {
+        expr.value->accept(*this);
+        const auto* evaluated = m_result;
         if (evaluated->is_error()) {
-            return evaluated;
+            return;
         }
-        return make<return_value_object>(evaluated);
+        m_result = make<return_value_object>(evaluated);
+        return;
     }
-    return null();
+    m_result = null();
 }
 
-auto break_statement::eval(environment* /*env*/) const -> const object*
+void evaluator::visit(const break_statement& /*expr*/)
 {
-    return brake();
+    m_result = brake();
 }
 
-auto continue_statement::eval(environment* /*env*/) const -> const object*
+void evaluator::visit(const continue_statement& /*expr*/)
 {
-    return cont();
+    m_result = cont();
 }
 
-auto expression_statement::eval(environment* env) const -> const object*
+void evaluator::visit(const expression_statement& expr)
 {
-    if (expr != nullptr) {
-        return expr->eval(env);
+    if (expr.expr != nullptr) {
+        expr.expr->accept(*this);
+        return;
     }
-    return null();
+    m_result = null();
 }
 
-auto block_statement::eval(environment* env) const -> const object*
+void evaluator::visit(const block_statement& expr)
 {
-    const object* result = nullptr;
-    for (const auto& stmt : statements) {
-        result = stmt->eval(env);
-        if (result->is_error() || result->is_return_value() || result->is_break() || result->is_continue()) {
-            return result;
+    for (const auto* stmt : expr.statements) {
+        stmt->accept(*this);
+        if (m_result->is_error() || m_result->is_return_value() || m_result->is_break() || m_result->is_continue()) {
+            return;
         }
     }
-    return result;
 }
 
-auto string_literal::eval(environment* /*env*/) const -> const object*
+void evaluator::visit(const string_literal& expr)
 {
-    return make<string_object>(value);
+    m_result = make<string_object>(expr.value);
 }
 
-auto unary_expression::eval(environment* env) const -> const object*
+void evaluator::visit(const unary_expression& expr)
 {
-    using enum token_type;
-    const auto* evaluated_value = right->eval(env);
+    expr.right->accept(*this);
+    const auto* evaluated_value = m_result;
     if (evaluated_value->is_error()) {
-        return evaluated_value;
+        return;
     }
-    switch (op) {
+    using enum token_type;
+    switch (expr.op) {
         case minus:
             if (evaluated_value->is(object::object_type::integer)) {
-                return make<integer_object>(-evaluated_value->as<integer_object>()->value);
+                m_result = make<integer_object>(-evaluated_value->as<integer_object>()->value);
+                return;
             } else if (evaluated_value->is(object::object_type::decimal)) {
-                return make<decimal_object>(-evaluated_value->as<decimal_object>()->value);
+                m_result = make<decimal_object>(-evaluated_value->as<decimal_object>()->value);
+                return;
             }
-            return make_error("unknown operator: -{}", evaluated_value->type());
+            m_result = make_error("unknown operator: -{}", evaluated_value->type());
+            return;
         case exclamation:
-            return native_bool_to_object(!evaluated_value->is_truthy());
+            m_result = native_bool_to_object(!evaluated_value->is_truthy());
+            return;
         default:
-            return make_error("unknown operator: {}{}", op, evaluated_value->type());
+            m_result = make_error("unknown operator: {}{}", expr.op, evaluated_value->type());
+            return;
     }
 }
 
-auto builtin_function::call(environment* /*closure_env*/,
-                            environment* caller_env,
-                            const std::vector<const expression*>& arguments) const -> const object*
+void evaluator::visit(const builtin_function& expr) {}
+
+void evaluator::visit(const call_expression& expr)
 {
-    array_object::value_type args;
-    std::transform(arguments.cbegin(),
-                   arguments.cend(),
-                   std::back_inserter(args),
-                   [caller_env](const expression* expr) { return expr->eval(caller_env); });
-    return body(std::move(args));
+    expr.function->accept(*this);
+    if (m_result->is_error()) {
+        return;
+    }
+    const auto* func = m_result;
+    auto args = evaluate_expressions(expr.arguments);
+    if (m_result->is_error()) {
+        return;
+    }
+    apply_function(func, std::move(args));
 }
 
-auto callable_expression::eval(environment* env) const -> const object*
+void evaluator::visit(const function_literal& expr)
 {
-    return make<function_object>(this, env);
+    m_result = make<function_object>(expr.parameters, expr.body, m_env);
+}
+
+void evaluator::apply_function(const object* function_or_builtin, array_object::value_type&& args)
+{
+    if (function_or_builtin->is(object::object_type::function)) {
+        auto* old_env = m_env;
+        const auto* func = function_or_builtin->as<function_object>();
+        auto* locals = make<environment>(func->closure_env);
+        for (auto arg_itr = args.begin(); const auto* parameter : func->parameters) {
+            locals->set(parameter->value, *(arg_itr++));
+        }
+        m_env = locals;
+        func->body->accept(*this);
+        m_env = old_env;
+        if (m_result->is_return_value()) {
+            m_result = m_result->as<return_value_object>()->return_value;
+        }
+        return;
+    }
+    if (function_or_builtin->is(object::object_type::builtin)) {
+        const auto* builtin = function_or_builtin->as<builtin_object>();
+        m_result = builtin->builtin->body(std::move(args));
+        return;
+    }
+    m_result = make_error("not a function {}", m_result->type());
+}
+
+auto evaluator::evaluate_expressions(const expressions& exprs) -> array_object::value_type
+{
+    array_object::value_type result;
+    for (const auto* expr : exprs) {
+        expr->accept(*this);
+        if (m_result->is_error()) {
+            return {m_result};
+        }
+        result.push_back(m_result);
+    }
+    return result;
 }
 
 namespace
@@ -437,7 +491,7 @@ auto require_eq(const object* obj, const std::string& expected, std::string_view
 
 auto require_eq(const object* obj, double expected, std::string_view input) -> void
 {
-    INFO(input, " expected: string with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
+    INFO(input, " expected: decimal with: ", expected, " got: ", obj->type(), " with: ", obj->inspect());
     REQUIRE(obj->is(object::object_type::decimal));
     const auto& actual = obj->as<decimal_object>()->value;
     REQUIRE(actual == dt::Approx(expected));
@@ -506,7 +560,8 @@ auto run(std::string_view input) -> const object*
     for (const auto& builtin : builtin_function::builtins()) {
         env.set(builtin->name, make<builtin_object>(builtin));
     }
-    auto result = prgrm->eval(&env);
+    evaluator ev(&env);
+    auto result = ev.evaluate(prgrm);
     return result;
 }
 
@@ -516,7 +571,8 @@ auto run_multi(std::deque<std::string>& inputs) -> const object*
     const object* result = nullptr;
     while (!inputs.empty()) {
         auto [prgrm, _] = check_program(inputs.front());
-        result = prgrm->eval(&env);
+        evaluator ev {&env};
+        result = ev.evaluate(prgrm);
         inputs.pop_front();
     }
     return result;
@@ -988,7 +1044,7 @@ TEST_CASE("integerLetStatements")
 
 TEST_CASE("boundFunction")
 {
-    const auto* input = "fn(x) {x + 2; };";
+    const auto* input = "fn(x) { x + 2; };";
     auto evaluated = run(input);
     INFO("expected a function object, got ", evaluated->inspect());
     REQUIRE(evaluated->is(object::object_type::function));

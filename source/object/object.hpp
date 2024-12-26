@@ -15,6 +15,9 @@
 #include <fmt/ostream.h>
 #include <gc.hpp>
 
+#include "ast/identifier.hpp"
+#include "ast/statements.hpp"
+
 struct object;
 auto tru() -> const object*;
 auto fals() -> const object*;
@@ -62,6 +65,8 @@ struct object
     [[nodiscard]] virtual auto cast_to(object_type /*type*/) const -> const object* { return nullptr; }
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
+
+    [[nodiscard]] auto is_null() const -> bool { return type() == object_type::nll; }
 
     [[nodiscard]] auto is_return_value() const -> bool { return type() == object_type::return_value; }
 
@@ -354,12 +359,11 @@ struct return_value_object : object
     const object* return_value;
 };
 
-struct callable_expression;
-
 struct function_object : object
 {
-    function_object(const callable_expression* expr, environment* env)
-        : callable {expr}
+    function_object(const std::vector<const identifier*>& params, const block_statement* bod, environment* env)
+        : parameters {params}
+        , body {bod}
         , closure_env {env}
     {
     }
@@ -370,7 +374,8 @@ struct function_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override;
 
-    const callable_expression* callable {};
+    std::vector<const identifier*> parameters;
+    const block_statement* body {};
     environment* closure_env {};
 };
 
@@ -416,7 +421,7 @@ struct closure_object : object
 
 struct builtin_function;
 
-struct builtin_object : function_object
+struct builtin_object : object
 {
     explicit builtin_object(const builtin_function* bltn);
 
