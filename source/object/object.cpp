@@ -634,7 +634,7 @@ auto return_value_object::inspect() const -> std::string
 
 auto function_object::inspect() const -> std::string
 {
-    return fmt::format("fn({}) {{\n{}\n}}", join(parameters), body->string());
+    return fmt::format("fn({}) {{\n{}\n}}", join(parameters, ", "), body->string());
 }
 
 auto error_object::operator==(const object& other) const -> const object*
