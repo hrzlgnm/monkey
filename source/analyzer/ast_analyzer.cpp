@@ -5,16 +5,13 @@
 #include <ast/array_expression.hpp>
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
-#include <ast/boolean.hpp>
 #include <ast/call_expression.hpp>
-#include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_expression.hpp>
 #include <ast/hash_literal_expression.hpp>
 #include <ast/identifier.hpp>
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
-#include <ast/integer_literal.hpp>
 #include <ast/program.hpp>
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
