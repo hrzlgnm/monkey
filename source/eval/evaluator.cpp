@@ -1125,6 +1125,10 @@ TEST_CASE("builtinFunctions")
         bt {R"(type("c"))", "string"},
         bt {R"(type())", error {"wrong number of arguments to type(): expected=1, got=0"}},
         bt {R"(type(type))", {"builtin"}},
+        bt {R"(chr())", error {"wrong number of arguments to chr(): expected=1, got=0"}},
+        bt {R"(chr("65"))", error {"argument of type string to chr() is not supported"}},
+        bt {R"(chr(128))", error {"number 128 is out of range to be an ascii character"}},
+        bt {R"(chr(65))", {"A"}},
     };
 
     for (const auto& test : tests) {
