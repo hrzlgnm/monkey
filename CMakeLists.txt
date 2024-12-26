@@ -28,7 +28,6 @@ target_sources(cappuchin_lib
     source/ast/assign_expression.cpp
     source/ast/binary_expression.cpp
     source/ast/boolean_literal.cpp
-    source/ast/builtin_function.cpp
     source/ast/call_expression.cpp
     source/ast/decimal_literal.cpp
     source/ast/function_literal.cpp
@@ -41,6 +40,7 @@ target_sources(cappuchin_lib
     source/ast/statements.cpp
     source/ast/string_literal.cpp
     source/ast/unary_expression.cpp
+    source/builtin/builtin.cpp
     source/code/code.cpp
     source/compiler/compiler.cpp
     source/compiler/symbol_table.cpp

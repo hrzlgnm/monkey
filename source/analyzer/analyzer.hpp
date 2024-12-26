@@ -33,8 +33,6 @@ struct analyzer final : visitor
 
     void visit(const boolean_literal& expr) final {}
 
-    void visit(const builtin_function& expr) final {}
-
     void visit(const decimal_literal& expr) final {}
 
     void visit(const integer_literal& expr) final {}

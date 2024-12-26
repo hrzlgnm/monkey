@@ -94,8 +94,6 @@ struct compiler final : public visitor
     void visit(const unary_expression& expr) final;
     void visit(const while_statement& expr) final;
 
-    void visit(const builtin_function& expr) final {}
-
   private:
     constants* m_consts {};
     symbol_table* m_symbols;

@@ -5,7 +5,6 @@
 #include <ast/array_literal.hpp>
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
-#include <ast/builtin_function.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_literal.hpp>
@@ -17,6 +16,7 @@
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
+#include <builtin/builtin.hpp>
 #include <compiler/symbol_table.hpp>
 #include <doctest/doctest.h>
 #include <eval/environment.hpp>
@@ -42,7 +42,7 @@ void analyze_program(const program* program,
         symbols = symbol_table::create_enclosed(existing_symbols);
     } else {
         symbols = symbol_table::create();
-        for (auto i = 0; const auto* builtin : builtin_function::builtins()) {
+        for (auto i = 0; const auto* builtin : builtin::builtins()) {
             symbols->define_builtin(i++, builtin->name);
         }
     }

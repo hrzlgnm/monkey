@@ -11,7 +11,7 @@
 
 #include "object.hpp"
 
-#include <ast/builtin_function.hpp>
+#include <builtin/builtin.hpp>
 #include <code/code.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
@@ -142,7 +142,7 @@ auto object::operator||(const object& other) const -> const object*
     return native_bool_to_object(is_truthy() || other.is_truthy());
 }
 
-builtin_object::builtin_object(const builtin_function* bltn)
+builtin_object::builtin_object(const struct builtin* bltn)
 
     : builtin {bltn}
 {
@@ -1108,7 +1108,7 @@ TEST_SUITE("object tests")
     const hash_object hash_obj {{{1, &str_obj}, {2, &true_obj}}};
     const return_value_object ret_obj {&array_obj};
     const function_object function_obj {{}, nullptr, nullptr};
-    const builtin_object builtin_obj {builtin_function::builtins()[0]};
+    const builtin_object builtin_obj {builtin::builtins()[0]};
     const compiled_function_object cmpld_obj {{}, 0, 0};
     const closure_object clsr_obj {&cmpld_obj, {}};
 

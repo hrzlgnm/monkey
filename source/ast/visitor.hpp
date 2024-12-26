@@ -4,7 +4,6 @@
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean_literal.hpp>
-#include <ast/builtin_function.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
@@ -37,7 +36,6 @@ struct visitor
     virtual void visit(const block_statement& expr) = 0;
     virtual void visit(const boolean_literal& expr) = 0;
     virtual void visit(const break_statement& expr) = 0;
-    virtual void visit(const builtin_function& expr) = 0;
     virtual void visit(const call_expression& expr) = 0;
     virtual void visit(const continue_statement& expr) = 0;
     virtual void visit(const decimal_literal& expr) = 0;
