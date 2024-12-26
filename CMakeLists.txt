@@ -42,7 +42,6 @@ target_sources(cappuchin_lib
     source/ast/string_literal.cpp
     source/ast/unary_expression.cpp
     source/code/code.cpp
-    source/compiler/ast_compile.cpp
     source/compiler/compiler.cpp
     source/compiler/symbol_table.cpp
     source/eval/environment.cpp
