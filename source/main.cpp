@@ -11,7 +11,7 @@
 #include <vector>
 
 #include <analyzer/analyzer.hpp>
-#include <ast/builtin_function.hpp>
+#include <builtin/builtin.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
 #include <compiler/symbol_table.hpp>
@@ -24,8 +24,6 @@
 #include <object/object.hpp>
 #include <parser/parser.hpp>
 #include <vm/vm.hpp>
-
-#include "ast/program.hpp"
 
 namespace
 {
@@ -201,7 +199,7 @@ auto run_file(const command_line_args& opts) -> int
         }
     } else {
         auto* global_env = make<environment>();
-        for (const auto& builtin : builtin_function::builtins()) {
+        for (const auto& builtin : builtin::builtins()) {
             global_env->set(builtin->name, make<builtin_object>(builtin));
         }
         evaluator ev {global_env};
@@ -225,7 +223,7 @@ auto run_repl(const command_line_args& opts) -> int
     auto* symbols = opts.mode == engine::vm ? symbol_table::create() : nullptr;
     constants consts;
     constants globals(globals_size);
-    for (auto idx = 0; const auto& builtin : builtin_function::builtins()) {
+    for (auto idx = 0; const auto& builtin : builtin::builtins()) {
         if (global_env != nullptr) {
             global_env->set(builtin->name, make<builtin_object>(builtin));
         }
