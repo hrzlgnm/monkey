@@ -1,4 +1,3 @@
-#include <cmath>
 #include <stdexcept>
 #include <string_view>
 
@@ -23,7 +22,7 @@
 #include <compiler/symbol_table.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
-#include <lexer/token_type.hpp>
+#include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
 
 auto array_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void

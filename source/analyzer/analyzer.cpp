@@ -5,7 +5,6 @@
 #include <ast/builtin_function_expression.hpp>
 #include <ast/program.hpp>
 #include <compiler/symbol_table.hpp>
-#include <gc.hpp>
 
 void analyzer::analyze_program(const program* program, symbol_table* existing_symbols) noexcept(false)
 {
