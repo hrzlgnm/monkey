@@ -234,8 +234,10 @@ TEST_SUITE("analyzer")
         };
         for (const auto& [input, expected] : tests) {
             INFO(input, " expected error: ", expected);
-            CHECK_THROWS_AS_MESSAGE(analyze(input), std::runtime_error, expected);
+            CHECK_THROWS_WITH_AS(analyze(input), expected.data(), std::runtime_error);
         }
     }
 }
+
+// NOLINTEND(*)
 }  // namespace
