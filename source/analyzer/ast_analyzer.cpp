@@ -190,7 +190,7 @@ auto check_program(std::string_view input) -> parsed_program
 auto analyze(std::string_view input) noexcept(false) -> void
 {
     auto [prgrm, _] = check_program(input);
-    analyze_program(prgrm, nullptr);
+    analyze_program(prgrm, nullptr, nullptr);
 }
 
 TEST_SUITE("analyzer")

@@ -183,8 +183,8 @@ auto run_file(const command_line_args& opts) -> int
         print_parse_errors(prsr.errors());
         return 1;
     }
+    analyze_program(prgrm, nullptr, nullptr);
     if (opts.mode == engine::vm) {
-        analyze_program(prgrm, nullptr);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
         if (opts.debug) {
@@ -197,7 +197,6 @@ auto run_file(const command_line_args& opts) -> int
             std::cout << result->inspect() << '\n';
         }
     } else {
-        analyze_program(prgrm, nullptr);
         auto* global_env = make<environment>();
         for (const auto& builtin : builtin_function_expression::builtins()) {
             global_env->set(builtin->name, make<builtin_object>(builtin));
@@ -218,15 +217,20 @@ auto run_repl(const command_line_args& opts) -> int
     std::cout << "Hello " << get_logged_in_user() << ". This is the Cappuchin programming language using engine "
               << opts.mode << ".\n";
     std::cout << "Feel free to type in commands\n";
-    auto* global_env = make<environment>();
-    auto* symbols = symbol_table::create();
+    auto* global_env = opts.mode == engine::eval ? make<environment>() : nullptr;
+    auto* symbols = opts.mode == engine::vm ? symbol_table::create() : nullptr;
     constants consts;
     constants globals(globals_size);
     for (auto idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
-        global_env->set(builtin->name, make<builtin_object>(builtin));
-        symbols->define_builtin(idx, builtin->name);
+        if (global_env != nullptr) {
+            global_env->set(builtin->name, make<builtin_object>(builtin));
+        }
+        if (symbols != nullptr) {
+            symbols->define_builtin(idx, builtin->name);
+        }
         idx++;
     }
+
     auto show_prompt = []() { std::cout << prompt; };
     auto input = std::string {};
     show_prompt();
@@ -239,15 +243,16 @@ auto run_repl(const command_line_args& opts) -> int
             show_prompt();
             continue;
         }
-        if (opts.mode == engine::vm) {
-            try {
-                analyze_program(prgrm, symbols);
-            } catch (const std::exception& e) {
-                fmt::println("{}", e.what());
-                show_prompt();
-                continue;
-            }
 
+        try {
+            analyze_program(prgrm, symbols, global_env);
+        } catch (const std::exception& e) {
+            fmt::println("{}", e.what());
+            show_prompt();
+            continue;
+        }
+
+        if (opts.mode == engine::vm) {
             try {
                 auto cmplr = compiler::create_with_state(&consts, symbols);
                 cmplr.compile(prgrm);
@@ -266,13 +271,6 @@ auto run_repl(const command_line_args& opts) -> int
                 continue;
             }
         } else {
-            try {
-                analyze_program(prgrm, symbols);
-            } catch (const std::exception& e) {
-                fmt::println("{}", e.what());
-                show_prompt();
-                continue;
-            }
             try {
                 const auto* result = prgrm->eval(global_env);
                 if (result != nullptr && !result->is(object::object_type::nll)) {
