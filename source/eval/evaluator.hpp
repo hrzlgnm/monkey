@@ -39,6 +39,6 @@ struct evaluator final : visitor
   private:
     void apply_function(const object* function_or_builtin, array_object::value_type&& args);
     auto evaluate_expressions(const expressions& exprs) -> array_object::value_type;
+    environment* m_env {};
     const object* m_result {};
-    environment* m_env;
 };
