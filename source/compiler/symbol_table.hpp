@@ -33,6 +33,8 @@ struct symbol_pointer
     int level {};
     symbol_scope scope {};
     int index {};
+
+    [[nodiscard]] auto is_function() const -> bool { return scope == symbol_scope::function; }
 };
 
 auto operator==(const symbol_pointer& lhs, const symbol_pointer& rhs) -> bool;

@@ -19,6 +19,7 @@
 #include <compiler/symbol_table.hpp>
 #include <doctest/doctest.h>
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
 
@@ -36,7 +37,7 @@ auto assign_expression::check(analyzer& anlzr, symbol_table* symbols) const -> v
         anlzr.fail(fmt::format("identifier not found: {}", name->value));
     }
     const auto& symbol = maybe_symbol.value();
-    if (symbol.is_function() || symbol.is_outer() && symbol.ptr.value().scope == symbol_scope::function) {
+    if (symbol.is_function() || (symbol.is_outer() && symbol.ptr.value().is_function())) {
         anlzr.fail(fmt::format("cannot reassign the current function being defined: {}", name->value));
     }
     value->check(anlzr, symbols);
@@ -50,7 +51,7 @@ auto binary_expression::check(analyzer& anlzr, symbol_table* symbols) const -> v
 
 auto hash_literal_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
 {
-    for (const auto [key, value] : pairs) {
+    for (const auto& [key, value] : pairs) {
         key->check(anlzr, symbols);
         value->check(anlzr, symbols);
     }
@@ -99,7 +100,7 @@ auto let_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
     auto symbol = symbols->resolve(name->value);
     if (symbol.has_value()) {
         const auto& value = symbol.value();
-        if (value.is_local() || value.is_global() && symbol->is_global()) {
+        if (value.is_local() || (value.is_global() && symbol->is_global())) {
             anlzr.fail(fmt::format("{} is already defined", name->value));
         }
     }
