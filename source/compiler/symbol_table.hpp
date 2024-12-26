@@ -51,6 +51,12 @@ struct symbol
     std::optional<symbol_pointer> ptr;
 
     [[nodiscard]] auto is_local() const -> bool { return scope == symbol_scope::local; }
+
+    [[nodiscard]] auto is_global() const -> bool { return scope == symbol_scope::global; }
+
+    [[nodiscard]] auto is_function() const -> bool { return scope == symbol_scope::function; }
+
+    [[nodiscard]] auto is_outer() const -> bool { return scope == symbol_scope::outer; }
 };
 
 auto operator==(const symbol& lhs, const symbol& rhs) -> bool;

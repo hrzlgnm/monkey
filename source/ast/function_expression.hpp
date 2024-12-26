@@ -14,6 +14,7 @@ struct function_expression : callable_expression
                             environment* caller_env,
                             const std::vector<const expression*>& arguments) const -> const object* override;
     auto compile(compiler& comp) const -> void override;
+    auto check(analyzer& anlzr, symbol_table* symbols) const -> void override;
 
     const statement* body {};
     std::string name;

@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include <analyzer/analyzer.hpp>
 #include <ast/builtin_function_expression.hpp>
 #include <code/code.hpp>
 #include <compiler/compiler.hpp>
@@ -178,11 +179,13 @@ auto run_file(const command_line_args& opts) -> int
     auto lxr = lexer {contents};
     auto prsr = parser {lxr};
     auto* prgrm = prsr.parse_program();
+    analyzer anlzr;
     if (!prsr.errors().empty()) {
         print_parse_errors(prsr.errors());
         return 1;
     }
     if (opts.mode == engine::vm) {
+        anlzr.analyze_program(prgrm, nullptr);
         auto cmplr = compiler::create();
         cmplr.compile(prgrm);
         if (opts.debug) {
@@ -195,6 +198,7 @@ auto run_file(const command_line_args& opts) -> int
             std::cout << result->inspect() << '\n';
         }
     } else {
+        anlzr.analyze_program(prgrm, nullptr);
         auto* global_env = make<environment>();
         for (const auto& builtin : builtin_function_expression::builtins()) {
             global_env->set(builtin->name, make<builtin_object>(builtin));
@@ -219,6 +223,7 @@ auto run_repl(const command_line_args& opts) -> int
     auto* symbols = symbol_table::create();
     constants consts;
     constants globals(globals_size);
+    analyzer anlzr;
     for (auto idx = 0; const auto& builtin : builtin_function_expression::builtins()) {
         global_env->set(builtin->name, make<builtin_object>(builtin));
         symbols->define_builtin(idx, builtin->name);
@@ -238,6 +243,15 @@ auto run_repl(const command_line_args& opts) -> int
         }
         if (opts.mode == engine::vm) {
             try {
+                anlzr.analyze_program(prgrm, symbols);
+            } catch (const std::exception& e) {
+                fmt::println("{}", e.what());
+                show_prompt();
+                continue;
+            }
+
+            try {
+                anlzr.analyze_program(prgrm, symbols);
                 auto cmplr = compiler::create_with_state(&consts, symbols);
                 cmplr.compile(prgrm);
                 if (opts.debug) {
@@ -255,6 +269,13 @@ auto run_repl(const command_line_args& opts) -> int
                 continue;
             }
         } else {
+            try {
+                anlzr.analyze_program(prgrm, symbols);
+            } catch (const std::exception& e) {
+                fmt::println("{}", e.what());
+                show_prompt();
+                continue;
+            }
             try {
                 const auto* result = prgrm->eval(global_env);
                 if (result != nullptr && !result->is(object::object_type::nll)) {
