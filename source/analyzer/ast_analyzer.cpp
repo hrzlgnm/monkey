@@ -203,36 +203,36 @@ TEST_SUITE("analyzer")
         struct test
         {
             std::string_view input;
-            std::string_view expected_error_message;
+            std::string_view expected_exception_string;
         };
 
         std::array tests {
-            test {.input = "foobar", .expected_error_message = "identifier not found: foobar"},
-            test {.input = "x = 2;", .expected_error_message = "identifier not found: x"},
-            test {.input = "let a = 2; let a = 4;", .expected_error_message = "a is already defined"},
-            test {.input = "let f = fn(x) { let x = 3; }", .expected_error_message = "x is already defined"},
-            test {.input = "break;", .expected_error_message = "syntax error: break outside loop"},
-            test {.input = "continue;", .expected_error_message = "syntax error: continue outside loop"},
-            test {.input = "fn () { break; } ", .expected_error_message = "syntax error: break outside loop"},
-            test {.input = "fn () { continue; } ", .expected_error_message = "syntax error: continue outside loop"},
-            test {.input = "while (x == 2) {}", .expected_error_message = "identifier not found: x"},
-            test {.input = "while (true) { x = 2; }", .expected_error_message = "identifier not found: x"},
-            test {.input = "if (x == 2) {}", .expected_error_message = "identifier not found: x"},
-            test {.input = "if (true) { x }", .expected_error_message = "identifier not found: x"},
-            test {.input = "if (true) { 2 } else { x }", .expected_error_message = "identifier not found: x"},
-            test {.input = "-x", .expected_error_message = "identifier not found: x"},
-            test {.input = "x + 2", .expected_error_message = "identifier not found: x"},
-            test {.input = "x(3)", .expected_error_message = "identifier not found: x"},
-            test {.input = "x[3]", .expected_error_message = "identifier not found: x"},
-            test {.input = "[1, 2][x]", .expected_error_message = "identifier not found: x"},
-            test {.input = "len(x)", .expected_error_message = "identifier not found: x"},
-            test {.input = "[x]", .expected_error_message = "identifier not found: x"},
-            test {.input = "{x: 2}", .expected_error_message = "identifier not found: x"},
-            test {.input = "{2: x}", .expected_error_message = "identifier not found: x"},
+            test {.input = "foobar", .expected_exception_string = "identifier not found: foobar"},
+            test {.input = "x = 2;", .expected_exception_string = "identifier not found: x"},
+            test {.input = "let a = 2; let a = 4;", .expected_exception_string = "a is already defined"},
+            test {.input = "let f = fn(x) { let x = 3; }", .expected_exception_string = "x is already defined"},
+            test {.input = "break;", .expected_exception_string = "syntax error: break outside loop"},
+            test {.input = "continue;", .expected_exception_string = "syntax error: continue outside loop"},
+            test {.input = "fn () { break; } ", .expected_exception_string = "syntax error: break outside loop"},
+            test {.input = "fn () { continue; } ", .expected_exception_string = "syntax error: continue outside loop"},
+            test {.input = "while (x == 2) {}", .expected_exception_string = "identifier not found: x"},
+            test {.input = "while (true) { x = 2; }", .expected_exception_string = "identifier not found: x"},
+            test {.input = "if (x == 2) {}", .expected_exception_string = "identifier not found: x"},
+            test {.input = "if (true) { x }", .expected_exception_string = "identifier not found: x"},
+            test {.input = "if (true) { 2 } else { x }", .expected_exception_string = "identifier not found: x"},
+            test {.input = "-x", .expected_exception_string = "identifier not found: x"},
+            test {.input = "x + 2", .expected_exception_string = "identifier not found: x"},
+            test {.input = "x(3)", .expected_exception_string = "identifier not found: x"},
+            test {.input = "x[3]", .expected_exception_string = "identifier not found: x"},
+            test {.input = "[1, 2][x]", .expected_exception_string = "identifier not found: x"},
+            test {.input = "len(x)", .expected_exception_string = "identifier not found: x"},
+            test {.input = "[x]", .expected_exception_string = "identifier not found: x"},
+            test {.input = "{x: 2}", .expected_exception_string = "identifier not found: x"},
+            test {.input = "{2: x}", .expected_exception_string = "identifier not found: x"},
             test {.input = "let f = fn(x) { if (x > 0) { f(x - 1); f = 2; } }",
-                  .expected_error_message = "cannot reassign the current function being defined: f"},
+                  .expected_exception_string = "cannot reassign the current function being defined: f"},
         };
-        for (const auto& [input, expected] : tests) {
+        for (const auto [input, expected] : tests) {
             INFO(input, " expected error: ", expected);
             CHECK_THROWS_WITH_AS(analyze(input), expected.data(), std::runtime_error);
         }
