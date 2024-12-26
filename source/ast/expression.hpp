@@ -4,8 +4,6 @@
 #include <vector>
 
 struct compiler;
-struct environment;
-struct object;
 
 struct expression
 {
