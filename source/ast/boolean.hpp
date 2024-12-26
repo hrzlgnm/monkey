@@ -9,7 +9,7 @@ struct boolean : expression
     [[nodiscard]] auto eval(environment* env) const -> const object* override;
     auto compile(compiler& comp) const -> void override;
 
-    auto check(analyzer& anlzr, symbol_table* symbols) const -> void override {}
+    auto check(analyzer& /*anlzr*/, symbol_table* /*symbols*/) const -> void override {}
 
     bool value {};
 };
