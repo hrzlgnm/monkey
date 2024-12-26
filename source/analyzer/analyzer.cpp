@@ -16,7 +16,6 @@
 #include <ast/index_expression.hpp>
 #include <ast/program.hpp>
 #include <ast/statements.hpp>
-#include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 #include <builtin/builtin.hpp>
 #include <compiler/symbol_table.hpp>
