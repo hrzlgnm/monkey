@@ -145,7 +145,7 @@ void analyzer::visit(const let_statement& expr)
     auto symbol = m_symbols->resolve(expr.name->value);
     if (symbol.has_value()) {
         const auto& value = symbol.value();
-        if (value.is_local() || (value.is_global() && symbol->is_global())) {
+        if (value.is_local() || (value.is_global() && m_symbols->is_global())) {
             fail(fmt::format("{} is already defined", expr.name->value));
         }
     }
