@@ -6,7 +6,7 @@
 #include <ast/program.hpp>
 #include <compiler/symbol_table.hpp>
 
-void analyzer::analyze_program(const program* program, symbol_table* existing_symbols) noexcept(false)
+void analyze_program(const program* program, symbol_table* existing_symbols) noexcept(false)
 {
     symbol_table* symbols = nullptr;
     if (existing_symbols != nullptr) {
@@ -17,10 +17,10 @@ void analyzer::analyze_program(const program* program, symbol_table* existing_sy
             symbols->define_builtin(i++, builtin->name);
         }
     }
-    program->check(*this, symbols);
+    program->check(symbols);
 }
 
-void analyzer::fail(const std::string& error_message) const
+void fail(const std::string& error_message)
 {
     throw std::runtime_error(error_message);
 }

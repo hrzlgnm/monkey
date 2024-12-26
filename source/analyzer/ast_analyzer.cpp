@@ -23,128 +23,128 @@
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
 
-auto array_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto array_expression::check(symbol_table* symbols) const -> void
 {
     for (const auto* element : elements) {
-        element->check(anlzr, symbols);
+        element->check(symbols);
     }
 }
 
-auto assign_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto assign_expression::check(symbol_table* symbols) const -> void
 {
     auto maybe_symbol = symbols->resolve(name->value);
     if (!maybe_symbol.has_value()) {
-        anlzr.fail(fmt::format("identifier not found: {}", name->value));
+        fail(fmt::format("identifier not found: {}", name->value));
     }
     const auto& symbol = maybe_symbol.value();
     if (symbol.is_function() || (symbol.is_outer() && symbol.ptr.value().is_function())) {
-        anlzr.fail(fmt::format("cannot reassign the current function being defined: {}", name->value));
+        fail(fmt::format("cannot reassign the current function being defined: {}", name->value));
     }
-    value->check(anlzr, symbols);
+    value->check(symbols);
 }
 
-auto binary_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto binary_expression::check(symbol_table* symbols) const -> void
 {
-    left->check(anlzr, symbols);
-    right->check(anlzr, symbols);
+    left->check(symbols);
+    right->check(symbols);
 }
 
-auto hash_literal_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto hash_literal_expression::check(symbol_table* symbols) const -> void
 {
     for (const auto& [key, value] : pairs) {
-        key->check(anlzr, symbols);
-        value->check(anlzr, symbols);
+        key->check(symbols);
+        value->check(symbols);
     }
 }
 
-auto identifier::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto identifier::check(symbol_table* symbols) const -> void
 {
     auto symbol = symbols->resolve(value);
     if (!symbol.has_value()) {
-        anlzr.fail(fmt::format("identifier not found: {}", value));
+        fail(fmt::format("identifier not found: {}", value));
     }
 }
 
-auto if_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto if_expression::check(symbol_table* symbols) const -> void
 {
-    condition->check(anlzr, symbols);
-    consequence->check(anlzr, symbols);
+    condition->check(symbols);
+    consequence->check(symbols);
     if (alternative != nullptr) {
-        alternative->check(anlzr, symbols);
+        alternative->check(symbols);
     }
 }
 
-auto while_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto while_statement::check(symbol_table* symbols) const -> void
 {
-    condition->check(anlzr, symbols);
+    condition->check(symbols);
 
     auto* inner = symbol_table::create_enclosed(symbols, /*inside_loop=*/true);
-    body->check(anlzr, inner);
+    body->check(inner);
 }
 
-auto index_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto index_expression::check(symbol_table* symbols) const -> void
 {
-    left->check(anlzr, symbols);
-    index->check(anlzr, symbols);
+    left->check(symbols);
+    index->check(symbols);
 }
 
-auto program::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto program::check(symbol_table* symbols) const -> void
 {
     for (const auto* statement : statements) {
-        statement->check(anlzr, symbols);
+        statement->check(symbols);
     }
 }
 
-auto let_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto let_statement::check(symbol_table* symbols) const -> void
 {
     auto symbol = symbols->resolve(name->value);
     if (symbol.has_value()) {
         const auto& value = symbol.value();
         if (value.is_local() || (value.is_global() && symbol->is_global())) {
-            anlzr.fail(fmt::format("{} is already defined", name->value));
+            fail(fmt::format("{} is already defined", name->value));
         }
     }
     symbols->define(name->value);
-    value->check(anlzr, symbols);
+    value->check(symbols);
 }
 
-auto return_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto return_statement::check(symbol_table* symbols) const -> void
 {
-    value->check(anlzr, symbols);
+    value->check(symbols);
 }
 
-auto break_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto break_statement::check(symbol_table* symbols) const -> void
 {
     if (!symbols->inside_loop()) {
-        anlzr.fail("syntax error: break outside loop");
+        fail("syntax error: break outside loop");
     }
 }
 
-auto continue_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto continue_statement::check(symbol_table* symbols) const -> void
 {
     if (!symbols->inside_loop()) {
-        anlzr.fail("syntax error: continue outside loop");
+        fail("syntax error: continue outside loop");
     }
 }
 
-auto expression_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto expression_statement::check(symbol_table* symbols) const -> void
 {
-    expr->check(anlzr, symbols);
+    expr->check(symbols);
 }
 
-auto block_statement::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto block_statement::check(symbol_table* symbols) const -> void
 {
     for (const auto* statement : statements) {
-        statement->check(anlzr, symbols);
+        statement->check(symbols);
     }
 }
 
-auto unary_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto unary_expression::check(symbol_table* symbols) const -> void
 {
-    right->check(anlzr, symbols);
+    right->check(symbols);
 }
 
-auto function_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto function_expression::check(symbol_table* symbols) const -> void
 {
     auto* inner = symbol_table::create_enclosed(symbols);
     if (!name.empty()) {
@@ -155,14 +155,14 @@ auto function_expression::check(analyzer& anlzr, symbol_table* symbols) const ->
         inner->define(parameter);
     }
 
-    body->check(anlzr, inner);
+    body->check(inner);
 }
 
-auto call_expression::check(analyzer& anlzr, symbol_table* symbols) const -> void
+auto call_expression::check(symbol_table* symbols) const -> void
 {
-    function->check(anlzr, symbols);
+    function->check(symbols);
     for (const auto* arg : arguments) {
-        arg->check(anlzr, symbols);
+        arg->check(symbols);
     }
 }
 
@@ -190,8 +190,7 @@ auto check_program(std::string_view input) -> parsed_program
 auto analyze(std::string_view input) noexcept(false) -> void
 {
     auto [prgrm, _] = check_program(input);
-    analyzer anlzr;
-    anlzr.analyze_program(prgrm, nullptr);
+    analyze_program(prgrm, nullptr);
 }
 
 TEST_SUITE("analyzer")
