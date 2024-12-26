@@ -25,16 +25,16 @@ target_sources(cappuchin_lib
   PRIVATE
     source/analyzer/analyzer.cpp
     source/analyzer/ast_analyzer.cpp
-    source/ast/array_expression.cpp
+    source/ast/array_literal.cpp
     source/ast/assign_expression.cpp
     source/ast/binary_expression.cpp
-    source/ast/boolean.cpp
-    source/ast/builtin_function_expression.cpp
+    source/ast/boolean_literal.cpp
+    source/ast/builtin_function.cpp
     source/ast/call_expression.cpp
     source/ast/callable_expression.cpp
     source/ast/decimal_literal.cpp
-    source/ast/function_expression.cpp
-    source/ast/hash_literal_expression.cpp
+    source/ast/function_literal.cpp
+    source/ast/hash_literal.cpp
     source/ast/identifier.cpp
     source/ast/if_expression.cpp
     source/ast/index_expression.cpp

@@ -2,7 +2,7 @@
 
 #include "analyzer.hpp"
 
-#include <ast/builtin_function_expression.hpp>
+#include <ast/builtin_function.hpp>
 #include <ast/program.hpp>
 #include <compiler/symbol_table.hpp>
 #include <eval/environment.hpp>
@@ -16,7 +16,7 @@ void analyze_program(const program* program,
         symbols = symbol_table::create_enclosed(existing_symbols);
     } else {
         symbols = symbol_table::create();
-        for (auto i = 0; const auto* builtin : builtin_function_expression::builtins()) {
+        for (auto i = 0; const auto* builtin : builtin_function::builtins()) {
             symbols->define_builtin(i++, builtin->name);
         }
     }

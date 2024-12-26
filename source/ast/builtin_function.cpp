@@ -6,24 +6,23 @@
 #include <utility>
 #include <vector>
 
-#include "builtin_function_expression.hpp"
+#include "builtin_function.hpp"
 
 #include <fmt/base.h>
 #include <fmt/format.h>
 #include <gc.hpp>
 #include <object/object.hpp>
 
-builtin_function_expression::builtin_function_expression(
-    std::string name,
-    std::vector<std::string> params,
-    std::function<const object*(array_object::value_type&& arguments)> bod)
+builtin_function::builtin_function(std::string name,
+                                   std::vector<std::string> params,
+                                   std::function<const object*(array_object::value_type&& arguments)> bod)
     : callable_expression {std::move(params)}
     , name {std::move(name)}
     , body {std::move(bod)}
 {
 }
 
-auto builtin_function_expression::string() const -> std::string
+auto builtin_function::string() const -> std::string
 {
     return fmt::format("{}(){{...}}", name);
 }
@@ -31,7 +30,7 @@ auto builtin_function_expression::string() const -> std::string
 namespace
 {
 
-const builtin_function_expression builtin_len {
+const builtin_function builtin_len {
     "len",
     {"val"},
     [](const array_object::value_type& arguments) -> const object*
@@ -58,27 +57,27 @@ const builtin_function_expression builtin_len {
         return make_error("argument of type {} to len() is not supported", maybe_string_or_array_or_hash->type());
     }};
 
-const builtin_function_expression builtin_puts {"puts",
-                                                {"val"},
-                                                [](const array_object::value_type& arguments) -> const object*
-                                                {
-                                                    using enum object::object_type;
-                                                    for (bool first = true; const auto& arg : arguments) {
-                                                        if (!first) {
-                                                            fmt::print(" ");
-                                                        }
-                                                        if (arg->is(string)) {
-                                                            fmt::print("{}", arg->as<string_object>()->value);
-                                                        } else {
-                                                            fmt::print("{}", arg->inspect());
-                                                        }
-                                                        first = false;
-                                                    }
-                                                    fmt::print("\n");
-                                                    return null();
-                                                }};
+const builtin_function builtin_puts {"puts",
+                                     {"val"},
+                                     [](const array_object::value_type& arguments) -> const object*
+                                     {
+                                         using enum object::object_type;
+                                         for (bool first = true; const auto& arg : arguments) {
+                                             if (!first) {
+                                                 fmt::print(" ");
+                                             }
+                                             if (arg->is(string)) {
+                                                 fmt::print("{}", arg->as<string_object>()->value);
+                                             } else {
+                                                 fmt::print("{}", arg->inspect());
+                                             }
+                                             first = false;
+                                         }
+                                         fmt::print("\n");
+                                         return null();
+                                     }};
 
-const builtin_function_expression builtin_first {
+const builtin_function builtin_first {
     "first",
     {"arr"},
     [](const array_object::value_type& arguments) -> const object*
@@ -105,7 +104,7 @@ const builtin_function_expression builtin_first {
         return make_error("argument of type {} to first() is not supported", maybe_string_or_array->type());
     }};
 
-const builtin_function_expression builtin_last {
+const builtin_function builtin_last {
     "last",
     {"arr"},
     [](const array_object::value_type& arguments) -> const object*
@@ -132,7 +131,7 @@ const builtin_function_expression builtin_last {
         return make_error("argument of type {} to last() is not supported", maybe_string_or_array->type());
     }};
 
-const builtin_function_expression builtin_rest {
+const builtin_function builtin_rest {
     "rest",
     {"arr"},
     [](const array_object::value_type& arguments) -> const object*
@@ -161,7 +160,7 @@ const builtin_function_expression builtin_rest {
         return make_error("argument of type {} to rest() is not supported", maybe_string_or_array->type());
     }};
 
-const builtin_function_expression builtin_push {
+const builtin_function builtin_push {
     "push",
     {"arr", "val"},
     [](const array_object::value_type& arguments) -> const object*
@@ -203,7 +202,7 @@ const builtin_function_expression builtin_push {
         return make_error("invalid call to push()");
     }};
 
-const builtin_function_expression builtin_type {
+const builtin_function builtin_type {
     "type",
     {"val"},
     [](const array_object::value_type& arguments) -> const object*
@@ -216,9 +215,9 @@ const builtin_function_expression builtin_type {
     }};
 }  // namespace
 
-auto builtin_function_expression::builtins() -> const std::vector<const builtin_function_expression*>&
+auto builtin_function::builtins() -> const std::vector<const builtin_function*>&
 {
-    static const std::vector<const builtin_function_expression*> bltns {
+    static const std::vector<const builtin_function*> bltns {
         &builtin_len, &builtin_puts, &builtin_first, &builtin_last, &builtin_rest, &builtin_push, &builtin_type};
     return bltns;
 };

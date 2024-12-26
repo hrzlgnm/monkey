@@ -2,13 +2,13 @@
 #include <string_view>
 
 #include <analyzer/analyzer.hpp>
-#include <ast/array_expression.hpp>
+#include <ast/array_literal.hpp>
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/call_expression.hpp>
 #include <ast/expression.hpp>
-#include <ast/function_expression.hpp>
-#include <ast/hash_literal_expression.hpp>
+#include <ast/function_literal.hpp>
+#include <ast/hash_literal.hpp>
 #include <ast/identifier.hpp>
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
@@ -23,7 +23,7 @@
 #include <lexer/lexer.hpp>
 #include <parser/parser.hpp>
 
-auto array_expression::check(symbol_table* symbols) const -> void
+auto array_literal::check(symbol_table* symbols) const -> void
 {
     for (const auto* element : elements) {
         element->check(symbols);
@@ -49,7 +49,7 @@ auto binary_expression::check(symbol_table* symbols) const -> void
     right->check(symbols);
 }
 
-auto hash_literal_expression::check(symbol_table* symbols) const -> void
+auto hash_literal::check(symbol_table* symbols) const -> void
 {
     for (const auto& [key, value] : pairs) {
         key->check(symbols);
@@ -144,7 +144,7 @@ auto unary_expression::check(symbol_table* symbols) const -> void
     right->check(symbols);
 }
 
-auto function_expression::check(symbol_table* symbols) const -> void
+auto function_literal::check(symbol_table* symbols) const -> void
 {
     auto* inner = symbol_table::create_enclosed(symbols);
     if (!name.empty()) {
@@ -200,7 +200,7 @@ TEST_SUITE("analyzer")
         struct test
         {
             std::string_view input;
-            std::string_view expected_exception_string;
+            const char* expected_exception_string;
         };
 
         std::array tests {
@@ -231,7 +231,7 @@ TEST_SUITE("analyzer")
         };
         for (const auto& test : tests) {
             INFO(test.input, " expected error: ", test.expected_exception_string);
-            CHECK_THROWS_WITH_AS(analyze(test.input), test.expected_exception_string.data(), std::runtime_error);
+            CHECK_THROWS_WITH_AS(analyze(test.input), test.expected_exception_string, std::runtime_error);
         }
     }
 }

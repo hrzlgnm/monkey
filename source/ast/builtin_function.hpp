@@ -8,11 +8,11 @@
 
 #include "callable_expression.hpp"
 
-struct builtin_function_expression : callable_expression
+struct builtin_function : callable_expression
 {
-    builtin_function_expression(std::string name,
-                                std::vector<std::string> params,
-                                std::function<const object*(std::vector<const object*>&& arguments)> bod);
+    builtin_function(std::string name,
+                     std::vector<std::string> params,
+                     std::function<const object*(std::vector<const object*>&& arguments)> bod);
 
     [[nodiscard]] auto call(environment* closure_env,
                             environment* caller_env,
@@ -22,7 +22,7 @@ struct builtin_function_expression : callable_expression
 
     auto check(symbol_table* /*symbols*/) const -> void override {}
 
-    static auto builtins() -> const std::vector<const builtin_function_expression*>&;
+    static auto builtins() -> const std::vector<const builtin_function*>&;
 
     std::string name;
     std::function<const object*(array_object::value_type&& arguments)> body;

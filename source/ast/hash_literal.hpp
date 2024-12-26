@@ -5,7 +5,7 @@
 
 #include "expression.hpp"
 
-struct hash_literal_expression : expression
+struct hash_literal : expression
 {
     [[nodiscard]] auto string() const -> std::string override;
     [[nodiscard]] auto eval(environment* env) const -> const object* override;

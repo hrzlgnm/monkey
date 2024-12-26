@@ -5,9 +5,9 @@
 #include "callable_expression.hpp"
 #include "statements.hpp"
 
-struct function_expression : callable_expression
+struct function_literal : callable_expression
 {
-    function_expression(std::vector<std::string>&& params, const statement* bod);
+    function_literal(std::vector<std::string>&& params, const statement* bod);
 
     [[nodiscard]] auto string() const -> std::string override;
     [[nodiscard]] auto call(environment* closure_env,
