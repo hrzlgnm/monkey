@@ -9,7 +9,5 @@ struct integer_literal final : expression
     void accept(struct visitor& visitor) const final;
     auto compile(compiler& comp) const -> void override;
 
-    auto check(symbol_table* /*symbols*/) const -> void override {}
-
     std::int64_t value {};
 };

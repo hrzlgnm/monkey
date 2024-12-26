@@ -18,8 +18,6 @@ struct builtin_function final : expression
     void accept(struct visitor& visitor) const final;
     auto compile(compiler& comp) const -> void override;
 
-    auto check(symbol_table* /*symbols*/) const -> void override {}
-
     static auto builtins() -> const std::vector<const builtin_function*>&;
 
     std::string name;

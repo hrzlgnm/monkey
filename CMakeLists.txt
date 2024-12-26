@@ -24,7 +24,6 @@ add_library(cappuchin::lib ALIAS cappuchin_lib)
 target_sources(cappuchin_lib
   PRIVATE
     source/analyzer/analyzer.cpp
-    source/analyzer/ast_analyzer.cpp
     source/ast/array_literal.cpp
     source/ast/assign_expression.cpp
     source/ast/binary_expression.cpp
