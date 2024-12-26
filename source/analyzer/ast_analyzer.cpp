@@ -232,9 +232,9 @@ TEST_SUITE("analyzer")
             test {.input = "let f = fn(x) { if (x > 0) { f(x - 1); f = 2; } }",
                   .expected_exception_string = "cannot reassign the current function being defined: f"},
         };
-        for (const auto [input, expected] : tests) {
-            INFO(input, " expected error: ", expected);
-            CHECK_THROWS_WITH_AS(analyze(input), expected.data(), std::runtime_error);
+        for (const auto& test : tests) {
+            INFO(test.input, " expected error: ", test.expected_exception_string);
+            CHECK_THROWS_WITH_AS(analyze(test.input), test.expected_exception_string.data(), std::runtime_error);
         }
     }
 }
