@@ -37,8 +37,6 @@ struct analyzer final : visitor
     void visit(const while_statement& expr) final;
 
   private:
-    void apply_function(const object* function_or_builtin, array_object::value_type&& args);
-    auto evaluate_expressions(const expressions& exprs) -> array_object::value_type;
     symbol_table* m_symbols;
 };
 
