@@ -1,4 +1,3 @@
-#include <cassert>
 #include <stdexcept>
 #include <string>
 
