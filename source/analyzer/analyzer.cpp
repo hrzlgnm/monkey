@@ -1,6 +1,3 @@
-#include <algorithm>
-#include <future>
-#include <iterator>
 #include <stdexcept>
 #include <string>
 
@@ -9,15 +6,19 @@
 #include <ast/array_literal.hpp>
 #include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
+#include <ast/boolean_literal.hpp>
 #include <ast/call_expression.hpp>
+#include <ast/decimal_literal.hpp>
 #include <ast/expression.hpp>
 #include <ast/function_literal.hpp>
 #include <ast/hash_literal.hpp>
 #include <ast/identifier.hpp>
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
+#include <ast/integer_literal.hpp>
 #include <ast/program.hpp>
 #include <ast/statements.hpp>
+#include <ast/string_literal.hpp>
 #include <ast/unary_expression.hpp>
 #include <builtin/builtin.hpp>
 #include <compiler/symbol_table.hpp>
@@ -25,7 +26,6 @@
 #include <eval/environment.hpp>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
-#include <fmt/std.h>
 #include <lexer/lexer.hpp>
 #include <object/object.hpp>
 #include <parser/parser.hpp>
