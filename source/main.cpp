@@ -264,7 +264,7 @@ auto run_repl(const command_line_args& opts) -> int
                 auto machine = vm::create_with_state(cmplr.byte_code(), &globals);
                 machine.run();
                 const auto* result = machine.last_popped();
-                if (result != nullptr && !result->is(object::object_type::nll)) {
+                if (!result->is_null()) {
                     std::cout << result->inspect() << '\n';
                 }
             } catch (const std::exception& e) {

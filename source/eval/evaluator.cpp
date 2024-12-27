@@ -853,7 +853,7 @@ TEST_CASE("ifElseExpressions")
         const auto evaluated = run(test.input);
         std::visit(
             overloaded {
-                [&](const null_type& /*null*/) { REQUIRE(evaluated->is(object::object_type::nll)); },
+                [&](const null_type& /*null*/) { REQUIRE(evaluated->is_null()); },
                 [&](const int64_t value) { require_eq(evaluated, value, test.input); },
             },
             test.expected);
@@ -878,7 +878,7 @@ TEST_CASE("assignExpressions")
         const auto evaluated = run(test.input);
         std::visit(
             overloaded {
-                [&](const null_type& /*null*/) { REQUIRE(evaluated->is(object::object_type::nll)); },
+                [&](const null_type& /*null*/) { REQUIRE(evaluated->is_null()); },
                 [&](const int64_t value) { require_eq(evaluated, value, test.input); },
             },
             test.expected);
@@ -921,7 +921,7 @@ TEST_CASE("whileStatements")
         const auto evaluated = run(test.input);
         std::visit(
             overloaded {
-                [&](const null_type& /*null*/) { REQUIRE(evaluated->is(object::object_type::nll)); },
+                [&](const null_type& /*null*/) { REQUIRE(evaluated->is_null()); },
                 [&](const int64_t value) { require_eq(evaluated, value, test.input); },
                 [&](const double value) { require_eq(evaluated, value, test.input); },
             },
@@ -1140,7 +1140,7 @@ TEST_CASE("builtinFunctions")
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
                 [&](const array& val) { require_array_eq(evaluated, val, test.input); },
                 [&](const hash& val) { require_hash_eq(evaluated, val, test.input); },
-                [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::nll)); },
+                [&](const null_type& /*val*/) { REQUIRE(evaluated->is_null()); },
             },
             test.expected);
     }
@@ -1256,7 +1256,7 @@ TEST_CASE("indexOperatorExpressions")
                 [&](const error& val) { require_error_eq(evaluated, val.message, test.input); },
                 [&](const std::string& val) { require_eq(evaluated, val, test.input); },
                 [&](const array& val) { require_array_eq(evaluated, val, test.input); },
-                [&](const null_type& /*val*/) { REQUIRE(evaluated->is(object::object_type::nll)); },
+                [&](const null_type& /*val*/) { REQUIRE(evaluated->is_null()); },
             },
             test.expected);
     }
@@ -1347,7 +1347,7 @@ TEST_CASE("hashIndexExpression")
         REQUIRE_FALSE(evaluated->is_error());
         std::visit(
             overloaded {
-                [&](const null_type&) { CHECK(evaluated->is(object::object_type::nll)); },
+                [&](const null_type&) { CHECK(evaluated->is_null()); },
                 [&](const int64_t value)
                 {
                     REQUIRE(evaluated->is(object::object_type::integer));

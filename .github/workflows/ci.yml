@@ -17,7 +17,7 @@ jobs:
   Lint:
     runs-on: ubuntu-latest
     container:
-      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2"
+      image: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1"
 
     steps:
       - name: Checkout
@@ -51,7 +51,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 libc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libc++",
@@ -62,7 +62,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 libstdc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libstdc++",
@@ -73,7 +73,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 ASAN+UBSAN libstdc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -stdlib=libstdc++",
@@ -85,7 +85,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 13 Release libstdc++",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-clang:v2",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-clang:v1",
               CC: clang-13,
               CXX: clang++-13,
               CFLAGS: "-stdlib=libstdc++",
@@ -96,7 +96,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 musl",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
               CFLAGS: "",
@@ -107,7 +107,7 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 musl ASAN+UBSAN",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -fuse-ld=gold",
@@ -119,12 +119,46 @@ jobs:
           - {
               runs_on: ubuntu-latest,
               name: "Clang 15 musl Release",
-              container: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Release",
               WARNINGS: "-Werror;{1}",
+              CMAKE_FLAGS: "-G Ninja",
+            }
+          - {
+              runs_on: ubuntu-latest,
+              name: "GCC 13",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-gcc:v1",
+              CC: gcc,
+              CXX: g++,
+              CFLAGS: "",
+              CMAKE_BUILD_TYPE: "Debug",
+              WARNINGS: "-Werror;{0}",
+              CMAKE_FLAGS: "-G Ninja",
+            }
+          - {
+              runs_on: ubuntu-latest,
+              name: "GCC 13 ASAN+UBSAN",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-gcc:v1",
+              CC: gcc,
+              CXX: g++,
+              CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -fuse-ld=gold",
+              CMAKE_BUILD_TYPE: "Debug",
+              WARNINGS: "-Werror;{0}",
+              CMAKE_FLAGS: "-G Ninja",
+              ASAN_OPTIONS: "strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1",
+            }
+          - {
+              runs_on: ubuntu-latest,
+              name: "GCC 13 Release",
+              container: "ghcr.io/hrzlgnm/cappuchin-github-gcc:v1",
+              CC: gcc,
+              CXX: g++,
+              CFLAGS: "",
+              CMAKE_BUILD_TYPE: "Release",
+              WARNINGS: "-Werror;{0}",
               CMAKE_FLAGS: "-G Ninja",
             }
           - {
@@ -191,7 +225,7 @@ jobs:
     needs: [Lint]
     runs-on: ubuntu-latest
     container:
-      image: "ghcr.io/hrzlgnm/monkey-github-builder-void-linux-musl-clang:v2"
+      image: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1"
 
     steps:
       - name: Checkout

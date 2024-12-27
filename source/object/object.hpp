@@ -419,11 +419,9 @@ struct closure_object : object
     std::vector<const object*> free;
 };
 
-struct builtin;
-
 struct builtin_object : object
 {
-    explicit builtin_object(const builtin* bltn);
+    explicit builtin_object(const struct builtin* bltn);
 
     [[nodiscard]] auto is_truthy() const -> bool override { return true; }
 
@@ -431,5 +429,5 @@ struct builtin_object : object
 
     [[nodiscard]] auto inspect() const -> std::string override;
 
-    const builtin* builtin {};
+    const struct builtin* builtin {};
 };
