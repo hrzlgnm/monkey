@@ -159,6 +159,7 @@ jobs:
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Release",
               WARNINGS: "-Werror;{0}",
+              CMAKE_FLAGS: "-G Ninja",
             }
           - {
               runs_on: windows-latest,
