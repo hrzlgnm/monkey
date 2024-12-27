@@ -511,7 +511,7 @@ void compiler::visit(const function_literal& expr)
 
 void compiler::visit(const call_expression& expr)
 {
-    expr.function->accept(*this);
+    expr.callee->accept(*this);
     for (const auto& arg : expr.arguments) {
         arg->accept(*this);
     }

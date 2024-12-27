@@ -456,7 +456,7 @@ auto parser::parse_continue_statement() -> statement*
 auto parser::parse_call_expression(expression* function) -> expression*
 {
     auto* call = make<call_expression>();
-    call->function = function;
+    call->callee = function;
     call->arguments = parse_expression_list(token_type::rparen);
     return call;
 }
@@ -1287,7 +1287,7 @@ TEST_CASE("callExpressionParsing")
     const auto* input = "add(1, 2 * 3, 4 + 5);";
     auto [prgrm, _] = check_program(input);
     auto* call = require_expression<call_expression>(prgrm);
-    require_identifier(call->function, "add");
+    require_identifier(call->callee, "add");
     REQUIRE_EQ(call->arguments.size(), 3);
     require_literal_expression(call->arguments[0], 1);
     require_binary_expression(call->arguments[1], 2, token_type::asterisk, 3);

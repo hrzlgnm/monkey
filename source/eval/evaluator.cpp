@@ -393,7 +393,7 @@ void evaluator::visit(const unary_expression& expr)
 
 void evaluator::visit(const call_expression& expr)
 {
-    expr.function->accept(*this);
+    expr.callee->accept(*this);
     if (m_result->is_error()) {
         return;
     }

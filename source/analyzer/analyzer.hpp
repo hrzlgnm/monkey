@@ -1,6 +1,6 @@
 #pragma once
 
-#include <variant>
+#include <unordered_map>
 
 #include <ast/expression.hpp>
 #include <ast/program.hpp>
@@ -9,8 +9,6 @@
 #include <eval/environment.hpp>
 #include <lexer/token_type.hpp>
 #include <object/object.hpp>
-
-using seen = std::variant<std::monostate, object::object_type, token_type, symbol>;
 
 struct analyzer final : visitor
 {
@@ -41,9 +39,12 @@ struct analyzer final : visitor
     void visit(const string_literal& /* expr */) final;
 
   private:
-    void see(const seen& s);
-    std::vector<seen> m_seen;
+    void see(object::object_type type);
+    void see(const std::string& identifier);
+    void see(const std::string& identifier, object::object_type type);
     symbol_table* m_symbols;
+    std::optional<object::object_type> m_last_type;
+    std::unordered_map<std::string, object::object_type> m_symbol_types;
 };
 
 void analyze_program(const program* program,

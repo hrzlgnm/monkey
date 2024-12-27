@@ -9,7 +9,7 @@
 
 auto call_expression::string() const -> std::string
 {
-    return fmt::format("{}({})", function->string(), join(arguments, ", "));
+    return fmt::format("{}({})", callee->string(), join(arguments, ", "));
 }
 
 void call_expression::accept(visitor& visitor) const
