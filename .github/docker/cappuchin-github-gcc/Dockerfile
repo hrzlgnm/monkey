@@ -1,15 +1,7 @@
-FROM debian:bullseye
+FROM ghcr.io/void-linux/void-musl
+RUN xbps-install -Syu || xbps-install -yu xbps \
+    && xbps-install -yu \
+    && xbps-install -y bash git cmake ninja gcc \
+    && xbps-remove -Ooy
 
-RUN \
-    sed -n -e 's/^deb /deb-src /p' /etc/apt/sources.list >/etc/apt/sources.list.d/cappuchin-sources.list && \
-    apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates \
-    cmake \
-    g++ \
-    git \
-    libc6-dev \
-    make \
-    ninja-build \
-    nodejs \
-    python3
+

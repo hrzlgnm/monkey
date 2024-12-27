@@ -129,10 +129,10 @@ jobs:
             }
           - {
               runs_on: ubuntu-latest,
-              name: "GCC 10",
+              name: "GCC 13",
               container: "ghcr.io/hrzlgnm/cappuchin-github-gcc:v1",
-              CC: gcc-10,
-              CXX: g++-10,
+              CC: gcc-13,
+              CXX: g++-13,
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Debug",
               WARNINGS: "-Werror;{0}",
@@ -140,10 +140,10 @@ jobs:
             }
           - {
               runs_on: ubuntu-latest,
-              name: "GCC 10 ASAN+UBSAN",
+              name: "GCC 13 ASAN+UBSAN",
               container: "ghcr.io/hrzlgnm/cappuchin-github-gcc:v1",
-              CC: gcc-10,
-              CXX: g++-10,
+              CC: gcc-13,
+              CXX: g++-13,
               CFLAGS: "-fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-sanitize-recover=address,undefined -fuse-ld=gold",
               CMAKE_BUILD_TYPE: "Debug",
               WARNINGS: "-Werror;{0}",
@@ -152,10 +152,10 @@ jobs:
             }
           - {
               runs_on: ubuntu-latest,
-              name: "GCC 10 Release",
+              name: "GCC 13 Release",
               container: "ghcr.io/hrzlgnm/cappuchin-github-gcc:v1",
-              CC: gcc-10,
-              CXX: g++-10,
+              CC: gcc-13,
+              CXX: g++-13,
               CFLAGS: "",
               CMAKE_BUILD_TYPE: "Release",
               WARNINGS: "-Werror;{0}",
