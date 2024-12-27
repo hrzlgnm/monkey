@@ -149,12 +149,7 @@ void analyzer::visit(const while_statement& expr)
 void analyzer::visit(const index_expression& expr)
 {
     expr.left->accept(*this);
-    auto left = m_last_type;
     expr.index->accept(*this);
-    if (left != array && left != hash && left != string) {
-        fail(fmt::format("type error: `{}` is not subscriptable", left.value()));
-    }
-    m_last_type = nll;
 }
 
 void analyzer::visit(const program& expr)
@@ -342,8 +337,6 @@ TEST_SUITE("analyzer")
                   .expected_exception_string = "cannot reassign the current function being defined: f"},
             test {.input = "1(2);", .expected_exception_string = "type error: `integer` is not callable"},
             test {.input = "let i = 1; i(2);", .expected_exception_string = "type error: `integer` is not callable"},
-            test {.input = "let i = 1; i[2];",
-                  .expected_exception_string = "type error: `integer` is not subscriptable"},
         };
         for (const auto& test : tests) {
             INFO("with: `", test.input, "` expected error: ", test.expected_exception_string);
