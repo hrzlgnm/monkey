@@ -641,7 +641,7 @@ auto require_eq(const std::variant<T...>& expected, const object*& actual, std::
             [&](const int64_t exp) { require_is(exp, actual, input); },
             [&](const double exp) { require_is(exp, actual, input); },
             [&](const bool exp) { require_is(exp, actual, input); },
-            [&](const null_type& /*null*/) { REQUIRE(actual->is(nll)); },
+            [&](const null_type& /*null*/) { REQUIRE(actual->is_null()); },
             [&](const std::string& exp) { require_is(exp, actual, input); },
             [&](const ::error& exp) { require_is(exp, actual, input); },
             [&](const std::vector<int>& exp) { require_array_object(exp, actual, input); },
