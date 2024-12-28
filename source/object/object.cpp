@@ -756,7 +756,7 @@ auto null_object::operator==(const object& other) const -> const object*
 
 auto compiled_function_object::inspect() const -> std::string
 {
-    return fmt::format("{{\n{}}}", to_string(instrs));
+    return "{<code...>}";
 }
 
 [[nodiscard]] auto closure_object::as_mutable() const -> closure_object*
@@ -768,18 +768,7 @@ auto compiled_function_object::inspect() const -> std::string
 
 auto closure_object::inspect() const -> std::string
 {
-    std::ostringstream strm;
-    strm << "[";
-    for (bool first = true; const auto* const element : free) {
-        if (!first) {
-            strm << ", ";
-        }
-        strm << fmt::format("{}", element->inspect());
-        first = false;
-    }
-    strm << "]";
-
-    return fmt::format("fn<closure>() compiled: {}\n free: {}", fn->inspect(), strm.str());
+    return fmt::format("closure[{}]", static_cast<const void*>(fn));
 }
 
 namespace
