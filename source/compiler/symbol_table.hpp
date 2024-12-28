@@ -28,7 +28,7 @@ struct fmt::formatter<symbol_scope> : ostream_formatter
 {
 };
 
-struct symbol_pointer
+struct symbol_pointer final
 {
     int level {};
     symbol_scope scope {};
@@ -45,7 +45,7 @@ struct fmt::formatter<symbol_pointer> : ostream_formatter
 {
 };
 
-struct symbol
+struct symbol final
 {
     std::string name;
     symbol_scope scope {};
@@ -69,7 +69,7 @@ struct fmt::formatter<symbol> : ostream_formatter
 {
 };
 
-struct symbol_table
+struct symbol_table final
 {
     static auto create() -> symbol_table*;
     static auto create_enclosed(symbol_table* outer, bool inside_loop = false) -> symbol_table*;

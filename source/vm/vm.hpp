@@ -13,7 +13,7 @@ constexpr size_t stack_size = 2048UL;
 constexpr size_t globals_size = 65536UL;
 constexpr size_t max_frames = 1024UL;
 
-struct frame
+struct frame final
 {
     closure_object* cl {};
     int ip {};
@@ -22,7 +22,7 @@ struct frame
 
 using frames = std::array<frame, max_frames>;
 
-struct vm
+struct vm final
 {
     static auto create(bytecode code) -> vm;
     static auto create_with_state(bytecode code, constants* globals) -> vm;

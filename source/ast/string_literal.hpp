@@ -1,10 +1,15 @@
 #pragma once
 
-#include "identifier.hpp"
+#include <string>
 
-struct string_literal : identifier
+#include "expression.hpp"
+
+struct string_literal final : expression
 {
-    using identifier::identifier;
-    [[nodiscard]] auto string() const -> std::string override;
+    explicit string_literal(std::string val);
+
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
+
+    std::string value;
 };

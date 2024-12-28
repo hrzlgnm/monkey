@@ -167,7 +167,7 @@ void evaluator::visit(const hash_literal& expr)
         if (eval_val->is_error()) {
             return;
         }
-        result.insert({eval_key->as<hashable_object>()->hash_key(), eval_val});
+        result.insert({eval_key->as<hashable>()->hash_key(), eval_val});
     }
     m_result = make<hash_object>(std::move(result));
 }
@@ -270,7 +270,7 @@ void evaluator::visit(const index_expression& expr)
             m_result = make_error("unusable as hash key: {}", evaluated_index->type());
             return;
         }
-        const auto hash_key = evaluated_index->as<hashable_object>()->hash_key();
+        const auto hash_key = evaluated_index->as<hashable>()->hash_key();
         if (const auto itr = hsh.find(hash_key); itr != hsh.end()) {
             m_result = itr->second;
             return;
@@ -1284,7 +1284,7 @@ TEST_CASE("hashLiterals")
 
     struct expect
     {
-        hashable_object::hash_key_type key;
+        hashable::key_type key;
         int64_t value;
     };
 

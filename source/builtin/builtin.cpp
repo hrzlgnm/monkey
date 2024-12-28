@@ -189,7 +189,7 @@ const builtin push {
                     return make_error("type {} is not hashable", k->type());
                 }
                 auto copy = lhs->as<hash_object>()->value;
-                copy.insert_or_assign(k->as<hashable_object>()->hash_key(), v);
+                copy.insert_or_assign(k->as<hashable>()->hash_key(), v);
                 return make<hash_object>(std::move(copy));
             }
             return make_error(

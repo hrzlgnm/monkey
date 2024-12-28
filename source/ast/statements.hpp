@@ -7,7 +7,7 @@ using statement = expression;
 
 struct let_statement final : statement
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     const identifier* name {};
@@ -17,7 +17,7 @@ struct let_statement final : statement
 struct return_statement final : statement
 
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     const expression* value {};
@@ -25,19 +25,19 @@ struct return_statement final : statement
 
 struct break_statement final : statement
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 };
 
 struct continue_statement final : statement
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 };
 
 struct expression_statement final : statement
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     const expression* expr {};
@@ -45,7 +45,7 @@ struct expression_statement final : statement
 
 struct block_statement final : statement
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     expressions statements;
@@ -53,7 +53,7 @@ struct block_statement final : statement
 
 struct while_statement final : statement
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     expression* condition {};

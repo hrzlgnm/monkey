@@ -4,7 +4,7 @@
 
 struct call_expression final : expression
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     expression* function {};

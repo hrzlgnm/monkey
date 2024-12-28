@@ -11,19 +11,19 @@
 
 using constants = std::vector<const object*>;
 
-struct bytecode
+struct bytecode final
 {
     instructions instrs;
     const constants* consts {};
 };
 
-struct emitted_instruction
+struct emitted_instruction final
 {
     opcodes opcode {};
     std::size_t position {};
 };
 
-struct compilation_scope
+struct compilation_scope final
 {
     instructions instrs;
     emitted_instruction last_instr;
