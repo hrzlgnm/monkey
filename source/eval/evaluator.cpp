@@ -40,7 +40,6 @@
 
 evaluator::evaluator(environment* existing_env)
     : m_env {existing_env != nullptr ? existing_env : make<environment>()}
-    , m_result {null()}
 {
 }
 
@@ -315,6 +314,11 @@ void evaluator::visit(const let_statement& expr)
     m_result = null();
 }
 
+void evaluator::visit(const null_literal& /*expr*/)
+{
+    m_result = null();
+}
+
 void evaluator::visit(const return_statement& expr)
 {
     if (expr.value != nullptr) {
@@ -561,6 +565,7 @@ auto run(std::string_view input) -> const object*
     }
     evaluator ev(&env);
     auto result = ev.evaluate(prgrm);
+    REQUIRE(result);
     return result;
 }
 
@@ -1356,6 +1361,14 @@ TEST_CASE("hashIndexExpression")
             },
             expected);
     }
+}
+
+TEST_CASE("nullLiteral")
+{
+    const auto* input = R"(null;)";
+    auto evaluated = run(input);
+    REQUIRE(evaluated);
+    REQUIRE(evaluated->is_null());
 }
 
 TEST_SUITE_END();

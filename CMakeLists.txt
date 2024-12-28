@@ -36,6 +36,7 @@ target_sources(cappuchin_lib
     source/ast/if_expression.cpp
     source/ast/index_expression.cpp
     source/ast/integer_literal.cpp
+    source/ast/null_literal.cpp
     source/ast/program.cpp
     source/ast/statements.cpp
     source/ast/string_literal.cpp
@@ -92,6 +93,6 @@ add_executable(cappuchin::exe ALIAS cappuchin_exe)
 target_compile_definitions(cappuchin_exe PRIVATE DOCTEST_CONFIG_DISABLE)
 set_property(TARGET cappuchin_exe PROPERTY OUTPUT_NAME cappuchin)
 target_compile_features(cappuchin_exe PRIVATE cxx_std_20)
-target_link_libraries(cappuchin_exe PRIVATE fmt::fmt cappuchin_lib)
+target_link_libraries(cappuchin_exe PRIVATE cappuchin_lib fmt::fmt)
 
 include(cmake/dev-mode.cmake)

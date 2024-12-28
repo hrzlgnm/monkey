@@ -30,6 +30,7 @@ struct evaluator final : visitor
     void visit(const index_expression& expr) final;
     void visit(const integer_literal& expr) final;
     void visit(const let_statement& expr) final;
+    void visit(const null_literal& expr) final;
     void visit(const program& expr) final;
     void visit(const return_statement& expr) final;
     void visit(const string_literal& expr) final;

@@ -13,6 +13,7 @@
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
 #include <ast/integer_literal.hpp>
+#include <ast/null_literal.hpp>
 #include <ast/program.hpp>
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
@@ -47,6 +48,7 @@ struct visitor
     virtual void visit(const index_expression& expr) = 0;
     virtual void visit(const integer_literal& expr) = 0;
     virtual void visit(const let_statement& expr) = 0;
+    virtual void visit(const null_literal& expr) = 0;
     virtual void visit(const program& expr) = 0;
     virtual void visit(const return_statement& expr) = 0;
     virtual void visit(const string_literal& expr) = 0;

@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "compiler.hpp"
@@ -62,7 +63,7 @@ auto compiler::compile(const program* program) -> void
     program->accept(*this);
 }
 
-auto compiler::add_constant(object* obj) -> std::size_t
+auto compiler::add_constant(const object* obj) -> std::size_t
 {
     m_consts->push_back(obj);
     return m_consts->size() - 1;
@@ -431,6 +432,11 @@ void compiler::visit(const let_statement& expr)
     }
 }
 
+void compiler::visit(const null_literal& /*expr*/)
+{
+    emit(opcodes::constant, add_constant(null()));
+}
+
 void compiler::visit(const return_statement& expr)
 {
     expr.value->accept(*this);
@@ -555,7 +561,7 @@ auto check_program(std::string_view input) -> parsed_program
     return {std::move(prgrm), std::move(prsr)};
 }
 
-using expected_value = std::variant<int64_t, std::string, std::vector<instructions>>;
+using expected_value = std::variant<int64_t, std::string, std::vector<instructions>, std::monostate>;
 
 struct ctc
 {
@@ -579,6 +585,7 @@ auto check_constants(const std::vector<expected_value>& expecteds, const constan
         const auto& actual = consts.at(idx);
         std::visit(
             overloaded {
+                [&](const std::monostate&) { CHECK(actual->is_null()); },
                 [&](const int64_t val) { CHECK_EQ(val, actual->as<integer_object>()->value); },
                 [&](const std::string& val) { CHECK_EQ(val, actual->as<string_object>()->value); },
                 [&](const std::vector<instructions>& instrs)
@@ -1168,6 +1175,22 @@ TEST_CASE("hashLiterals")
                 make(constant, 5),
                 make(mul),
                 make(hash, 4),
+                make(pop),
+            },
+        },
+    };
+    run(std::move(tests));
+}
+
+TEST_CASE("nullLiteral")
+{
+    using enum opcodes;
+    std::array tests {
+        ctc {
+            R"(null)",
+            {std::monostate {}},
+            {
+                make(constant, 0),
                 make(pop),
             },
         },
