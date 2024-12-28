@@ -64,6 +64,7 @@ enum class token_type : std::uint8_t
     hwile,
     brake,
     cont,
+    null,
 };
 
 auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&;

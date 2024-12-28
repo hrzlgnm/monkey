@@ -5,103 +5,106 @@
 
 auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
 {
+    using enum token_type;
     switch (type) {
-        case token_type::asterisk:
+        case asterisk:
             return ostream << "*";
-        case token_type::back_slash:
+        case back_slash:
             return ostream << "\\";
-        case token_type::caret:
+        case caret:
             return ostream << "^";
-        case token_type::rsquirly:
+        case rsquirly:
             return ostream << "}";
-        case token_type::rbracket:
+        case rbracket:
             return ostream << "]";
-        case token_type::rparen:
+        case rparen:
             return ostream << ")";
-        case token_type::colon:
+        case colon:
             return ostream << ":";
-        case token_type::comma:
+        case comma:
             return ostream << ",";
-        case token_type::dot:
+        case dot:
             return ostream << ".";
-        case token_type::assign:
+        case assign:
             return ostream << "=";
-        case token_type::exclamation:
+        case exclamation:
             return ostream << "!";
-        case token_type::greater_than:
+        case greater_than:
             return ostream << ">";
-        case token_type::ident:
+        case ident:
             return ostream << "identifier";
-        case token_type::integer:
+        case integer:
             return ostream << "integer";
-        case token_type::decimal:
+        case decimal:
             return ostream << "decimal";
-        case token_type::string:
+        case string:
             return ostream << "string";
-        case token_type::let:
+        case let:
             return ostream << "let";
-        case token_type::function:
+        case function:
             return ostream << "fn";
-        case token_type::less_than:
+        case less_than:
             return ostream << "<";
-        case token_type::minus:
+        case minus:
             return ostream << "-";
-        case token_type::lsquirly:
+        case lsquirly:
             return ostream << "{";
-        case token_type::lbracket:
+        case lbracket:
             return ostream << "[";
-        case token_type::lparen:
+        case lparen:
             return ostream << "(";
-        case token_type::percent:
+        case percent:
             return ostream << "%";
-        case token_type::pipe:
+        case pipe:
             return ostream << "|";
-        case token_type::plus:
+        case plus:
             return ostream << "+";
-        case token_type::question:
+        case question:
             return ostream << "?";
-        case token_type::semicolon:
+        case semicolon:
             return ostream << ";";
-        case token_type::slash:
+        case slash:
             return ostream << "/";
-        case token_type::tilde:
+        case tilde:
             return ostream << "~";
-        case token_type::illegal:
+        case illegal:
             return ostream << "illegal";
-        case token_type::eof:
+        case eof:
             return ostream << "eof";
-        case token_type::tru:
+        case tru:
             return ostream << "true";
-        case token_type::fals:
+        case fals:
             return ostream << "false";
-        case token_type::eef:
+        case eef:
             return ostream << "if";
-        case token_type::elze:
+        case elze:
             return ostream << "else";
-        case token_type::ret:
+        case ret:
             return ostream << "return";
-        case token_type::equals:
+        case equals:
             return ostream << "==";
-        case token_type::not_equals:
+        case not_equals:
             return ostream << "!=";
-        case token_type::double_slash:
+        case double_slash:
             return ostream << "//";
-        case token_type::ampersand:
+        case ampersand:
             return ostream << "&";
-        case token_type::shift_right:
+        case shift_right:
             return ostream << ">>";
-        case token_type::shift_left:
+        case shift_left:
             return ostream << "<<";
-        case token_type::logical_and:
+        case logical_and:
             return ostream << "&&";
-        case token_type::logical_or:
+        case logical_or:
             return ostream << "||";
-        case token_type::hwile:
+        case hwile:
             return ostream << "while";
-        case token_type::brake:
+        case brake:
             return ostream << "break";
-        case token_type::cont:
+        case cont:
             return ostream << "continue";
+        case null:
+            return ostream << "null";
     }
     throw std::invalid_argument("invalid token_type");
 }

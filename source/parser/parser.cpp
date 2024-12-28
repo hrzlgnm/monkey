@@ -8,6 +8,7 @@
 #include "parser.hpp"
 
 #include <ast/array_literal.hpp>
+#include <ast/assign_expression.hpp>
 #include <ast/binary_expression.hpp>
 #include <ast/boolean_literal.hpp>
 #include <ast/call_expression.hpp>
@@ -19,6 +20,7 @@
 #include <ast/if_expression.hpp>
 #include <ast/index_expression.hpp>
 #include <ast/integer_literal.hpp>
+#include <ast/null_literal.hpp>
 #include <ast/program.hpp>
 #include <ast/statements.hpp>
 #include <ast/string_literal.hpp>
@@ -31,8 +33,6 @@
 #include <lexer/token.hpp>
 #include <lexer/token_type.hpp>
 #include <overloaded.hpp>
-
-#include "ast/assign_expression.hpp"
 
 namespace
 {
@@ -113,6 +113,7 @@ parser::parser(lexer lxr)
     register_unary(string, [this] { return parse_string_literal(); });
     register_unary(lbracket, [this] { return parse_array_expression(); });
     register_unary(lsquirly, [this] { return parse_hash_literal(); });
+    register_unary(null, [this] { return parse_null_literal(); });
     register_binary(plus, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(minus, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(slash, [this](expression* left) { return parse_binary_expression(left); });
@@ -479,10 +480,10 @@ auto parser::parse_string_literal() const -> expression*
     return make<string_literal>(std::string {m_current_token.literal});
 }
 
-auto parser::parse_expression_list(token_type end) -> std::vector<const expression*>
+auto parser::parse_expression_list(token_type end) -> expressions
 {
     using enum token_type;
-    auto list = std::vector<const expression*>();
+    expressions list;
     if (peek_token_is(end)) {
         next_token();
         return list;
@@ -546,6 +547,11 @@ auto parser::parse_hash_literal() -> expression*
         return {};
     }
     return hash;
+}
+
+auto parser::parse_null_literal() -> expression*
+{
+    return make<null_literal>();
 }
 
 auto parser::get(token_type type) -> bool
@@ -1360,6 +1366,12 @@ TEST_CASE("emptyHashLiteral")
     auto [prgrm, _] = check_program(R"({})");
     auto* hash_lit = require_expression<hash_literal>(prgrm);
     REQUIRE(hash_lit->pairs.empty());
+}
+
+TEST_CASE("nullLiteral")
+{
+    auto [prgrm, _] = check_program(R"(null)");
+    auto* hash_lit = require_expression<null_literal>(prgrm);
 }
 
 TEST_SUITE_END();

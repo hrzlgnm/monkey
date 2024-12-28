@@ -40,7 +40,7 @@ struct compiler final : public visitor
         return compiler {constants, symbols};
     }
 
-    [[nodiscard]] auto add_constant(object* obj) -> std::size_t;
+    [[nodiscard]] auto add_constant(const object* obj) -> std::size_t;
     [[nodiscard]] auto add_instructions(const instructions& ins) -> std::size_t;
     auto emit(opcodes opcode, const operands& operands = {}) -> std::size_t;
 
@@ -88,6 +88,7 @@ struct compiler final : public visitor
     void visit(const index_expression& expr) final;
     void visit(const integer_literal& expr) final;
     void visit(const let_statement& expr) final;
+    void visit(const null_literal& expr) final;
     void visit(const program& expr) final;
     void visit(const return_statement& expr) final;
     void visit(const string_literal& expr) final;

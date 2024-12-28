@@ -50,7 +50,7 @@ constexpr auto build_char_to_token_type_map() -> char_literal_lookup_table
 }
 
 constexpr auto char_literal_tokens = build_char_to_token_type_map();
-constexpr auto keyword_count = 10;
+constexpr auto keyword_count = 11;
 using keyword_pair = std::pair<std::string_view, token_type>;
 using keyword_lookup_table = std::array<keyword_pair, keyword_count>;
 
@@ -67,6 +67,7 @@ constexpr auto build_keyword_to_token_type_map() -> keyword_lookup_table
         std::pair {"return", token_type::ret},
         std::pair {"break", token_type::brake},
         std::pair {"continue", token_type::cont},
+        std::pair {"null", token_type::null},
     };
 }
 
@@ -271,7 +272,7 @@ return false;
 [1,2];
 {"foo": "bar"};
 5.5 // %
-& | ^ << >> && || a_b while break continue
+& | ^ << >> && || a_b while break continue null
         )"};
     const std::array expected_tokens {
         token {.type = let, .literal = "let"},        token {.type = ident, .literal = "five"},
@@ -325,7 +326,7 @@ return false;
         token {.type = logical_and, .literal = "&&"}, token {.type = logical_or, .literal = "||"},
         token {.type = ident, .literal = "a_b"},      token {.type = hwile, .literal = "while"},
         token {.type = brake, .literal = "break"},    token {.type = cont, .literal = "continue"},
-        token {.type = eof, .literal = ""},
+        token {.type = null, .literal = "null"},      token {.type = eof, .literal = ""},
     };
     for (const auto& expected_token : expected_tokens) {
         auto token = lxr.next_token();
