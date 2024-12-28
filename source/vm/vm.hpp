@@ -27,11 +27,11 @@ struct vm final
     static auto create(bytecode code) -> vm;
     static auto create_with_state(bytecode code, constants* globals) -> vm;
     auto run() -> void;
-    auto push(const object* obj) -> void;
     [[nodiscard]] auto last_popped() const -> const object*;
 
   private:
     vm(frames frames, const constants* consts, constants* globals);
+    auto push(const object* obj) -> void;
     auto pop() -> const object*;
     auto exec_binary_op(opcodes opcode) -> void;
     auto exec_bang() -> void;
