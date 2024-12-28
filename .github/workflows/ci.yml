@@ -95,7 +95,7 @@ jobs:
             }
           - {
               runs_on: ubuntu-latest,
-              name: "Clang 15 musl",
+              name: "Clang 17 musl",
               container: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
@@ -106,7 +106,7 @@ jobs:
             }
           - {
               runs_on: ubuntu-latest,
-              name: "Clang 15 musl ASAN+UBSAN",
+              name: "Clang 17 musl ASAN+UBSAN",
               container: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
@@ -118,7 +118,7 @@ jobs:
             }
           - {
               runs_on: ubuntu-latest,
-              name: "Clang 15 musl Release",
+              name: "Clang 17 musl Release",
               container: "ghcr.io/hrzlgnm/cappuchin-github-void-linux-musl-clang:v1",
               CC: clang,
               CXX: clang++,
