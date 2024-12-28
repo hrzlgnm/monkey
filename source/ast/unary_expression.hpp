@@ -4,10 +4,10 @@
 
 #include "expression.hpp"
 
-struct unary_expression : expression
+struct unary_expression final : expression
 {
-    [[nodiscard]] auto string() const -> std::string override;
-    void accept(struct visitor& visitor) const override;
+    [[nodiscard]] auto string() const -> std::string final;
+    void accept(struct visitor& visitor) const final;
 
     token_type op {};
     expression* right {};

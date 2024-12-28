@@ -4,7 +4,7 @@
 
 #include "expression.hpp"
 
-struct identifier : expression
+struct identifier final : expression
 {
     explicit identifier(std::string val);
     [[nodiscard]] auto string() const -> std::string override;

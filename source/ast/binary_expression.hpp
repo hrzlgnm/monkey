@@ -1,11 +1,16 @@
 #pragma once
+#include <string>
 
-#include "unary_expression.hpp"
+#include <lexer/token_type.hpp>
 
-struct binary_expression final : unary_expression
+#include "expression.hpp"
+
+struct binary_expression final : expression
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     expression* left {};
+    token_type op {};
+    expression* right {};
 };

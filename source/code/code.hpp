@@ -68,7 +68,7 @@ struct fmt::formatter<opcodes> : ostream_formatter
 using operands = std::vector<std::size_t>;
 using instructions = std::vector<uint8_t>;
 
-struct definition
+struct definition final
 {
     std::string_view name;
     operands operand_widths;

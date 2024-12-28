@@ -24,26 +24,21 @@ using enum object::object_type;
 
 namespace
 {
-const boolean_object false_obj {/*val=*/false};
-const boolean_object true_obj {/*val=*/true};
-const struct null_object null_obj;
-const struct break_object break_obj;
-const struct continue_object continue_obj;
 
 auto invert_boolean_object(const object* b) -> const object*
 {
-    if (b == &false_obj) {
-        return &true_obj;
+    if (b == fals()) {
+        return tru();
     }
-    if (b == &true_obj) {
-        return &false_obj;
+    if (b == tru()) {
+        return fals();
     }
     return nullptr;
 }
 
 auto object_eq(const object& lhs, const object& rhs) -> bool
 {
-    return (lhs == rhs) == &true_obj;
+    return (lhs == rhs) == tru();
 }
 
 constexpr auto epsilon = 1e-9;
@@ -98,33 +93,38 @@ auto math_mod(decimal_object::value_type lhs, decimal_object::value_type rhs) ->
 auto native_bool_to_object(bool val) -> const object*
 {
     if (val) {
-        return &true_obj;
+        return tru();
     }
-    return &false_obj;
+    return fals();
 }
 
 auto tru() -> const object*
 {
+    static const boolean_object true_obj {/*val=*/true};
     return &true_obj;
 }
 
 auto fals() -> const object*
 {
+    static const boolean_object false_obj {/*val=*/false};
     return &false_obj;
 }
 
 auto null() -> const object*
 {
+    static const struct null_object null_obj;
     return &null_obj;
 }
 
 auto brake() -> const object*
 {
+    static const struct break_object break_obj;
     return &break_obj;
 }
 
 auto cont() -> const object*
 {
+    static const struct continue_object continue_obj;
     return &continue_obj;
 }
 
@@ -161,8 +161,6 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
             return ostrm << "boolean";
         case string:
             return ostrm << "string";
-        case nll:
-            return ostrm << "null";
         case error:
             return ostrm << "error";
         case array:
@@ -177,17 +175,13 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
             return ostrm << "closure";
         case builtin:
             return ostrm << "builtin";
-        case object::object_type::return_value:
+        case return_value:
             return ostrm << "return_value";
-        case object::object_type::brek:
-            return ostrm << "break";
-        case object::object_type::cntn:
-            return ostrm << "continue";
     }
-    return ostrm << "unknown " << static_cast<int>(type);
+    return ostrm << "unknown " << std::hex << static_cast<int>(type);
 }
 
-auto string_object::hash_key() const -> hash_key_type
+auto string_object::hash_key() const -> key_type
 {
     return value;
 }
@@ -218,7 +212,7 @@ auto string_object::operator*(const object& other) const -> const object*
     return nullptr;
 }
 
-auto boolean_object::hash_key() const -> hash_key_type
+auto boolean_object::hash_key() const -> key_type
 {
     return value;
 }
@@ -381,7 +375,7 @@ auto boolean_object::operator>>(const object& other) const -> const object*
     return nullptr;
 }
 
-auto integer_object::hash_key() const -> hash_key_type
+auto integer_object::hash_key() const -> key_type
 {
     return value;
 }
@@ -694,7 +688,7 @@ auto array_object::operator+(const object& other) const -> const object*
     return nullptr;
 }
 
-auto operator<<(std::ostream& strm, const hashable_object::hash_key_type& t) -> std::ostream&
+auto operator<<(std::ostream& strm, const hashable::key_type& t) -> std::ostream&
 {
     std::visit(
         overloaded {
@@ -762,7 +756,7 @@ auto null_object::operator==(const object& other) const -> const object*
 
 auto compiled_function_object::inspect() const -> std::string
 {
-    return fmt::format("{{\n{}}}", to_string(instrs));
+    return "{<code...>}";
 }
 
 [[nodiscard]] auto closure_object::as_mutable() const -> closure_object*
@@ -774,18 +768,7 @@ auto compiled_function_object::inspect() const -> std::string
 
 auto closure_object::inspect() const -> std::string
 {
-    std::ostringstream strm;
-    strm << "[";
-    for (bool first = true; const auto* const element : free) {
-        if (!first) {
-            strm << ", ";
-        }
-        strm << fmt::format("{}", element->inspect());
-        first = false;
-    }
-    strm << "]";
-
-    return fmt::format("fn<closure>() compiled: {}\n free: {}", fn->inspect(), strm.str());
+    return fmt::format("closure[{}]", static_cast<const void*>(fn));
 }
 
 namespace
@@ -1103,6 +1086,7 @@ TEST_SUITE("object tests")
     const string_object str_obj {"str"};
     const boolean_object true_obj {/*val=*/true};
     const boolean_object false_obj {/*val=*/false};
+    const null_object null_obj;
     const error_object err_obj {"error"};
     const integer_object int2_obj {i2};
     const array_object array_obj {{&int_obj, &int2_obj}};
@@ -1143,9 +1127,6 @@ TEST_SUITE("object tests")
         CHECK_EQ(dec_obj.type(), decimal);
         CHECK_EQ(true_obj.type(), boolean);
         CHECK_EQ(str_obj.type(), string);
-        CHECK_EQ(brake()->type(), brek);
-        CHECK_EQ(cont()->type(), cntn);
-        CHECK_EQ(null()->type(), nll);
         CHECK_EQ(err_obj.type(), error);
         CHECK_EQ(array_obj.type(), array);
         CHECK_EQ(hash_obj.type(), hash);

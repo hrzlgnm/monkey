@@ -7,7 +7,7 @@ struct function_literal final : expression
 {
     function_literal(identifiers&& params, const block_statement* bod);
 
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     std::string name;

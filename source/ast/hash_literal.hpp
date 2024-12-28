@@ -5,9 +5,9 @@
 
 #include "expression.hpp"
 
-struct hash_literal : expression
+struct hash_literal final : expression
 {
-    [[nodiscard]] auto string() const -> std::string override;
+    [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
     std::vector<std::pair<expression*, expression*>> pairs;

@@ -372,14 +372,14 @@ auto vm::build_hash(int start, int end) const -> const object*
     for (auto idx = start; idx < end; idx += 2) {
         const auto* key = m_stack[idx];
         const auto* val = m_stack[idx + 1];
-        hsh[key->as<hashable_object>()->hash_key()] = val;
+        hsh[key->as<hashable>()->hash_key()] = val;
     }
     return make<hash_object>(std::move(hsh));
 }
 
 namespace
 {
-auto exec_hash(const hash_object::value_type& hsh, const hashable_object::hash_key_type& key) -> const object*
+auto exec_hash(const hash_object::value_type& hsh, const hashable::key_type& key) -> const object*
 {
     if (const auto itr = hsh.find(key); itr != hsh.end()) {
         return itr->second;
@@ -412,7 +412,7 @@ auto vm::exec_index(const object* left, const object* index) -> void
         return;
     }
     if (left->is(hash) && index->is_hashable()) {
-        push(exec_hash(left->as<hash_object>()->value, index->as<hashable_object>()->hash_key()));
+        push(exec_hash(left->as<hash_object>()->value, index->as<hashable>()->hash_key()));
         return;
     }
     push(make_error("invalid index operation: {}[{}]", left->type(), index->type()));
@@ -512,7 +512,7 @@ struct error
     std::string message;
 };
 
-using hash = std::unordered_map<hashable_object::hash_key_type, int64_t>;
+using hash = std::unordered_map<hashable::key_type, int64_t>;
 using null_type = std::monostate;
 const null_type null_value {};
 
