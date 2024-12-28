@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <array>
 #include <cctype>
+#include <cstdint>
 #include <limits>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 
 #include "lexer.hpp"
@@ -73,6 +75,66 @@ constexpr auto build_keyword_to_token_type_map() -> keyword_lookup_table
 
 constexpr auto keyword_tokens = build_keyword_to_token_type_map();
 
+using token_pair = std::pair<token_type, token_type>;
+
+struct token_pair_hash
+{
+    auto operator()(const std::pair<token_type, token_type>& pair) const -> size_t
+    {
+        return static_cast<uint8_t>(pair.first) ^ static_cast<uint8_t>(static_cast<uint8_t>(pair.second) << 4U);
+    }
+};
+
+using two_token_lookup = std::unordered_map<token_pair, token, token_pair_hash>;
+
+auto build_two_token_lookup() -> two_token_lookup
+{
+    using enum token_type;
+    two_token_lookup lookup;
+
+    lookup.insert({{assign, assign},
+                   {
+                       .type = equals,
+                       .literal = "==",
+                   }});
+    lookup.insert({{exclamation, assign},
+                   {
+                       .type = not_equals,
+                       .literal = "!=",
+                   }});
+    lookup.insert({{exclamation, assign},
+                   {
+                       .type = not_equals,
+                       .literal = "!=",
+                   }});
+    lookup.insert({{less_than, less_than},
+                   {
+                       .type = shift_left,
+                       .literal = "<<",
+                   }});
+    lookup.insert({{greater_than, greater_than},
+                   {
+                       .type = shift_right,
+                       .literal = ">>",
+                   }});
+    lookup.insert({{ampersand, ampersand},
+                   {
+                       .type = logical_and,
+                       .literal = "&&",
+                   }});
+    lookup.insert({{pipe, pipe},
+                   {
+                       .type = logical_or,
+                       .literal = "||",
+                   }});
+    lookup.insert({{slash, slash},
+                   {
+                       .type = double_slash,
+                       .literal = "//",
+                   }});
+    return lookup;
+}
+
 inline auto is_letter(char chr) -> bool
 {
     return std::isalpha(static_cast<unsigned char>(chr)) != 0 || chr == '_';
@@ -100,51 +162,15 @@ auto lexer::next_token() -> token
     }
     const auto as_uchar = static_cast<unsigned char>(m_byte);
     const auto char_token_type = char_literal_tokens[as_uchar];
+    const static auto two_token = build_two_token_lookup();
     if (char_token_type != illegal) {
         const auto peek_token_type = char_literal_tokens[static_cast<unsigned char>(peek_char())];
-        switch (char_token_type) {
-            // todo: compress this to another lookupt table
-            case assign:
-                if (peek_token_type == assign) {
-                    return read_char(), read_char(), token {.type = equals, .literal = "=="};
-                }
-                break;
-            case exclamation:
-                if (peek_token_type == assign) {
-                    return read_char(), read_char(), token {.type = not_equals, .literal = "!="};
-                }
-                break;
-            case slash:
-                if (peek_token_type == slash) {
-                    return read_char(), read_char(), token {.type = double_slash, .literal = "//"};
-                }
-                break;
-            case less_than:
-                if (peek_token_type == less_than) {
-                    return read_char(), read_char(), token {.type = shift_left, .literal = "<<"};
-                }
-                break;
-            case greater_than:
-                if (peek_token_type == greater_than) {
-                    return read_char(), read_char(), token {.type = shift_right, .literal = ">>"};
-                }
-                break;
-            case ampersand:
-                if (peek_token_type == ampersand) {
-                    return read_char(), read_char(), token {.type = logical_and, .literal = "&&"};
-                }
-                break;
-            case pipe:
-                if (peek_token_type == pipe) {
-                    return read_char(), read_char(), token {.type = logical_or, .literal = "||"};
-                }
-                break;
-            default:
-                break;
+        if (const auto itr = two_token.find({char_token_type, peek_token_type}); itr != two_token.end()) {
+            return read_char(), read_char(), itr->second;
         }
         return read_char(),
                token {
-                   .type = char_literal_tokens[as_uchar],
+                   .type = char_token_type,
                    .literal = std::string_view {&m_input[m_position - 1], 1},
                };
     }
