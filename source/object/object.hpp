@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -48,9 +49,6 @@ struct object
         decimal,
         boolean,
         string,
-        brek,
-        cntn,
-        nll,
         error,
         array,
         hash,
@@ -80,19 +78,23 @@ struct object
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
 
-    [[nodiscard]] auto is_null() const -> bool { return type() == object_type::nll; }
+    [[nodiscard]] auto is_null() const -> bool { return this == null(); }
 
     [[nodiscard]] auto is_return_value() const -> bool { return type() == object_type::return_value; }
 
-    [[nodiscard]] auto is_break() const -> bool { return type() == object_type::brek; }
+    [[nodiscard]] auto is_break() const -> bool { return this == brake(); }
 
-    [[nodiscard]] auto is_continue() const -> bool { return type() == object_type::cntn; }
+    [[nodiscard]] auto is_continue() const -> bool { return this == cont(); }
 
     [[nodiscard]] virtual auto is_truthy() const -> bool { return false; }
 
     [[nodiscard]] virtual auto is_hashable() const -> bool { return false; }
 
-    [[nodiscard]] virtual auto type() const -> object_type = 0;
+    [[nodiscard]] virtual auto type() const -> object_type
+    {
+        return static_cast<object_type>(std::numeric_limits<uint8_t>::max());
+    };
+
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
     [[nodiscard]] auto operator!=(const object& other) const -> const object*;
@@ -278,22 +280,16 @@ struct string_object final
 
 struct break_object final : object
 {
-    [[nodiscard]] auto type() const -> object_type final { return object_type::brek; }
-
     [[nodiscard]] auto inspect() const -> std::string final { return "break"; }
 };
 
 struct continue_object final : object
 {
-    [[nodiscard]] auto type() const -> object_type final { return object_type::cntn; }
-
     [[nodiscard]] auto inspect() const -> std::string final { return "continue"; }
 };
 
 struct null_object final : object
 {
-    [[nodiscard]] auto type() const -> object_type final { return object_type::nll; }
-
     [[nodiscard]] auto inspect() const -> std::string final { return "null"; }
 
     [[nodiscard]] auto operator==(const object& other) const -> const object* final;

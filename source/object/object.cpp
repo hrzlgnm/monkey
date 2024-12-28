@@ -161,8 +161,6 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
             return ostrm << "boolean";
         case string:
             return ostrm << "string";
-        case nll:
-            return ostrm << "null";
         case error:
             return ostrm << "error";
         case array:
@@ -179,10 +177,6 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
             return ostrm << "builtin";
         case return_value:
             return ostrm << "return_value";
-        case brek:
-            return ostrm << "break";
-        case cntn:
-            return ostrm << "continue";
     }
     return ostrm << "unknown " << static_cast<int>(type);
 }
@@ -1144,9 +1138,6 @@ TEST_SUITE("object tests")
         CHECK_EQ(dec_obj.type(), decimal);
         CHECK_EQ(true_obj.type(), boolean);
         CHECK_EQ(str_obj.type(), string);
-        CHECK_EQ(brake()->type(), brek);
-        CHECK_EQ(cont()->type(), cntn);
-        CHECK_EQ(null()->type(), nll);
         CHECK_EQ(err_obj.type(), error);
         CHECK_EQ(array_obj.type(), array);
         CHECK_EQ(hash_obj.type(), hash);
