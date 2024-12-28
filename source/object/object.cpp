@@ -178,7 +178,7 @@ auto operator<<(std::ostream& ostrm, object::object_type type) -> std::ostream&
         case return_value:
             return ostrm << "return_value";
     }
-    return ostrm << "unknown " << static_cast<int>(type);
+    return ostrm << "unknown " << std::hex << static_cast<int>(type);
 }
 
 auto string_object::hash_key() const -> key_type

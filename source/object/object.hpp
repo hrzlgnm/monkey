@@ -93,7 +93,7 @@ struct object
     [[nodiscard]] virtual auto type() const -> object_type
     {
         return static_cast<object_type>(std::numeric_limits<uint8_t>::max());
-    };
+    }
 
     [[nodiscard]] virtual auto inspect() const -> std::string = 0;
 
