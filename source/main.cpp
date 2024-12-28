@@ -98,17 +98,27 @@ struct command_line_args
     std::string_view file;
 };
 
-auto get_logged_in_user() -> std::string
+auto get_compiler_identifier() -> std::string
 {
-    // NOLINTBEGIN(concurrency-mt-unsafe)
-    const char* username = getenv("USER");
+#if defined(_MSC_VER)
+    return "Microsoft Visual Studio Compiler (MSVC) " + std::to_string(_MSC_VER);
+#elif defined(__clang__)
+    return "Clang " + std::string(__clang_version__);
+#elif defined(__GNUC__)
+    return "GCC " + std::to_string(__GNUC__) + "." + std::to_string(__GNUC_MINOR__) + "."
+        + std::to_string(__GNUC_PATCHLEVEL__);
+#else
+    return "Unknown Compiler";
+#endif
+}
 
-    if (username == nullptr) {
-        username = getenv("USERNAME");
-    }
-    // NOLINTEND(concurrency-mt-unsafe)
-
-    return (username != nullptr) ? std::string(username) : "Unknown";
+auto get_build_type() -> std::string
+{
+#if defined(NDEBUG)
+    return "Release";
+#else
+    return "Debug";
+#endif
 }
 
 [[noreturn]] auto show_usage(std::string_view program, std::string_view error_msg = {})
@@ -216,8 +226,8 @@ auto run_file(const command_line_args& opts) -> int
 
 auto run_repl(const command_line_args& opts) -> int
 {
-    std::cout << "Hello " << get_logged_in_user() << ". This is the Cappuchin programming language using engine "
-              << opts.mode << ".\n";
+    std::cout << "Cappuchin programming language using engine: " << opts.mode << ".\n";
+    std::cout << get_build_type() << " built with " << get_compiler_identifier() << '\n';
     std::cout << "Feel free to type in commands\n";
     auto* global_env = opts.mode == engine::eval ? make<environment>() : nullptr;
     auto* symbols = opts.mode == engine::vm ? symbol_table::create() : nullptr;
