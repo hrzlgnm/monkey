@@ -3,7 +3,7 @@
 #include "expression.hpp"
 #include "identifier.hpp"
 
-struct assign_expression : expression
+struct assign_expression final : expression
 {
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;

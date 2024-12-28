@@ -52,7 +52,7 @@ class parser final
     auto parse_hash_literal() -> expression*;
     auto parse_null_literal() -> expression*;
 
-    auto parse_expression_list(token_type end) -> expressions;
+    auto parse_expressions(token_type end) -> expressions;
     auto get(token_type type) -> bool;
     auto current_token_is(token_type type) const -> bool;
     auto peek_token_is(token_type type) const -> bool;

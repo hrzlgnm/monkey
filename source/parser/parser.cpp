@@ -458,7 +458,7 @@ auto parser::parse_call_expression(expression* function) -> expression*
 {
     auto* call = make<call_expression>();
     call->function = function;
-    call->arguments = parse_expression_list(token_type::rparen);
+    call->arguments = parse_expressions(token_type::rparen);
     return call;
 }
 
@@ -480,7 +480,7 @@ auto parser::parse_string_literal() const -> expression*
     return make<string_literal>(std::string {m_current_token.literal});
 }
 
-auto parser::parse_expression_list(token_type end) -> expressions
+auto parser::parse_expressions(token_type end) -> expressions
 {
     using enum token_type;
     expressions list;
@@ -507,7 +507,7 @@ auto parser::parse_expression_list(token_type end) -> expressions
 auto parser::parse_array_expression() -> expression*
 {
     auto* array_expr = make<array_literal>();
-    array_expr->elements = parse_expression_list(token_type::rbracket);
+    array_expr->elements = parse_expressions(token_type::rbracket);
     return array_expr;
 }
 
