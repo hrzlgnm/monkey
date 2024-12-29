@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <ios>
 #include <limits>
 #include <string>
 #include <unordered_map>
@@ -17,6 +18,7 @@
 #include <eval/environment.hpp>
 #include <fmt/ostream.h>
 #include <gc.hpp>
+#include <sys/types.h>
 
 struct object;
 auto tru() -> const object*;
@@ -74,7 +76,11 @@ struct object
         return static_cast<const T*>(this);
     }
 
-    [[nodiscard]] virtual auto cast_to(object_type /*type*/) const -> const object* { return nullptr; }
+    template<typename T>
+    [[nodiscard]] auto val() const -> typename T::value_type
+    {
+        return as<T>()->value;
+    }
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
 
@@ -154,6 +160,12 @@ struct integer_object final
     {
     }
 
+    template<typename T>
+    [[nodiscard]] auto value_to() const -> typename T::value_type
+    {
+        return static_cast<typename T::value_type>(val<integer_object>());
+    }
+
     [[nodiscard]] auto is_truthy() const -> bool final { return value != 0; }
 
     [[nodiscard]] auto type() const -> object_type final { return object_type::integer; }
@@ -164,7 +176,6 @@ struct integer_object final
 
     [[nodiscard]] auto hash_key() const -> key_type final;
 
-    [[nodiscard]] auto cast_to(object_type type) const -> const object* final;
     [[nodiscard]] auto operator==(const object& other) const -> const object* final;
     [[nodiscard]] auto operator>(const object& other) const -> const object* final;
     [[nodiscard]] auto operator+(const object& other) const -> const object* final;
@@ -172,6 +183,7 @@ struct integer_object final
     [[nodiscard]] auto operator*(const object& other) const -> const object* final;
     [[nodiscard]] auto operator/(const object& other) const -> const object* final;
     [[nodiscard]] auto operator%(const object& other) const -> const object* final;
+    // TODO: use unsigned for all the bit ops
     [[nodiscard]] auto operator&(const object& other) const -> const object* final;
     [[nodiscard]] auto operator|(const object& other) const -> const object* final;
     [[nodiscard]] auto operator^(const object& other) const -> const object* final;
@@ -192,13 +204,17 @@ struct decimal_object final : object
     {
     }
 
+    template<typename T>
+    [[nodiscard]] auto value_to() const -> typename T::value_type
+    {
+        return static_cast<typename T::value_type>(val<decimal_object>());
+    }
+
     [[nodiscard]] auto is_truthy() const -> bool final { return value != 0.0; }
 
     [[nodiscard]] auto type() const -> object_type final { return object_type::decimal; }
 
     [[nodiscard]] auto inspect() const -> std::string final { return decimal_to_string(value); }
-
-    [[nodiscard]] auto cast_to(object_type type) const -> const object* final;
 
     [[nodiscard]] auto operator==(const object& other) const -> const object* final;
     [[nodiscard]] auto operator>(const object& other) const -> const object* final;
@@ -222,6 +238,12 @@ struct boolean_object final
     {
     }
 
+    template<typename T>
+    [[nodiscard]] auto value_to() const -> typename T::value_type
+    {
+        return static_cast<typename T::value_type>(val<boolean_object>());
+    }
+
     [[nodiscard]] auto is_truthy() const -> bool final { return value; }
 
     [[nodiscard]] auto type() const -> object_type final { return object_type::boolean; }
@@ -231,7 +253,6 @@ struct boolean_object final
     [[nodiscard]] auto is_hashable() const -> bool final { return true; }
 
     [[nodiscard]] auto hash_key() const -> key_type final;
-    [[nodiscard]] auto cast_to(object_type type) const -> const object* final;
     [[nodiscard]] auto operator==(const object& other) const -> const object* final;
     [[nodiscard]] auto operator+(const object& other) const -> const object* final;
     [[nodiscard]] auto operator-(const object& other) const -> const object* final;
