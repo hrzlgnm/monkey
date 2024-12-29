@@ -110,6 +110,8 @@ struct object
 
     [[nodiscard]] virtual auto operator>(const object& /*other*/) const -> const object* { return nullptr; }
 
+    [[nodiscard]] virtual auto operator>=(const object& /*other*/) const -> const object* { return nullptr; }
+
     [[nodiscard]] virtual auto operator*(const object& /*other*/) const -> const object* { return nullptr; }
 
     [[nodiscard]] virtual auto operator+(const object& /*other*/) const -> const object* { return nullptr; }
@@ -177,6 +179,7 @@ struct integer_object final
 
     [[nodiscard]] auto operator==(const object& other) const -> const object* final;
     [[nodiscard]] auto operator>(const object& other) const -> const object* final;
+    [[nodiscard]] auto operator>=(const object& other) const -> const object* final;
     [[nodiscard]] auto operator+(const object& other) const -> const object* final;
     [[nodiscard]] auto operator-(const object& other) const -> const object* final;
     [[nodiscard]] auto operator*(const object& other) const -> const object* final;
@@ -217,6 +220,7 @@ struct decimal_object final : object
 
     [[nodiscard]] auto operator==(const object& other) const -> const object* final;
     [[nodiscard]] auto operator>(const object& other) const -> const object* final;
+    [[nodiscard]] auto operator>=(const object& other) const -> const object* final;
     [[nodiscard]] auto operator+(const object& other) const -> const object* final;
     [[nodiscard]] auto operator-(const object& other) const -> const object* final;
     [[nodiscard]] auto operator*(const object& other) const -> const object* final;
@@ -259,6 +263,7 @@ struct boolean_object final
     [[nodiscard]] auto operator/(const object& other) const -> const object* final;
     [[nodiscard]] auto operator%(const object& other) const -> const object* final;
     [[nodiscard]] auto operator>(const object& other) const -> const object* final;
+    [[nodiscard]] auto operator>=(const object& other) const -> const object* final;
     [[nodiscard]] auto operator&(const object& other) const -> const object* final;
     [[nodiscard]] auto operator|(const object& other) const -> const object* final;
     [[nodiscard]] auto operator^(const object& other) const -> const object* final;
@@ -292,6 +297,7 @@ struct string_object final
     [[nodiscard]] auto hash_key() const -> key_type final;
     [[nodiscard]] auto operator==(const object& other) const -> const object* final;
     [[nodiscard]] auto operator>(const object& other) const -> const object* final;
+    [[nodiscard]] auto operator>=(const object& other) const -> const object* final;
     [[nodiscard]] auto operator+(const object& other) const -> const object* final;
     [[nodiscard]] auto operator*(const object& other) const -> const object* final;
 

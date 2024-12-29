@@ -46,6 +46,8 @@ enum class token_type : std::uint8_t
     shift_left,
     logical_and,
     logical_or,
+    greater_equal,
+    less_equal,
 
     // multi character tokens
     ident,

@@ -105,6 +105,10 @@ auto operator<<(std::ostream& ostream, token_type type) -> std::ostream&
             return ostream << "continue";
         case null:
             return ostream << "null";
+        case greater_equal:
+            return ostream << ">=";
+        case less_equal:
+            return ostream << "<=";
     }
     throw std::invalid_argument("invalid token_type");
 }
