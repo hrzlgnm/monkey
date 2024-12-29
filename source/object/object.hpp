@@ -76,10 +76,10 @@ struct object
         return static_cast<const T*>(this);
     }
 
-    template<typename To, typename From>
-    [[nodiscard]] auto as_value_of() const -> typename To::value_type
+    template<typename T>
+    [[nodiscard]] auto val() const -> typename T::value_type
     {
-        return static_cast<typename To::value_type>(as<From>()->value);
+        return as<T>()->value;
     }
 
     [[nodiscard]] auto is_error() const -> bool { return type() == object_type::error; }
@@ -160,6 +160,12 @@ struct integer_object final
     {
     }
 
+    template<typename T>
+    [[nodiscard]] auto value_to() const -> typename T::value_type
+    {
+        return static_cast<typename T::value_type>(val<integer_object>());
+    }
+
     [[nodiscard]] auto is_truthy() const -> bool final { return value != 0; }
 
     [[nodiscard]] auto type() const -> object_type final { return object_type::integer; }
@@ -198,6 +204,12 @@ struct decimal_object final : object
     {
     }
 
+    template<typename T>
+    [[nodiscard]] auto value_to() const -> typename T::value_type
+    {
+        return static_cast<typename T::value_type>(val<decimal_object>());
+    }
+
     [[nodiscard]] auto is_truthy() const -> bool final { return value != 0.0; }
 
     [[nodiscard]] auto type() const -> object_type final { return object_type::decimal; }
@@ -224,6 +236,12 @@ struct boolean_object final
     explicit boolean_object(value_type val)
         : value {val}
     {
+    }
+
+    template<typename T>
+    [[nodiscard]] auto value_to() const -> typename T::value_type
+    {
+        return static_cast<typename T::value_type>(val<boolean_object>());
     }
 
     [[nodiscard]] auto is_truthy() const -> bool final { return value; }
