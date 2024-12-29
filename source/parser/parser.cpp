@@ -59,6 +59,8 @@ auto precedence_of_token(token_type type) -> std::uint8_t
     switch (type) {
         case token_type::equals:
         case token_type::not_equals:
+        case token_type::less_equal:
+        case token_type::greater_equal:
             return equals;
         case token_type::less_than:
         case token_type::greater_than:
@@ -133,6 +135,8 @@ parser::parser(lexer lxr)
     register_binary(shift_right, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(logical_and, [this](expression* left) { return parse_binary_expression(left); });
     register_binary(logical_or, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(greater_equal, [this](expression* left) { return parse_binary_expression(left); });
+    register_binary(less_equal, [this](expression* left) { return parse_binary_expression(left); });
 }
 
 auto parser::parse_program() -> program*
@@ -945,22 +949,12 @@ TEST_CASE("binaryExpressions")
     };
 
     std::array tests {
-        bt {"5 + 5;", 5, plus, 5},
-        bt {"5 - 5;", 5, minus, 5},
-        bt {"5 * 5;", 5, asterisk, 5},
-        bt {"5 / 5;", 5, slash, 5},
-        bt {"5 > 5;", 5, greater_than, 5},
-        bt {"5 < 5;", 5, less_than, 5},
-        bt {"5 == 5;", 5, equals, 5},
-        bt {"5 != 5;", 5, not_equals, 5},
-        bt {"5 // 5;", 5, double_slash, 5},
-        bt {"5 % 5;", 5, percent, 5},
-        bt {"5 & 5;", 5, ampersand, 5},
-        bt {"5 | 5;", 5, pipe, 5},
-        bt {"5 ^ 5;", 5, caret, 5},
-        bt {"5 << 5;", 5, shift_left, 5},
-        bt {"5 >> 5;", 5, shift_right, 5},
-        bt {"5 && 5;", 5, logical_and, 5},
+        bt {"5 + 5;", 5, plus, 5},           bt {"5 - 5;", 5, minus, 5},         bt {"5 * 5;", 5, asterisk, 5},
+        bt {"5 / 5;", 5, slash, 5},          bt {"5 > 5;", 5, greater_than, 5},  bt {"5 < 5;", 5, less_than, 5},
+        bt {"5 >= 5;", 5, greater_equal, 5}, bt {"5 <= 5;", 5, less_equal, 5},   bt {"5 == 5;", 5, equals, 5},
+        bt {"5 != 5;", 5, not_equals, 5},    bt {"5 // 5;", 5, double_slash, 5}, bt {"5 % 5;", 5, percent, 5},
+        bt {"5 & 5;", 5, ampersand, 5},      bt {"5 | 5;", 5, pipe, 5},          bt {"5 ^ 5;", 5, caret, 5},
+        bt {"5 << 5;", 5, shift_left, 5},    bt {"5 >> 5;", 5, shift_right, 5},  bt {"5 && 5;", 5, logical_and, 5},
         bt {"5 || 5;", 5, logical_or, 5},
     };
 
@@ -1084,6 +1078,14 @@ TEST_CASE("operatorPrecedence")
         op {
             "5 < 4 != 3 > 4",
             "((5 < 4) != (3 > 4))",
+        },
+        op {
+            "5 < 4 <= 3 > 4",
+            "((5 < 4) <= (3 > 4))",
+        },
+        op {
+            "5 < 4 >= 3 > 4",
+            "((5 < 4) >= (3 > 4))",
         },
         op {
             "3 + 4 * 5 == 3 * 1 + 4 * 5",

@@ -73,10 +73,25 @@ auto value_gt_helper(const T& lhs, const T& rhs) -> const object*
 }
 
 template<typename T>
+auto value_ge_helper(const T& lhs, const T& rhs) -> const object*
+{
+    return native_bool_to_object(lhs >= rhs);
+}
+
+template<typename T>
 auto gt_helper(const T* t, const object& other) -> const object*
 {
     if (other.is(t->type())) {
         return native_bool_to_object(t->value > other.as<T>()->value);
+    }
+    return nullptr;
+}
+
+template<typename T>
+auto ge_helper(const T* t, const object& other) -> const object*
+{
+    if (other.is(t->type())) {
+        return native_bool_to_object(t->value >= other.as<T>()->value);
     }
     return nullptr;
 }
@@ -208,6 +223,11 @@ auto string_object::operator>(const object& other) const -> const object*
     return gt_helper(this, other);
 }
 
+auto string_object::operator>=(const object& other) const -> const object*
+{
+    return ge_helper(this, other);
+}
+
 auto string_object::operator+(const object& other) const -> const object*
 {
     if (other.is(string)) {
@@ -249,6 +269,17 @@ auto boolean_object::operator>(const object& other) const -> const object*
         return value_gt_helper(value_to<decimal_object>(), other.val<decimal_object>());
     }
     return gt_helper(this, other);
+}
+
+auto boolean_object::operator>=(const object& other) const -> const object*
+{
+    if (other.is(integer)) {
+        return value_ge_helper(value_to<integer_object>(), other.val<integer_object>());
+    }
+    if (other.is(decimal)) {
+        return value_ge_helper(value_to<decimal_object>(), other.val<decimal_object>());
+    }
+    return ge_helper(this, other);
 }
 
 auto boolean_object::operator+(const object& other) const -> const object*
@@ -422,6 +453,17 @@ auto integer_object::operator>(const object& other) const -> const object*
         return value_gt_helper(value_to<decimal_object>(), other.val<decimal_object>());
     }
     return gt_helper(this, other);
+}
+
+auto integer_object::operator>=(const object& other) const -> const object*
+{
+    if (other.is(boolean)) {
+        return value_ge_helper(value_to<integer_object>(), other.as<boolean_object>()->value_to<integer_object>());
+    }
+    if (other.is(decimal)) {
+        return value_ge_helper(value_to<decimal_object>(), other.val<decimal_object>());
+    }
+    return ge_helper(this, other);
 }
 
 auto integer_object::operator+(const object& other) const -> const object*
@@ -669,6 +711,17 @@ auto decimal_object::operator>(const object& other) const -> const object*
         return value_gt_helper(value, other.as<integer_object>()->value_to<decimal_object>());
     }
     return gt_helper(this, other);
+}
+
+auto decimal_object::operator>=(const object& other) const -> const object*
+{
+    if (other.is(boolean)) {
+        return value_ge_helper(value, other.as<boolean_object>()->value_to<decimal_object>());
+    }
+    if (other.is(integer)) {
+        return value_ge_helper(value, other.as<integer_object>()->value_to<decimal_object>());
+    }
+    return ge_helper(this, other);
 }
 
 auto object_floor_div(const object* lhs, const object* rhs) -> const object*
@@ -1251,6 +1304,23 @@ TEST_SUITE("object tests")
         REQUIRE_EQ(true_obj > decimal_object {0.9}, tru());
         REQUIRE_EQ(true_obj > false_obj, tru());
         REQUIRE_EQ(false_obj > null_obj, nullptr);
+    }
+
+    TEST_CASE("operator >=")
+    {
+        REQUIRE_EQ(int_obj >= true_obj, tru());
+        REQUIRE_EQ(true_obj >= true_obj, tru());
+        REQUIRE_EQ(int_obj >= integer_object {122}, tru());
+        REQUIRE_EQ(int_obj >= int_obj, tru());
+        REQUIRE_EQ(decimal_object {d2} >= decimal_object {d2}, tru());
+        REQUIRE_EQ(decimal_object {d2} >= true_obj, tru());
+        REQUIRE_EQ(str_obj >= string_object {"st"}, tru());
+        REQUIRE_EQ(str_obj >= str_obj, tru());
+        REQUIRE_EQ(true_obj >= decimal_object {0.9}, tru());
+        REQUIRE_EQ(true_obj >= false_obj, tru());
+        REQUIRE_EQ(false_obj >= false_obj, tru());
+        REQUIRE_EQ(false_obj >= null_obj, nullptr);
+        REQUIRE_EQ(false_obj >= str_obj, nullptr);
     }
 
     TEST_CASE("operator &&")

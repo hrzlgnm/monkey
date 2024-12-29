@@ -256,6 +256,12 @@ void compiler::visit(const binary_expression& expr)
         emit(opcodes::greater_than);
         return;
     }
+    if (expr.op == token_type::less_equal) {
+        expr.right->accept(*this);
+        expr.left->accept(*this);
+        emit(opcodes::greater_equal);
+        return;
+    }
     expr.left->accept(*this);
     expr.right->accept(*this);
     switch (expr.op) {
@@ -300,6 +306,9 @@ void compiler::visit(const binary_expression& expr)
             break;
         case token_type::greater_than:
             emit(opcodes::greater_than);
+            break;
+        case token_type::greater_equal:
+            emit(opcodes::greater_equal);
             break;
         case token_type::equals:
             emit(opcodes::equal);
@@ -816,12 +825,32 @@ TEST_CASE("booleanExpressions")
             },
         },
         ctc {
+            "1 >= 2",
+            {{1}, {2}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(greater_equal),
+                make(pop),
+            },
+        },
+        ctc {
             "1 < 2",
             {{2}, {1}},
             {
                 make(constant, 0),
                 make(constant, 1),
                 make(greater_than),
+                make(pop),
+            },
+        },
+        ctc {
+            "1 <= 2",
+            {{2}, {1}},
+            {
+                make(constant, 0),
+                make(constant, 1),
+                make(greater_equal),
                 make(pop),
             },
         },

@@ -81,6 +81,7 @@ auto vm::run() -> void
             case opcodes::equal:
             case opcodes::not_equal:
             case opcodes::greater_than:
+            case opcodes::greater_equal:
                 exec_binary_op(op);
                 break;
             case opcodes::pop:
@@ -287,6 +288,8 @@ auto apply_binary_operator(opcodes opcode, const object* left, const object* rig
             return *left != *right;
         case greater_than:
             return *left > *right;
+        case greater_equal:
+            return *left >= *right;
         case floor_div:
             return object_floor_div(left, right);
         default:
@@ -728,6 +731,8 @@ TEST_CASE("booleanExpressions")
         vt<bool> {R"("b" < "a")", false},
         vt<bool> {R"(1 < 2)", true},
         vt<bool> {R"(1 > 2)", false},
+        vt<bool> {R"(1 <= 2)", true},
+        vt<bool> {R"(1 >= 2)", false},
         vt<bool> {R"(1 < 1)", false},
         vt<bool> {R"(1 > 1)", false},
         vt<bool> {R"(true & true)", true},

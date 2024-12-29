@@ -27,7 +27,7 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "mul";
         case div:
             return ostream << "div";
-        case opcodes::floor_div:
+        case floor_div:
             return ostream << "floor_div";
         case pop:
             return ostream << "pop";
@@ -79,32 +79,34 @@ auto operator<<(std::ostream& ostream, opcodes opcode) -> std::ostream&
             return ostream << "get_free";
         case current_closure:
             return ostream << "current_closure";
-        case opcodes::mod:
+        case mod:
             return ostream << "mod";
-        case opcodes::bit_and:
+        case bit_and:
             return ostream << "bit_and";
-        case opcodes::bit_or:
+        case bit_or:
             return ostream << "bit_or";
-        case opcodes::bit_xor:
+        case bit_xor:
             return ostream << "bit_xor";
-        case opcodes::bit_lsh:
+        case bit_lsh:
             return ostream << "bit_lsh";
-        case opcodes::bit_rsh:
+        case bit_rsh:
             return ostream << "bit_rsh";
-        case opcodes::logical_and:
+        case logical_and:
             return ostream << "logical_and";
-        case opcodes::logical_or:
+        case logical_or:
             return ostream << "logical_or";
-        case opcodes::set_free:
+        case set_free:
             return ostream << "set_free";
-        case opcodes::get_outer:
+        case get_outer:
             return ostream << "get_outer";
-        case opcodes::set_outer:
+        case set_outer:
             return ostream << "set_outer";
-        case opcodes::brake:
+        case brake:
             return ostream << "break";
-        case opcodes::cont:
+        case cont:
             return ostream << "continue";
+        case greater_equal:
+            return ostream << "greater_equal";
     }
     throw std::runtime_error(
         fmt::format("operator <<(std::ostream&) for {} is not implemented yet", static_cast<uint8_t>(opcode)));

@@ -87,8 +87,12 @@ auto apply_binary_operator(token_type oper, const object* left, const object* ri
             return *left / *right;
         case less_than:
             return *right > *left;
+        case less_equal:
+            return *right >= *left;
         case greater_than:
             return *left > *right;
+        case greater_equal:
+            return *left >= *right;
         case equals:
             return *left == *right;
         case not_equals:
@@ -711,6 +715,8 @@ TEST_CASE("booleanExpression")
         et {"false", false},
         et {"1 < 2", true},
         et {"1 > 2", false},
+        et {"1 <= 2", true},
+        et {"1 >= 2", false},
         et {"1 < 1", false},
         et {"1 > 1", false},
         et {"1.1 > 1.1", false},
