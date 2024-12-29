@@ -51,12 +51,18 @@ auto are_almost_equal(double a, double b) -> bool
 template<typename T>
 auto eq_helper(const T* t, const object& other) -> const object*
 {
+    if constexpr (std::is_same_v<T, decimal_object>) {
+        return native_bool_to_object(other.is(t->type()) && are_almost_equal(t->value, other.val<decimal_object>()));
+    }
     return native_bool_to_object(other.is(t->type()) && t->value == other.as<T>()->value);
 }
 
 template<typename T>
 auto value_eq_helper(const T& lhs, const T& rhs) -> const object*
 {
+    if constexpr (std::is_same_v<T, double>) {
+        return native_bool_to_object(are_almost_equal(lhs, rhs));
+    }
     return native_bool_to_object(lhs == rhs);
 }
 
@@ -64,18 +70,6 @@ template<typename T>
 auto value_gt_helper(const T& lhs, const T& rhs) -> const object*
 {
     return native_bool_to_object(lhs > rhs);
-}
-
-template<>
-auto value_eq_helper(const double& lhs, const double& rhs) -> const object*
-{
-    return native_bool_to_object(are_almost_equal(lhs, rhs));
-}
-
-template<>
-auto eq_helper(const decimal_object* t, const object& other) -> const object*
-{
-    return native_bool_to_object(other.is(t->type()) && are_almost_equal(t->value, other.val<decimal_object>()));
 }
 
 template<typename T>
@@ -260,10 +254,10 @@ auto boolean_object::operator>(const object& other) const -> const object*
 auto boolean_object::operator+(const object& other) const -> const object*
 {
     if (other.is(integer)) {
-        return make<integer_object>(value_to<integer_object>() + other.val<integer_object>());
+        return other + *this;
     }
     if (other.is(decimal)) {
-        return make<decimal_object>(value_to<decimal_object>() + other.val<decimal_object>());
+        return other + *this;
     }
     if (other.is(boolean)) {
         return make<integer_object>(value_to<integer_object>()
@@ -351,8 +345,7 @@ auto boolean_object::operator%(const object& other) const -> const object*
 auto boolean_object::operator&(const object& other) const -> const object*
 {
     if (other.is(boolean)) {
-        return make<boolean_object>(
-            ((static_cast<uint8_t>(value) & static_cast<uint8_t>(other.as<boolean_object>()->value)) != 0));
+        return make<boolean_object>(value & other.val<boolean_object>());
     }
     if (other.is(integer)) {
         return other & *this;
@@ -363,8 +356,7 @@ auto boolean_object::operator&(const object& other) const -> const object*
 auto boolean_object::operator|(const object& other) const -> const object*
 {
     if (other.is(boolean)) {
-        return make<boolean_object>(
-            ((static_cast<uint8_t>(value) | static_cast<uint8_t>(other.as<boolean_object>()->value)) != 0));
+        return make<boolean_object>(value | other.val<boolean_object>());
     }
     if (other.is(integer)) {
         return other | *this;
@@ -375,8 +367,7 @@ auto boolean_object::operator|(const object& other) const -> const object*
 auto boolean_object::operator^(const object& other) const -> const object*
 {
     if (other.is(boolean)) {
-        return make<boolean_object>(
-            ((static_cast<uint8_t>(value) ^ static_cast<uint8_t>(other.as<boolean_object>()->value)) != 0));
+        return make<boolean_object>(value ^ other.val<boolean_object>());
     }
     if (other.is(integer)) {
         return other ^ *this;
@@ -387,8 +378,7 @@ auto boolean_object::operator^(const object& other) const -> const object*
 auto boolean_object::operator<<(const object& other) const -> const object*
 {
     if (other.is(boolean)) {
-        return make<integer_object>(static_cast<uint8_t>(value)
-                                    << static_cast<uint8_t>(other.as<boolean_object>()->value));
+        return make<integer_object>(value_to<integer_object>() << other.val<boolean_object>());
     }
     if (other.is(integer)) {
         return make<integer_object>(value_to<integer_object>() << other.val<integer_object>());
@@ -399,8 +389,7 @@ auto boolean_object::operator<<(const object& other) const -> const object*
 auto boolean_object::operator>>(const object& other) const -> const object*
 {
     if (other.is(boolean)) {
-        return make<integer_object>(static_cast<uint8_t>(value)
-                                    >> static_cast<uint8_t>(other.as<boolean_object>()->value));
+        return make<integer_object>(value_to<integer_object>() >> other.val<boolean_object>());
     }
     if (other.is(integer)) {
         return make<integer_object>(value_to<integer_object>() >> other.val<integer_object>());
@@ -685,7 +674,7 @@ auto decimal_object::operator>(const object& other) const -> const object*
 auto object_floor_div(const object* lhs, const object* rhs) -> const object*
 {
     const auto* div = (*lhs / *rhs);
-    if (div->is(object::object_type::decimal)) {
+    if (div->is(decimal)) {
         return make<decimal_object>(std::floor(div->val<decimal_object>()));
     }
     return div;
