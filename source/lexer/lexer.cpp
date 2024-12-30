@@ -200,8 +200,8 @@ auto lexer::next_token() -> token
     auto literal = m_byte;
     return read_char(),
            token {
-               .type = token_type::illegal, 
-               .literal = m_input.substr(m_position - 1, 1), 
+               .type = token_type::illegal,
+               .literal = m_input.substr(m_position - 1, 1),
                .loc = loc,
            };
 }
