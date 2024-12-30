@@ -200,7 +200,10 @@ auto lexer::next_token() -> token
     auto literal = m_byte;
     return read_char(),
            token {
-               .type = token_type::illegal, .literal = m_input.substr(m_read_position - 2, 1), .loc = loc};
+               .type = token_type::illegal, 
+               .literal = m_input.substr(m_read_position - 2, 1), 
+               .loc = loc,
+           ,};
 }
 
 auto lexer::read_char() -> void
