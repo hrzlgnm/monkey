@@ -48,6 +48,7 @@ target_sources(cappuchin_lib
     source/eval/environment.cpp
     source/eval/evaluator.cpp
     source/lexer/lexer.cpp
+    source/lexer/location.cpp
     source/lexer/token.cpp
     source/lexer/token_type.cpp
     source/object/object.cpp
