@@ -76,12 +76,12 @@ void analyzer::visit(const assign_expression& expr)
 {
     auto maybe_symbol = m_symbols->resolve(expr.name->value);
     if (!maybe_symbol.has_value()) {
-        fail(fmt::format("identifier not found: {}", expr.name->value));
+        fail(fmt::format("{}: identifier not found: {}", expr.l, expr.name->value));
     }
     const auto& symbol = maybe_symbol.value();
     // NOLINTBEGIN(bugprone-unchecked-optional-access)
     if (symbol.is_function() || (symbol.is_outer() && symbol.ptr.value().is_function())) {
-        fail(fmt::format("cannot reassign the current function being defined: {}", expr.name->value));
+        fail(fmt::format("{}: cannot reassign the current function being defined: {}", expr.l, expr.name->value));
     }
     // NOLINTEND(bugprone-unchecked-optional-access)
     expr.value->accept(*this);
@@ -105,7 +105,7 @@ void analyzer::visit(const identifier& expr)
 {
     auto symbol = m_symbols->resolve(expr.value);
     if (!symbol.has_value()) {
-        fail(fmt::format("identifier not found: {}", expr.value));
+        fail(fmt::format("{}: identifier not found: {}", expr.l, expr.value));
     }
 }
 
@@ -146,7 +146,7 @@ void analyzer::visit(const let_statement& expr)
     if (symbol.has_value()) {
         const auto& value = symbol.value();
         if (value.is_local() || (value.is_global() && m_symbols->is_global())) {
-            fail(fmt::format("{} is already defined", expr.name->value));
+            fail(fmt::format("{}: {} is already defined", expr.l, expr.name->value));
         }
     }
     m_symbols->define(expr.name->value);
@@ -158,17 +158,17 @@ void analyzer::visit(const return_statement& expr)
     expr.value->accept(*this);
 }
 
-void analyzer::visit(const break_statement& /*expr*/)
+void analyzer::visit(const break_statement& expr)
 {
     if (!m_symbols->inside_loop()) {
-        fail("syntax error: break outside loop");
+        fail(fmt::format("{}: syntax error: break outside loop", expr.l));
     }
 }
 
-void analyzer::visit(const continue_statement& /*expr*/)
+void analyzer::visit(const continue_statement& expr)
 {
     if (!m_symbols->inside_loop()) {
-        fail("syntax error: continue outside loop");
+        fail(fmt::format("{}: syntax error: continue outside loop", expr.l));
     }
 }
 
@@ -249,33 +249,39 @@ TEST_SUITE("analyzer")
         };
 
         std::array tests {
-            test {.input = "foobar", .expected_exception_string = "identifier not found: foobar"},
-            test {.input = "x = 2;", .expected_exception_string = "identifier not found: x"},
-            test {.input = "let a = 2; let a = 4;", .expected_exception_string = "a is already defined"},
-            test {.input = "let f = fn(x) { let x = 3; }", .expected_exception_string = "x is already defined"},
-            test {.input = "break;", .expected_exception_string = "syntax error: break outside loop"},
-            test {.input = "continue;", .expected_exception_string = "syntax error: continue outside loop"},
-            test {.input = "fn () { break; } ", .expected_exception_string = "syntax error: break outside loop"},
-            test {.input = "fn () { continue; } ", .expected_exception_string = "syntax error: continue outside loop"},
-            test {.input = "while (x == 2) {}", .expected_exception_string = "identifier not found: x"},
-            test {.input = "while (true) { x = 2; }", .expected_exception_string = "identifier not found: x"},
-            test {.input = "if (x == 2) {}", .expected_exception_string = "identifier not found: x"},
-            test {.input = "if (true) { x }", .expected_exception_string = "identifier not found: x"},
-            test {.input = "if (true) { 2 } else { x }", .expected_exception_string = "identifier not found: x"},
-            test {.input = "-x", .expected_exception_string = "identifier not found: x"},
-            test {.input = "x + 2", .expected_exception_string = "identifier not found: x"},
-            test {.input = "x(3)", .expected_exception_string = "identifier not found: x"},
-            test {.input = "x[3]", .expected_exception_string = "identifier not found: x"},
-            test {.input = "[1, 2][x]", .expected_exception_string = "identifier not found: x"},
-            test {.input = "len(x)", .expected_exception_string = "identifier not found: x"},
-            test {.input = "[x]", .expected_exception_string = "identifier not found: x"},
-            test {.input = "{x: 2}", .expected_exception_string = "identifier not found: x"},
-            test {.input = "{2: x}", .expected_exception_string = "identifier not found: x"},
+            test {.input = "foobar", .expected_exception_string = "<stdin>:1:1: identifier not found: foobar"},
+            test {.input = "x = 2;", .expected_exception_string = "<stdin>:1:1: identifier not found: x"},
+            test {.input = "let a = 2; let a = 4;", .expected_exception_string = "<stdin>:1:12: a is already defined"},
+            test {.input = "let f = fn(x) { let x = 3; }",
+                  .expected_exception_string = "<stdin>:1:17: x is already defined"},
+            test {.input = "break;", .expected_exception_string = "<stdin>:1:1: syntax error: break outside loop"},
+            test {.input = "continue;",
+                  .expected_exception_string = "<stdin>:1:1: syntax error: continue outside loop"},
+            test {.input = "fn () { break; } ",
+                  .expected_exception_string = "<stdin>:1:9: syntax error: break outside loop"},
+            test {.input = "fn () { continue; } ",
+                  .expected_exception_string = "<stdin>:1:9: syntax error: continue outside loop"},
+            test {.input = "while (x == 2) {}", .expected_exception_string = "<stdin>:1:8: identifier not found: x"},
+            test {.input = "while (true) { x = 2; }",
+                  .expected_exception_string = "<stdin>:1:16: identifier not found: x"},
+            test {.input = "if (x == 2) {}", .expected_exception_string = "<stdin>:1:5: identifier not found: x"},
+            test {.input = "if (true) { x }", .expected_exception_string = "<stdin>:1:13: identifier not found: x"},
+            test {.input = "if (true) { 2 } else { x }",
+                  .expected_exception_string = "<stdin>:1:24: identifier not found: x"},
+            test {.input = "-x", .expected_exception_string = "<stdin>:1:2: identifier not found: x"},
+            test {.input = "x + 2", .expected_exception_string = "<stdin>:1:1: identifier not found: x"},
+            test {.input = "x(3)", .expected_exception_string = "<stdin>:1:1: identifier not found: x"},
+            test {.input = "x[3]", .expected_exception_string = "<stdin>:1:1: identifier not found: x"},
+            test {.input = "[1, 2][x]", .expected_exception_string = "<stdin>:1:8: identifier not found: x"},
+            test {.input = "len(x)", .expected_exception_string = "<stdin>:1:5: identifier not found: x"},
+            test {.input = "[x]", .expected_exception_string = "<stdin>:1:2: identifier not found: x"},
+            test {.input = "{x: 2}", .expected_exception_string = "<stdin>:1:2: identifier not found: x"},
+            test {.input = "{2: x}", .expected_exception_string = "<stdin>:1:5: identifier not found: x"},
             test {.input = "let f = fn(x) { if (x > 0) { f(x - 1); f = 2; } }",
-                  .expected_exception_string = "cannot reassign the current function being defined: f"},
+                  .expected_exception_string = "<stdin>:1:40: cannot reassign the current function being defined: f"},
         };
         for (const auto& test : tests) {
-            INFO(test.input, " expected error: ", test.expected_exception_string);
+            INFO(test.input, " expected error: ", std::string(test.expected_exception_string));
             CHECK_THROWS_WITH_AS(analyze(test.input), test.expected_exception_string, std::runtime_error);
         }
     }

@@ -7,6 +7,7 @@ using statement = expression;
 
 struct let_statement final : statement
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
@@ -15,8 +16,8 @@ struct let_statement final : statement
 };
 
 struct return_statement final : statement
-
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
@@ -25,18 +26,21 @@ struct return_statement final : statement
 
 struct break_statement final : statement
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 };
 
 struct continue_statement final : statement
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 };
 
 struct expression_statement final : statement
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
@@ -45,6 +49,7 @@ struct expression_statement final : statement
 
 struct block_statement final : statement
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 
@@ -53,6 +58,7 @@ struct block_statement final : statement
 
 struct while_statement final : statement
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 

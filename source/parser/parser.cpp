@@ -34,6 +34,8 @@
 #include <lexer/token_type.hpp>
 #include <overloaded.hpp>
 
+#include "lexer/location.hpp"
+
 namespace
 {
 enum precedence : std::uint8_t
@@ -141,7 +143,7 @@ parser::parser(lexer lxr)
 
 auto parser::parse_program() -> program*
 {
-    auto* prog = make<program>();
+    auto* prog = make<program>(m_current_token.loc);
     while (m_current_token.type != token_type::eof) {
         auto* stmt = parse_statement();
         if (stmt != nullptr) {
@@ -189,7 +191,8 @@ auto parser::parse_statement() -> statement*
 
 auto parser::parse_let_statement() -> statement*
 {
-    auto* stmt = make<let_statement>();
+    auto* stmt = make<let_statement>(m_current_token.loc);
+    stmt->l = m_current_token.loc;
     using enum token_type;
     if (!get(ident)) {
         return {};
@@ -215,7 +218,7 @@ auto parser::parse_let_statement() -> statement*
 
 auto parser::parse_assign_statement() -> statement*
 {
-    auto* stmt = make<assign_expression>();
+    auto* stmt = make<assign_expression>(m_current_token.loc);
     using enum token_type;
 
     stmt->name = parse_identifier();
@@ -236,7 +239,7 @@ auto parser::parse_assign_statement() -> statement*
 auto parser::parse_return_statement() -> statement*
 {
     using enum token_type;
-    auto* stmt = make<return_statement>();
+    auto* stmt = make<return_statement>(m_current_token.loc);
 
     next_token();
     stmt->value = parse_expression(lowest);
@@ -249,7 +252,7 @@ auto parser::parse_return_statement() -> statement*
 
 auto parser::parse_expression_statement() -> statement*
 {
-    auto* expr_stmt = make<expression_statement>();
+    auto* expr_stmt = make<expression_statement>(m_current_token.loc);
     expr_stmt->expr = parse_expression(lowest);
     if (peek_token_is(token_type::semicolon)) {
         next_token();
@@ -279,16 +282,16 @@ auto parser::parse_expression(int precedence) -> expression*
 
 auto parser::parse_identifier() const -> identifier*
 {
-    return make<identifier>(std::string(m_current_token.literal));
+    return make<identifier>(std::string(m_current_token.literal), m_current_token.loc);
 }
 
 auto parser::parse_integer_literal() -> expression*
 {
-    auto* lit = make<integer_literal>();
+    auto* lit = make<integer_literal>(m_current_token.loc);
     try {
         lit->value = std::stoll(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
-        new_error("could not parse {} as integer", m_current_token.literal);
+        new_error("{}: could not parse {} as integer", m_current_token.loc, m_current_token.literal);
         return {};
     }
     return lit;
@@ -296,11 +299,11 @@ auto parser::parse_integer_literal() -> expression*
 
 auto parser::parse_decimal_literal() -> expression*
 {
-    auto* lit = make<decimal_literal>();
+    auto* lit = make<decimal_literal>(m_current_token.loc);
     try {
         lit->value = std::stod(std::string {m_current_token.literal});
     } catch (const std::out_of_range&) {
-        new_error("could not parse {} as decimal", m_current_token.literal);
+        new_error("{}: could not parse {} as decimal", m_current_token.loc, m_current_token.literal);
         return {};
     }
     return lit;
@@ -308,7 +311,7 @@ auto parser::parse_decimal_literal() -> expression*
 
 auto parser::parse_unary_expression() -> expression*
 {
-    auto* unary = make<unary_expression>();
+    auto* unary = make<unary_expression>(m_current_token.loc);
     unary->op = m_current_token.type;
 
     next_token();
@@ -318,7 +321,7 @@ auto parser::parse_unary_expression() -> expression*
 
 auto parser::parse_boolean() -> expression*
 {
-    return make<boolean_literal>(current_token_is(token_type::tru));
+    return make<boolean_literal>(current_token_is(token_type::tru), m_current_token.loc);
 }
 
 auto parser::parse_grouped_expression() -> expression*
@@ -334,7 +337,7 @@ auto parser::parse_grouped_expression() -> expression*
 auto parser::parse_if_expression() -> expression*
 {
     using enum token_type;
-    auto* expr = make<if_expression>();
+    auto* expr = make<if_expression>(m_current_token.loc);
     if (!get(lparen)) {
         return {};
     }
@@ -365,7 +368,7 @@ auto parser::parse_if_expression() -> expression*
 auto parser::parse_while_statement() -> expression*
 {
     using enum token_type;
-    auto* expr = make<while_statement>();
+    auto* expr = make<while_statement>(m_current_token.loc);
     if (!get(lparen)) {
         return {};
     }
@@ -388,6 +391,7 @@ auto parser::parse_while_statement() -> expression*
 auto parser::parse_function_expression() -> expression*
 {
     using enum token_type;
+    const auto loc = m_current_token.loc;
     if (!get(lparen)) {
         return {};
     }
@@ -396,7 +400,7 @@ auto parser::parse_function_expression() -> expression*
         return {};
     }
     auto* body = parse_block_statement();
-    return make<function_literal>(std::move(parameters), body);
+    return make<function_literal>(std::move(parameters), body, loc);
 }
 
 auto parser::parse_function_parameters() -> identifiers
@@ -425,7 +429,7 @@ auto parser::parse_function_parameters() -> identifiers
 auto parser::parse_block_statement() -> block_statement*
 {
     using enum token_type;
-    auto* block = make<block_statement>();
+    auto* block = make<block_statement>(m_current_token.loc);
     next_token();
     while (!current_token_is(rsquirly) && !current_token_is(eof)) {
         auto* stmt = parse_statement();
@@ -441,7 +445,7 @@ auto parser::parse_block_statement() -> block_statement*
 auto parser::parse_break_statement() -> statement*
 {
     using enum token_type;
-    auto* b = make<break_statement>();
+    auto* b = make<break_statement>(m_current_token.loc);
     if (peek_token_is(semicolon)) {
         next_token();
     }
@@ -451,7 +455,7 @@ auto parser::parse_break_statement() -> statement*
 auto parser::parse_continue_statement() -> statement*
 {
     using enum token_type;
-    auto* b = make<continue_statement>();
+    auto* b = make<continue_statement>(m_current_token.loc);
     if (peek_token_is(semicolon)) {
         next_token();
     }
@@ -460,7 +464,7 @@ auto parser::parse_continue_statement() -> statement*
 
 auto parser::parse_call_expression(expression* function) -> expression*
 {
-    auto* call = make<call_expression>();
+    auto* call = make<call_expression>(m_current_token.loc);
     call->function = function;
     call->arguments = parse_expressions(token_type::rparen);
     return call;
@@ -468,7 +472,7 @@ auto parser::parse_call_expression(expression* function) -> expression*
 
 auto parser::parse_binary_expression(expression* left) -> expression*
 {
-    auto* bin_expr = make<binary_expression>();
+    auto* bin_expr = make<binary_expression>(m_current_token.loc);
     bin_expr->op = m_current_token.type;
     bin_expr->left = left;
 
@@ -481,7 +485,7 @@ auto parser::parse_binary_expression(expression* left) -> expression*
 
 auto parser::parse_string_literal() const -> expression*
 {
-    return make<string_literal>(std::string {m_current_token.literal});
+    return make<string_literal>(std::string {m_current_token.literal}, m_current_token.loc);
 }
 
 auto parser::parse_expressions(token_type end) -> expressions
@@ -510,14 +514,14 @@ auto parser::parse_expressions(token_type end) -> expressions
 
 auto parser::parse_array_expression() -> expression*
 {
-    auto* array_expr = make<array_literal>();
+    auto* array_expr = make<array_literal>(m_current_token.loc);
     array_expr->elements = parse_expressions(token_type::rbracket);
     return array_expr;
 }
 
 auto parser::parse_index_expression(expression* left) -> expression*
 {
-    auto* index_expr = make<index_expression>();
+    auto* index_expr = make<index_expression>(m_current_token.loc);
     index_expr->left = left;
     next_token();
     index_expr->index = parse_expression(lowest);
@@ -531,7 +535,7 @@ auto parser::parse_index_expression(expression* left) -> expression*
 
 auto parser::parse_hash_literal() -> expression*
 {
-    auto* hash = make<hash_literal>();
+    auto* hash = make<hash_literal>(m_current_token.loc);
     using enum token_type;
     while (!peek_token_is(rsquirly)) {
         next_token();
@@ -555,7 +559,7 @@ auto parser::parse_hash_literal() -> expression*
 
 auto parser::parse_null_literal() -> expression*
 {
-    return make<null_literal>();
+    return make<null_literal>(m_current_token.loc);
 }
 
 auto parser::get(token_type type) -> bool
@@ -570,7 +574,7 @@ auto parser::get(token_type type) -> bool
 
 auto parser::peek_error(token_type type) -> void
 {
-    new_error("expected next token to be {}, got {} instead", type, m_peek_token.type);
+    new_error("{}: expected next token to be {}, got {} instead", m_current_token.loc, type, m_peek_token.literal);
 }
 
 auto parser::register_binary(token_type type, binary_parser binary) -> void
@@ -593,9 +597,9 @@ auto parser::peek_token_is(token_type type) const -> bool
     return m_peek_token.type == type;
 }
 
-auto parser::no_unary_expression_error(token_type type) -> void
+auto parser::no_unary_expression_error(token_type /*type*/) -> void
 {
-    new_error("no prefix parse function for {} found", type);
+    new_error("{}: no prefix parse function for {} found", m_current_token.loc, m_current_token.literal);
 }
 
 auto parser::peek_precedence() const -> int
@@ -872,12 +876,13 @@ return 993322;
 TEST_CASE("string")
 {
     using enum token_type;
-    auto name = make<identifier>("myVar");
-    auto value = make<identifier>("anotherVar");
+    auto name = make<identifier>("myVar", location {"<stdin>", 1, 1});
+    auto value = make<identifier>("anotherVar", location {"<stdin>", 1, 9});
 
-    program prgrm;
+    program prgrm {location {"<stdin>", 1, 1}};
 
-    auto let_stmt = make<let_statement>();
+    auto let_stmt = make<let_statement>(location {});
+
     let_stmt->name = name;
     let_stmt->value = value;
     prgrm.statements.push_back(let_stmt);
@@ -1368,6 +1373,7 @@ TEST_CASE("emptyHashLiteral")
     auto [prgrm, _] = check_program(R"({})");
     auto* hash_lit = require_expression<hash_literal>(prgrm);
     REQUIRE(hash_lit->pairs.empty());
+    REQUIRE(hash_lit->loc() == location {"<stdin>", 1, 1});
 }
 
 TEST_CASE("nullLiteral")

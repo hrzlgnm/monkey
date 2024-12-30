@@ -187,7 +187,7 @@ auto run_file(const command_line_args& opts) -> int
         return 1;
     }
     const std::string contents {(std::istreambuf_iterator<char>(ifs)), (std::istreambuf_iterator<char>())};
-    auto lxr = lexer {contents};
+    auto lxr = lexer {contents, opts.file};
     auto prsr = parser {lxr};
     auto* prgrm = prsr.parse_program();
     if (!prsr.errors().empty()) {

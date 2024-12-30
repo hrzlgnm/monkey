@@ -7,6 +7,7 @@
 
 struct binary_expression final : expression
 {
+    using expression::expression;
     [[nodiscard]] auto string() const -> std::string final;
     void accept(struct visitor& visitor) const final;
 

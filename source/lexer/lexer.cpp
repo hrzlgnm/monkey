@@ -11,6 +11,7 @@
 
 #include <doctest/doctest.h>
 
+#include "location.hpp"
 #include "token.hpp"
 #include "token_type.hpp"
 
@@ -157,8 +158,9 @@ inline auto is_digit(char chr) -> bool
 
 }  // namespace
 
-lexer::lexer(std::string_view input)
+lexer::lexer(std::string_view input, std::string_view filename)
     : m_input {input}
+    , m_filename {filename}
 {
     read_char();
 }
@@ -167,8 +169,9 @@ auto lexer::next_token() -> token
 {
     using enum token_type;
     skip_whitespace();
+    const auto loc = current_loc();
     if (m_byte == '\0') {
-        return token {.type = eof, .literal = ""};
+        return token {.type = eof, .literal = "", .loc = loc};
     }
     const auto as_uchar = static_cast<unsigned char>(m_byte);
     const auto char_token_type = char_literal_tokens[as_uchar];
@@ -176,12 +179,13 @@ auto lexer::next_token() -> token
     if (char_token_type != illegal) {
         const auto peek_token_type = char_literal_tokens[static_cast<unsigned char>(peek_char())];
         if (const auto itr = two_token.find({char_token_type, peek_token_type}); itr != two_token.end()) {
-            return read_char(), read_char(), itr->second;
+            return read_char(), read_char(), itr->second.with_loc(loc);
         }
         return read_char(),
                token {
                    .type = char_token_type,
                    .literal = std::string_view {&m_input[m_position - 1], 1},
+                   .loc = loc,
                };
     }
     if (m_byte == '"') {
@@ -194,7 +198,12 @@ auto lexer::next_token() -> token
         return read_number();
     }
     auto literal = m_byte;
-    return read_char(), token {.type = token_type::illegal, .literal = std::string_view {&literal, 1}};
+    return read_char(),
+           token {
+               .type = token_type::illegal,
+               .literal = m_input.substr(m_position - 1, 1),
+               .loc = loc,
+           };
 }
 
 auto lexer::read_char() -> void
@@ -203,6 +212,10 @@ auto lexer::read_char() -> void
         m_byte = '\0';
     } else {
         m_byte = m_input[m_read_position];
+    }
+    if (m_byte == '\n') {
+        m_row++;
+        m_bol = m_read_position;
     }
     m_position = m_read_position;
     m_read_position++;
@@ -225,6 +238,7 @@ auto lexer::peek_char() -> std::string_view::value_type
 
 auto lexer::read_identifier_or_keyword() -> token
 {
+    const auto loc = current_loc();
     const auto position = m_position;
     while (is_letter(m_byte)) {
         read_char();
@@ -239,14 +253,15 @@ auto lexer::read_identifier_or_keyword() -> token
                      keyword_tokens.cend(),
                      [&identifier_or_keyword](auto pair) -> bool { return pair.first == identifier_or_keyword; });
     if (itr != keyword_tokens.end()) {
-        return token {.type = itr->second, .literal = itr->first};
+        return token {.type = itr->second, .literal = itr->first, .loc = loc};
     }
     // NOLINTEND(*-qualified-auto)
-    return token {.type = token_type::ident, .literal = identifier_or_keyword};
+    return token {.type = token_type::ident, .literal = identifier_or_keyword, .loc = loc};
 }
 
 auto lexer::read_number() -> token
 {
+    const auto loc = current_loc();
     const auto position = m_position;
     int dot_count = 0;
     while (is_digit(m_byte) || m_byte == '.') {
@@ -258,16 +273,17 @@ auto lexer::read_number() -> token
     auto end = m_position;
     auto count = end - position;
     if (dot_count == 0) {
-        return token {.type = token_type::integer, .literal = m_input.substr(position, count)};
+        return token {.type = token_type::integer, .literal = m_input.substr(position, count), .loc = loc};
     }
     if (dot_count == 1) {
-        return token {.type = token_type::decimal, .literal = m_input.substr(position, count)};
+        return token {.type = token_type::decimal, .literal = m_input.substr(position, count), .loc = loc};
     }
-    return token {.type = token_type::illegal, .literal = m_input.substr(position, count)};
+    return token {.type = token_type::illegal, .literal = m_input.substr(position, count), .loc = loc};
 }
 
 auto lexer::read_string() -> token
 {
+    const auto loc = current_loc();
     const auto position = m_position + 1;
     while (true) {
         read_char();
@@ -277,7 +293,13 @@ auto lexer::read_string() -> token
     }
     auto end = m_position;
     auto count = end - position;
-    return read_char(), token {.type = token_type::string, .literal = m_input.substr(position, count)};
+    return read_char(), token {.type = token_type::string, .literal = m_input.substr(position, count), .loc = loc};
+}
+
+auto lexer::current_loc() -> location
+{
+    const auto column = m_row == 0 ? m_read_position - m_bol : m_read_position - m_bol - 1;
+    return location {.filename = m_filename, .line = m_row + 1, .column = column};
 }
 
 namespace
@@ -286,8 +308,7 @@ TEST_CASE("lexing")
 {
     using enum token_type;
     auto lxr = lexer {
-        R"(
-let five = 5;
+        R"(let five = 5;
 let ten = 10;
 let add = fn(x, y) {
 x + y;
@@ -308,63 +329,766 @@ return false;
 [1,2];
 {"foo": "bar"};
 5.5 // %
-& | ^ << >> && || a_b while break continue null <= >=
-        )"};
+&
+|
+^
+<<
+>>
+&&
+||
+a_b
+while
+break
+continue
+null
+<=
+>=
+)"};
     const std::array expected_tokens {
-        token {.type = let, .literal = "let"},          token {.type = ident, .literal = "five"},
-        token {.type = assign, .literal = "="},         token {.type = integer, .literal = "5"},
-        token {.type = semicolon, .literal = ";"},      token {.type = let, .literal = "let"},
-        token {.type = ident, .literal = "ten"},        token {.type = assign, .literal = "="},
-        token {.type = integer, .literal = "10"},       token {.type = semicolon, .literal = ";"},
-        token {.type = let, .literal = "let"},          token {.type = ident, .literal = "add"},
-        token {.type = assign, .literal = "="},         token {.type = function, .literal = "fn"},
-        token {.type = lparen, .literal = "("},         token {.type = ident, .literal = "x"},
-        token {.type = comma, .literal = ","},          token {.type = ident, .literal = "y"},
-        token {.type = rparen, .literal = ")"},         token {.type = lsquirly, .literal = "{"},
-        token {.type = ident, .literal = "x"},          token {.type = plus, .literal = "+"},
-        token {.type = ident, .literal = "y"},          token {.type = semicolon, .literal = ";"},
-        token {.type = rsquirly, .literal = "}"},       token {.type = semicolon, .literal = ";"},
-        token {.type = let, .literal = "let"},          token {.type = ident, .literal = "result"},
-        token {.type = assign, .literal = "="},         token {.type = ident, .literal = "add"},
-        token {.type = lparen, .literal = "("},         token {.type = ident, .literal = "five"},
-        token {.type = comma, .literal = ","},          token {.type = ident, .literal = "ten"},
-        token {.type = rparen, .literal = ")"},         token {.type = semicolon, .literal = ";"},
-        token {.type = exclamation, .literal = "!"},    token {.type = minus, .literal = "-"},
-        token {.type = slash, .literal = "/"},          token {.type = asterisk, .literal = "*"},
-        token {.type = integer, .literal = "5"},        token {.type = semicolon, .literal = ";"},
-        token {.type = integer, .literal = "5"},        token {.type = less_than, .literal = "<"},
-        token {.type = integer, .literal = "10"},       token {.type = greater_than, .literal = ">"},
-        token {.type = integer, .literal = "5"},        token {.type = semicolon, .literal = ";"},
-        token {.type = eef, .literal = "if"},           token {.type = lparen, .literal = "("},
-        token {.type = integer, .literal = "5"},        token {.type = less_than, .literal = "<"},
-        token {.type = integer, .literal = "10"},       token {.type = rparen, .literal = ")"},
-        token {.type = lsquirly, .literal = "{"},       token {.type = ret, .literal = "return"},
-        token {.type = tru, .literal = "true"},         token {.type = semicolon, .literal = ";"},
-        token {.type = rsquirly, .literal = "}"},       token {.type = elze, .literal = "else"},
-        token {.type = lsquirly, .literal = "{"},       token {.type = ret, .literal = "return"},
-        token {.type = fals, .literal = "false"},       token {.type = semicolon, .literal = ";"},
-        token {.type = rsquirly, .literal = "}"},       token {.type = integer, .literal = "10"},
-        token {.type = equals, .literal = "=="},        token {.type = integer, .literal = "10"},
-        token {.type = semicolon, .literal = ";"},      token {.type = integer, .literal = "10"},
-        token {.type = not_equals, .literal = "!="},    token {.type = integer, .literal = "9"},
-        token {.type = semicolon, .literal = ";"},      token {.type = string, .literal = "foobar"},
-        token {.type = string, .literal = "foo bar"},   token {.type = string, .literal = ""},
-        token {.type = lbracket, .literal = "["},       token {.type = integer, .literal = "1"},
-        token {.type = comma, .literal = ","},          token {.type = integer, .literal = "2"},
-        token {.type = rbracket, .literal = "]"},       token {.type = semicolon, .literal = ";"},
-        token {.type = lsquirly, .literal = "{"},       token {.type = string, .literal = "foo"},
-        token {.type = colon, .literal = ":"},          token {.type = string, .literal = "bar"},
-        token {.type = rsquirly, .literal = "}"},       token {.type = semicolon, .literal = ";"},
-        token {.type = decimal, .literal = "5.5"},      token {.type = double_slash, .literal = "//"},
-        token {.type = percent, .literal = "%"},        token {.type = ampersand, .literal = "&"},
-        token {.type = pipe, .literal = "|"},           token {.type = caret, .literal = "^"},
-        token {.type = shift_left, .literal = "<<"},    token {.type = shift_right, .literal = ">>"},
-        token {.type = logical_and, .literal = "&&"},   token {.type = logical_or, .literal = "||"},
-        token {.type = ident, .literal = "a_b"},        token {.type = hwile, .literal = "while"},
-        token {.type = brake, .literal = "break"},      token {.type = cont, .literal = "continue"},
-        token {.type = null, .literal = "null"},        token {.type = less_equal, .literal = "<="},
-        token {.type = greater_equal, .literal = ">="}, token {.type = eof, .literal = ""},
+        token {.type = let,
+               .literal = "let",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 1,
+                   .column = 1,
+               }},
+        token {.type = ident,
+               .literal = "five",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 1,
+                   .column = 5,
+               }},
+        token {.type = assign,
+               .literal = "=",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 1,
+                   .column = 10,
+               }},
+        token {.type = integer,
+               .literal = "5",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 1,
+                   .column = 12,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 1,
+                   .column = 13,
+               }},
+        token {.type = let,
+               .literal = "let",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 2,
+                   .column = 1,
+               }},
+        token {.type = ident,
+               .literal = "ten",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 2,
+                   .column = 5,
+               }},
+        token {.type = assign,
+               .literal = "=",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 2,
+                   .column = 9,
+               }},
+        token {.type = integer,
+               .literal = "10",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 2,
+                   .column = 11,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 2,
+                   .column = 13,
+               }},
+        token {.type = let,
+               .literal = "let",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 1,
+               }},
+        token {.type = ident,
+               .literal = "add",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 5,
+               }},
+        token {.type = assign,
+               .literal = "=",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 9,
+               }},
+        token {.type = function,
+               .literal = "fn",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 11,
+               }},
+        token {.type = lparen,
+               .literal = "(",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 13,
+               }},
+        token {.type = ident,
+               .literal = "x",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 14,
+               }},
+        token {.type = comma,
+               .literal = ",",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 15,
+               }},
+        token {.type = ident,
+               .literal = "y",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 17,
+               }},
+        token {.type = rparen,
+               .literal = ")",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 18,
+               }},
+        token {.type = lsquirly,
+               .literal = "{",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 3,
+                   .column = 20,
+               }},
+        token {.type = ident,
+               .literal = "x",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 4,
+                   .column = 1,
+               }},
+        token {.type = plus,
+               .literal = "+",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 4,
+                   .column = 3,
+               }},
+        token {.type = ident,
+               .literal = "y",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 4,
+                   .column = 5,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 4,
+                   .column = 6,
+               }},
+        token {.type = rsquirly,
+               .literal = "}",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 5,
+                   .column = 1,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 5,
+                   .column = 2,
+               }},
+        token {.type = let,
+               .literal = "let",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 1,
+               }},
+        token {.type = ident,
+               .literal = "result",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 5,
+               }},
+        token {.type = assign,
+               .literal = "=",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 12,
+               }},
+        token {.type = ident,
+               .literal = "add",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 14,
+               }},
+        token {.type = lparen,
+               .literal = "(",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 17,
+               }},
+        token {.type = ident,
+               .literal = "five",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 18,
+               }},
+        token {.type = comma,
+               .literal = ",",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 22,
+               }},
+        token {.type = ident,
+               .literal = "ten",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 24,
+               }},
+        token {.type = rparen,
+               .literal = ")",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 27,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 6,
+                   .column = 28,
+               }},
+        token {.type = exclamation,
+               .literal = "!",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 7,
+                   .column = 1,
+               }},
+        token {.type = minus,
+               .literal = "-",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 7,
+                   .column = 2,
+               }},
+        token {.type = slash,
+               .literal = "/",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 7,
+                   .column = 3,
+               }},
+        token {.type = asterisk,
+               .literal = "*",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 7,
+                   .column = 4,
+               }},
+        token {.type = integer,
+               .literal = "5",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 7,
+                   .column = 5,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 7,
+                   .column = 6,
+               }},
+        token {.type = integer,
+               .literal = "5",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 8,
+                   .column = 1,
+               }},
+        token {.type = less_than,
+               .literal = "<",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 8,
+                   .column = 3,
+               }},
+        token {.type = integer,
+               .literal = "10",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 8,
+                   .column = 5,
+               }},
+        token {.type = greater_than,
+               .literal = ">",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 8,
+                   .column = 8,
+               }},
+        token {.type = integer,
+               .literal = "5",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 8,
+                   .column = 10,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 8,
+                   .column = 11,
+               }},
+        token {.type = eef,
+               .literal = "if",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 9,
+                   .column = 1,
+               }},
+        token {.type = lparen,
+               .literal = "(",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 9,
+                   .column = 4,
+               }},
+        token {.type = integer,
+               .literal = "5",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 9,
+                   .column = 5,
+               }},
+        token {.type = less_than,
+               .literal = "<",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 9,
+                   .column = 7,
+               }},
+        token {.type = integer,
+               .literal = "10",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 9,
+                   .column = 9,
+               }},
+        token {.type = rparen,
+               .literal = ")",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 9,
+                   .column = 11,
+               }},
+        token {.type = lsquirly,
+               .literal = "{",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 9,
+                   .column = 13,
+               }},
+        token {.type = ret,
+               .literal = "return",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 10,
+                   .column = 1,
+               }},
+        token {.type = tru,
+               .literal = "true",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 10,
+                   .column = 8,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 10,
+                   .column = 12,
+               }},
+        token {.type = rsquirly,
+               .literal = "}",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 11,
+                   .column = 1,
+               }},
+        token {.type = elze,
+               .literal = "else",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 11,
+                   .column = 3,
+               }},
+        token {.type = lsquirly,
+               .literal = "{",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 11,
+                   .column = 8,
+               }},
+        token {.type = ret,
+               .literal = "return",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 12,
+                   .column = 1,
+               }},
+        token {.type = fals,
+               .literal = "false",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 12,
+                   .column = 8,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 12,
+                   .column = 13,
+               }},
+        token {.type = rsquirly,
+               .literal = "}",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 13,
+                   .column = 1,
+               }},
+        token {.type = integer,
+               .literal = "10",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 14,
+                   .column = 1,
+               }},
+        token {.type = equals,
+               .literal = "==",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 14,
+                   .column = 4,
+               }},
+        token {.type = integer,
+               .literal = "10",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 14,
+                   .column = 7,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 14,
+                   .column = 9,
+               }},
+        token {.type = integer,
+               .literal = "10",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 15,
+                   .column = 1,
+               }},
+        token {.type = not_equals,
+               .literal = "!=",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 15,
+                   .column = 4,
+               }},
+        token {.type = integer,
+               .literal = "9",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 15,
+                   .column = 7,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 15,
+                   .column = 8,
+               }},
+        token {.type = string,
+               .literal = "foobar",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 16,
+                   .column = 1,
+               }},
+        token {.type = string,
+               .literal = "foo bar",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 17,
+                   .column = 1,
+               }},
+        token {.type = string,
+               .literal = "",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 18,
+                   .column = 1,
+               }},
+        token {.type = lbracket,
+               .literal = "[",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 19,
+                   .column = 1,
+               }},
+        token {.type = integer,
+               .literal = "1",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 19,
+                   .column = 2,
+               }},
+        token {.type = comma,
+               .literal = ",",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 19,
+                   .column = 3,
+               }},
+        token {.type = integer,
+               .literal = "2",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 19,
+                   .column = 4,
+               }},
+        token {.type = rbracket,
+               .literal = "]",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 19,
+                   .column = 5,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 19,
+                   .column = 6,
+               }},
+        token {.type = lsquirly,
+               .literal = "{",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 20,
+                   .column = 1,
+               }},
+        token {.type = string,
+               .literal = "foo",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 20,
+                   .column = 2,
+               }},
+        token {.type = colon,
+               .literal = ":",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 20,
+                   .column = 7,
+               }},
+        token {.type = string,
+               .literal = "bar",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 20,
+                   .column = 9,
+               }},
+        token {.type = rsquirly,
+               .literal = "}",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 20,
+                   .column = 14,
+               }},
+        token {.type = semicolon,
+               .literal = ";",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 20,
+                   .column = 15,
+               }},
+        token {.type = decimal,
+               .literal = "5.5",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 21,
+                   .column = 1,
+               }},
+        token {.type = double_slash,
+               .literal = "//",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 21,
+                   .column = 5,
+               }},
+        token {.type = percent,
+               .literal = "%",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 21,
+                   .column = 8,
+               }},
+        token {.type = ampersand,
+               .literal = "&",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 22,
+                   .column = 1,
+               }},
+        token {.type = pipe,
+               .literal = "|",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 23,
+                   .column = 1,
+               }},
+        token {.type = caret,
+               .literal = "^",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 24,
+                   .column = 1,
+               }},
+        token {.type = shift_left,
+               .literal = "<<",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 25,
+                   .column = 1,
+               }},
+        token {.type = shift_right,
+               .literal = ">>",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 26,
+                   .column = 1,
+               }},
+        token {.type = logical_and,
+               .literal = "&&",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 27,
+                   .column = 1,
+               }},
+        token {.type = logical_or,
+               .literal = "||",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 28,
+                   .column = 1,
+               }},
+        token {.type = ident,
+               .literal = "a_b",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 29,
+                   .column = 1,
+               }},
+        token {.type = hwile,
+               .literal = "while",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 30,
+                   .column = 1,
+               }},
+        token {.type = brake,
+               .literal = "break",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 31,
+                   .column = 1,
+               }},
+        token {.type = cont,
+               .literal = "continue",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 32,
+                   .column = 1,
+               }},
+        token {.type = null,
+               .literal = "null",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 33,
+                   .column = 1,
+               }},
+        token {.type = less_equal,
+               .literal = "<=",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 34,
+                   .column = 1,
+               }},
+        token {.type = greater_equal,
+               .literal = ">=",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 35,
+                   .column = 1,
+               }},
+        token {.type = eof,
+               .literal = "",
+               .loc {
+                   .filename = "<stdin>",
+                   .line = 36,
+                   .column = 1,
+               }},
     };
+
     for (const auto& expected_token : expected_tokens) {
         auto token = lxr.next_token();
         CHECK_EQ(token, expected_token);
