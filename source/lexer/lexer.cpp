@@ -201,9 +201,9 @@ auto lexer::next_token() -> token
     return read_char(),
            token {
                .type = token_type::illegal, 
-               .literal = m_input.substr(m_read_position - 2, 1), 
+               .literal = m_input.substr(m_position - 1, 1), 
                .loc = loc,
-           ,};
+           };
 }
 
 auto lexer::read_char() -> void
