@@ -1325,7 +1325,7 @@ TEST_CASE("arrayExpression")
     require_binary_expression(array_expr->elements[2], 3, token_type::plus, 3);
 }
 
-TEST_CASE("indexEpxression")
+TEST_CASE("indexExpression")
 {
     auto [prgrm, _] = check_program("myArray[1+1]");
     auto* idx_expr = require_expression<index_expression>(prgrm);
